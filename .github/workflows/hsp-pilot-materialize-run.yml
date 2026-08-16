@@ -1,0 +1,235 @@
+name: Materialize and run real rice HSP six-material pilot
+
+on:
+  push:
+    branches:
+      - automation/hsp-six-material-pilot-20260817
+    paths:
+      - ".github/workflows/hsp-pilot-materialize-run.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hsp-six-material-pilot
+  cancel-in-progress: false
+
+jobs:
+  materialize-run-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout exact automation state
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Reconstruct and verify permanent pilot source
+        run: |
+          set -euo pipefail
+          test -s _hsp_pilot_publish/chunk-000
+          tr -d '[:space:]' < _hsp_pilot_publish/chunk-000 > /tmp/hsp-pilot.tar.xz.b64
+          test "$(wc -c < /tmp/hsp-pilot.tar.xz.b64)" -eq 30192
+          base64 --decode /tmp/hsp-pilot.tar.xz.b64 > /tmp/hsp-pilot.tar.xz
+          echo 'b0a5686effab0f70fd004c01ffbd0e4fa4fb7c0d59a22c3be585365bf7765dca  /tmp/hsp-pilot.tar.xz' | sha256sum --check --strict
+          xz --decompress --stdout /tmp/hsp-pilot.tar.xz > /tmp/hsp-pilot.tar
+          echo 'a7b130700e700d225dc02d1124604183dbdfb5fd798edfd76a749897cc6caec9  /tmp/hsp-pilot.tar' | sha256sum --check --strict
+          python3 - <<'PY'
+          import tarfile
+          from pathlib import Path, PurePosixPath
+
+          root = Path.cwd().resolve()
+          with tarfile.open('/tmp/hsp-pilot.tar', 'r:') as handle:
+              members = handle.getmembers()
+              if len(members) != 11:
+                  raise RuntimeError(f'Expected 11 permanent files, found {len(members)}')
+              for member in members:
+                  logical = PurePosixPath(member.name)
+                  if logical.is_absolute() or '..' in logical.parts:
+                      raise RuntimeError(f'Unsafe archive member: {member.name}')
+                  if not member.isfile() or member.issym() or member.islnk():
+                      raise RuntimeError(f'Unsupported archive member: {member.name}')
+                  target = (root / member.name).resolve()
+                  if not target.is_relative_to(root):
+                      raise RuntimeError(f'Archive escapes repository: {member.name}')
+              handle.extractall(root)
+          print(f'Permanent pilot source materialized: {len(members)} files')
+          PY
+          test -f examples/rice_hsp_6material_pilot/sample_metadata.tsv
+          test -f scripts/hsp_pilot/parse_hsp_pilot.py
+          test -f tests/test_hsp_pilot.py
+
+      - name: Install uv and project quality environment
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.12.3"
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Run code-quality and regression checks
+        run: |
+          set -euo pipefail
+          uv python install 3.12
+          uv sync --locked --all-extras --dev
+          uv run ruff check scripts/hsp_pilot tests/test_hsp_pilot.py
+          uv run ruff format --check scripts/hsp_pilot tests/test_hsp_pilot.py
+          uv run pytest -q tests/test_hsp_pilot.py
+          python -m compileall -q scripts/hsp_pilot tests/test_hsp_pilot.py
+
+      - name: Install external search and download tools
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends hmmer ncbi-blast+ jq
+          uv tool install 'gdown==6.1.0'
+          hmmsearch -h | head -n 2
+          blastp -version | head -n 1
+          gdown --version
+
+      - name: Resolve and download only six selected protein sets
+        env:
+          XI_FOLDER_ID: 1uliScvQglOmmx4saOtbzTxtRnNn7cSsL
+          GJ_FOLDER_ID: 1XlSBc0hnAYmQI1evgsgxpmDJAv8aZbTa
+          WILD_FOLDER_ID: 1-wufiQrGQoZSKNu1eS6ACkofsRIl3oim
+        run: |
+          set -euo pipefail
+          mkdir -p work/indexes work/raw_proteomes
+          gdown "https://drive.google.com/drive/folders/${XI_FOLDER_ID}" --folder --json --quiet > work/indexes/XI.json
+          gdown "https://drive.google.com/drive/folders/${GJ_FOLDER_ID}" --folder --json --quiet > work/indexes/GJ.json
+          gdown "https://drive.google.com/drive/folders/${WILD_FOLDER_ID}" --folder --json --quiet > work/indexes/Wild.json
+          for group in XI GJ Wild; do
+            jq -e 'type == "array" and length > 0' "work/indexes/${group}.json" >/dev/null
+            jq -r '.[].path' "work/indexes/${group}.json" | sort > "work/indexes/${group}.paths.txt"
+          done
+          python scripts/hsp_pilot/resolve_gdown_folder_index.py \
+            --sample-table examples/rice_hsp_6material_pilot/sample_metadata.tsv \
+            --index-dir work/indexes \
+            --output work/resolved_proteins.private.tsv
+          while IFS=$'\t' read -r sample group file_name url resolved_path; do
+            [[ "$sample" == "sample_id" ]] && continue
+            gdown "$url" -O "work/raw_proteomes/$file_name" --quiet
+            gzip -t "work/raw_proteomes/$file_name"
+            test -s "work/raw_proteomes/$file_name"
+          done < work/resolved_proteins.private.tsv
+
+      - name: Normalize proteomes and reconstruct audited MSU references
+        run: |
+          set -euo pipefail
+          mkdir -p work/normalized work/audit work/references work/msu
+          tail -n +2 examples/rice_hsp_6material_pilot/sample_metadata.tsv | while IFS=$'\t' read -r sample storage analysis_group taxon_name rest; do
+            file_name=$(awk -F '\t' -v sample="$sample" 'NR>1 && $1==sample {print $18}' examples/rice_hsp_6material_pilot/sample_metadata.tsv)
+            python scripts/hsp_pilot/normalize_proteome.py \
+              --input "work/raw_proteomes/$file_name" \
+              --output "work/normalized/$sample.pep.fa" \
+              --audit "work/audit/$sample.normalization.tsv" \
+              --sample "$sample"
+          done
+          gdown 'https://drive.google.com/file/d/1qzlrDK94RZwyBJG5u6n8auv3zLDxAWSS/view' -O work/msu/MSU.pep.fa --quiet
+          echo 'e8a96687a80e8c809b802d9044b3d284c7e1562db68fd2d9ad00dd4e706623d1  work/msu/MSU.pep.fa' | sha256sum --check --strict
+          python scripts/hsp_pilot/extract_msu_references.py \
+            --source work/msu/MSU.pep.fa \
+            --members examples/rice_hsp_6material_pilot/msu_reference_ids.tsv \
+            --output work/references/MSU_HSP_umbrella_six_primary_PASS.pep.fa
+          python scripts/hsp_pilot/split_hsp_references.py \
+            --input work/references/MSU_HSP_umbrella_six_primary_PASS.pep.fa \
+            --output-dir work/references \
+            --mapping work/references/reference_mapping.tsv
+          cat work/references/HSP*.references.fa > work/references/all_hsp_references.fa
+
+      - name: Download and freeze Pfam HMM profiles
+        run: |
+          set -euo pipefail
+          mkdir -p work/hmms
+          tail -n +2 examples/rice_hsp_6material_pilot/hsp_tracks.tsv | while IFS=$'\t' read -r track display pfam accession method hmm_url cut_ga min_id min_cov notes; do
+            curl --retry 4 --retry-all-errors --fail --location --silent --show-error "$hmm_url" -o "work/hmms/$pfam.hmm"
+            grep -q '^HMMER3/f' "work/hmms/$pfam.hmm"
+            grep -q "^ACC  $pfam" "work/hmms/$pfam.hmm"
+          done
+          tail -n +2 examples/rice_hsp_6material_pilot/support_profiles.tsv | while IFS=$'\t' read -r pfam role hmm_url; do
+            curl --retry 4 --retry-all-errors --fail --location --silent --show-error "$hmm_url" -o "work/hmms/$pfam.hmm"
+            grep -q '^HMMER3/f' "work/hmms/$pfam.hmm"
+            grep -q "^ACC  $pfam" "work/hmms/$pfam.hmm"
+          done
+          sha256sum work/hmms/*.hmm | sort > work/hmms/SHA256SUMS.txt
+
+      - name: Run HMMER and BLAST evidence searches
+        run: |
+          set -euo pipefail
+          mkdir -p work/domtbl work/blast work/logs
+          run_hmm() {
+            sample=$1
+            pfam=$2
+            hmm="work/hmms/$pfam.hmm"
+            fasta="work/normalized/$sample.pep.fa"
+            if grep -q '^GA  ' "$hmm"; then
+              hmmsearch --cpu 2 --cut_ga --domtblout "work/domtbl/$sample.$pfam.domtblout" "$hmm" "$fasta" > "work/logs/$sample.$pfam.hmmsearch.log"
+            else
+              hmmsearch --cpu 2 -E 1e-5 --domE 1e-3 --domtblout "work/domtbl/$sample.$pfam.domtblout" "$hmm" "$fasta" > "work/logs/$sample.$pfam.hmmsearch.log"
+            fi
+          }
+          cut -f1 examples/rice_hsp_6material_pilot/sample_metadata.tsv | tail -n +2 | while read -r sample; do
+            for pfam in PF00011 PF00226 PF00118 PF00012 PF00183 PF10431 PF00004 PF07724 PF01504; do
+              run_hmm "$sample" "$pfam"
+            done
+            makeblastdb -in "work/normalized/$sample.pep.fa" -dbtype prot -out "work/blast/$sample" >/dev/null
+            blastp \
+              -query work/references/all_hsp_references.fa \
+              -db "work/blast/$sample" \
+              -evalue 1e-5 \
+              -max_target_seqs 500 \
+              -num_threads 2 \
+              -outfmt '6 qseqid sseqid pident length qlen slen qstart qend sstart send evalue bitscore' \
+              -out "work/blast/$sample.references_vs_proteome.tsv"
+          done
+
+      - name: Merge evidence and build human/machine reports
+        run: |
+          set -euo pipefail
+          python scripts/hsp_pilot/parse_hsp_pilot.py \
+            --sample-table examples/rice_hsp_6material_pilot/sample_metadata.tsv \
+            --track-table examples/rice_hsp_6material_pilot/hsp_tracks.tsv \
+            --protein-dir work/normalized \
+            --audit-dir work/audit \
+            --domtbl-dir work/domtbl \
+            --blast-dir work/blast \
+            --output-dir results
+          mkdir -p results/raw
+          cp -a work/domtbl results/raw/domtbl
+          cp -a work/blast/*.references_vs_proteome.tsv results/raw/
+          cp -a work/hmms/SHA256SUMS.txt results/hmm_profile_sha256.tsv
+          cp examples/rice_hsp_6material_pilot/{sample_metadata.tsv,hsp_tracks.tsv,support_profiles.tsv,source_receipt.tsv} results/
+          find results -type f -print0 | sort -z | xargs -0 sha256sum > results/SHA256SUMS.txt
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          summary = json.loads(Path('results/hsp_pilot_summary.json').read_text(encoding='utf-8'))
+          if summary['candidate_gene_rows'] <= 0:
+              raise RuntimeError('No HSP candidates were produced')
+          expected = {'HSP20','HSP40','HSP60','HSP70','HSP90','HSP100'}
+          observed = {row['track_id'] for row in summary['tracks']}
+          if observed != expected:
+              raise RuntimeError(f'Unexpected tracks: {observed}')
+          print(json.dumps(summary['evidence_class_counts'], indent=2))
+          PY
+
+      - name: Upload complete auditable result artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: panfamflow-rice-hsp-six-material-pilot-${{ github.sha }}
+          path: results/
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Commit only permanent source and lightweight audit summaries
+        run: |
+          set -euo pipefail
+          mkdir -p examples/rice_hsp_6material_pilot/audit
+          cp results/index.html examples/rice_hsp_6material_pilot/audit/index.html
+          cp results/{hsp_candidate_summary.tsv,hsp_track_count_matrix.tsv,normalization_summary.tsv,hsp_pilot_summary.json,hmm_profile_sha256.tsv} examples/rice_hsp_6material_pilot/audit/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add examples/rice_hsp_6material_pilot scripts/hsp_pilot tests/test_hsp_pilot.py
+          git rm -r _hsp_pilot_publish .github/workflows/hsp-pilot-materialize-run.yml
+          git commit -m 'feat: add real three-species rice HSP family-discovery pilot'
+          git push origin 'HEAD:automation/hsp-six-material-pilot-20260817'
