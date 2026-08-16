@@ -1,0 +1,7 @@
+track_id	primary_pfam_id	primary_hmm_url	profile_policy	min_blast_identity	min_query_coverage	architecture_rule	exclusion_pfam_ids
+HSP20	PF00011	https://www.ebi.ac.uk/interpro/wwwapi//entry/pfam/PF00011?annotation=hmm	cut_ga	30	50	primary_domain_required	
+HSP40	PF00226	https://www.ebi.ac.uk/interpro/wwwapi//entry/pfam/PF00226?annotation=hmm	cut_ga	30	50	primary_domain_plus_HPD_review	
+HSP60	PF00118	https://www.ebi.ac.uk/interpro/wwwapi//entry/pfam/PF00118?annotation=hmm	cut_ga	30	50	primary_domain_and_no_PIP5K_conflict	PF01504
+HSP70	PF00012	https://www.ebi.ac.uk/interpro/wwwapi//entry/pfam/PF00012?annotation=hmm	cut_ga	30	50	primary_domain_required	
+HSP90	PF00183	https://www.ebi.ac.uk/interpro/wwwapi//entry/pfam/PF00183?annotation=hmm	cut_ga	30	50	primary_domain_required	
+HSP100	PF10431	https://www.ebi.ac.uk/interpro/wwwapi//entry/pfam/PF10431?annotation=hmm	cut_ga	30	50	PF10431_plus_PF00004_plus_PF07724	
