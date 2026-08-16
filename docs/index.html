@@ -1,0 +1,813 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="PanFamFlow 中文交互式入门教程：从输入准备、config.yaml 配置、校验、运行、断点续跑到结果解读。">
+  <meta name="color-scheme" content="light dark">
+  <title>PanFamFlow 中文入门教程｜一步步完成目标泛基因家族分析</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --panel: #ffffff;
+      --panel-soft: #f0f4f8;
+      --text: #17212b;
+      --muted: #5b6673;
+      --line: #d7dee7;
+      --brand: #176b55;
+      --brand-2: #0f513f;
+      --accent: #d97706;
+      --danger: #b42318;
+      --ok: #16794f;
+      --code: #0f172a;
+      --code-text: #e5edf7;
+      --shadow: 0 10px 30px rgba(15, 23, 42, .08);
+      --radius: 16px;
+      --sidebar: 290px;
+    }
+    [data-theme="dark"] {
+      --bg: #0c1117;
+      --panel: #151c24;
+      --panel-soft: #1d2631;
+      --text: #e7edf4;
+      --muted: #a9b4c0;
+      --line: #344151;
+      --brand: #57c7a5;
+      --brand-2: #83d8bd;
+      --accent: #f7b955;
+      --danger: #ff8a80;
+      --ok: #6bd7a9;
+      --code: #080c12;
+      --code-text: #dbe8f5;
+      --shadow: 0 12px 34px rgba(0, 0, 0, .28);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+      line-height: 1.72;
+    }
+    a { color: var(--brand); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { color: var(--brand-2); }
+    code, pre, kbd { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
+    .skip-link {
+      position: fixed; left: 12px; top: -60px; z-index: 1000;
+      padding: 8px 12px; background: var(--brand); color: white; border-radius: 8px;
+    }
+    .skip-link:focus { top: 12px; }
+    .topbar {
+      position: sticky; top: 0; z-index: 80;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      padding: 10px 20px;
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel) 92%, transparent);
+      backdrop-filter: blur(12px);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .brand-mark {
+      width: 34px; height: 34px; display: grid; place-items: center;
+      border-radius: 10px; background: linear-gradient(135deg, var(--brand), #53a48e); color: white;
+      font-weight: 800;
+    }
+    .brand strong { white-space: nowrap; }
+    .top-actions { display: flex; align-items: center; gap: 8px; }
+    button, .button {
+      border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--text);
+      padding: 8px 12px; font: inherit; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+    }
+    button:hover, .button:hover { border-color: var(--brand); color: var(--brand); }
+    .button.primary { background: var(--brand); color: white; border-color: var(--brand); }
+    .layout { display: grid; grid-template-columns: var(--sidebar) minmax(0, 1fr); max-width: 1580px; margin: 0 auto; }
+    aside {
+      position: sticky; top: 56px; height: calc(100vh - 56px); overflow: auto;
+      padding: 22px 18px 30px; border-right: 1px solid var(--line); background: var(--panel);
+    }
+    .progress-card { padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel-soft); }
+    .progress-track { height: 9px; border-radius: 999px; background: var(--line); overflow: hidden; margin-top: 8px; }
+    .progress-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--brand), #62c2a4); transition: width .25s; }
+    .progress-text { margin-top: 6px; color: var(--muted); font-size: .9rem; }
+    nav { margin-top: 18px; }
+    nav a {
+      display: block; padding: 7px 9px; margin: 2px 0; border-radius: 8px; text-decoration: none; color: var(--muted);
+      font-size: .94rem;
+    }
+    nav a:hover, nav a.active { background: var(--panel-soft); color: var(--brand); }
+    main { min-width: 0; padding: 28px clamp(18px, 4vw, 58px) 80px; }
+    .hero {
+      padding: clamp(24px, 5vw, 56px); border: 1px solid var(--line); border-radius: 24px;
+      background:
+        radial-gradient(circle at 85% 15%, color-mix(in srgb, var(--brand) 22%, transparent), transparent 35%),
+        linear-gradient(140deg, var(--panel), var(--panel-soft));
+      box-shadow: var(--shadow);
+    }
+    .eyebrow { color: var(--brand); font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+    h1 { font-size: clamp(2rem, 5vw, 4.2rem); line-height: 1.1; margin: 12px 0 18px; letter-spacing: -.035em; }
+    h2 { margin: 0 0 14px; font-size: clamp(1.45rem, 3vw, 2.15rem); line-height: 1.25; }
+    h3 { margin: 24px 0 8px; font-size: 1.2rem; }
+    h4 { margin: 18px 0 6px; }
+    .hero p { font-size: 1.08rem; max-width: 920px; color: var(--muted); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+    .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+    .badge { border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; background: var(--panel); font-size: .88rem; }
+    section.step, section.reference-section {
+      scroll-margin-top: 80px; margin-top: 28px; padding: clamp(20px, 3.5vw, 36px);
+      border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow);
+    }
+    .step-head { display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; }
+    .step-number {
+      display: inline-grid; place-items: center; min-width: 38px; height: 38px; border-radius: 12px;
+      background: var(--brand); color: white; font-weight: 800; margin-right: 10px;
+    }
+    .step-title { display: flex; align-items: center; }
+    .complete-toggle[aria-pressed="true"] { background: var(--ok); border-color: var(--ok); color: white; }
+    .callout { border-left: 4px solid var(--brand); background: var(--panel-soft); padding: 14px 16px; border-radius: 0 12px 12px 0; margin: 16px 0; }
+    .callout.warn { border-left-color: var(--accent); }
+    .callout.danger { border-left-color: var(--danger); }
+    .callout strong { display: block; margin-bottom: 4px; }
+    .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+    .card { border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: var(--panel-soft); }
+    .card h3, .card h4 { margin-top: 0; }
+    .card p:last-child { margin-bottom: 0; }
+    .flow {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 18px 0;
+    }
+    .flow div { position: relative; border: 1px solid var(--line); border-radius: 12px; padding: 13px; background: var(--panel-soft); text-align: center; font-weight: 700; }
+    .flow div:not(:last-child)::after { content: "→"; position: absolute; right: -15px; top: 50%; transform: translateY(-50%); color: var(--brand); font-size: 1.2rem; z-index: 2; }
+    .code-wrap { position: relative; margin: 14px 0 20px; }
+    pre {
+      margin: 0; overflow: auto; padding: 18px 18px 20px; border-radius: 14px; background: var(--code); color: var(--code-text);
+      border: 1px solid color-mix(in srgb, var(--line) 50%, transparent); line-height: 1.58; tab-size: 2;
+    }
+    .copy-button { position: absolute; right: 9px; top: 9px; font-size: .82rem; padding: 5px 8px; background: #172033; color: #f2f6fb; border-color: #3a465c; }
+    .copy-button.copied { background: var(--ok); border-color: var(--ok); }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: .95rem; }
+    th, td { border: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; }
+    th { background: var(--panel-soft); }
+    .table-scroll { overflow-x: auto; }
+    details { border: 1px solid var(--line); border-radius: 12px; padding: 0 14px; margin: 10px 0; background: var(--panel-soft); }
+    summary { cursor: pointer; font-weight: 750; padding: 13px 0; }
+    details > div { padding-bottom: 14px; }
+    .checklist { list-style: none; padding: 0; }
+    .checklist li { margin: 8px 0; padding-left: 28px; position: relative; }
+    .checklist li::before { content: "□"; position: absolute; left: 2px; color: var(--brand); font-weight: 800; }
+    .terminal-note { color: #b7f5d7; }
+    .inline-code { background: var(--panel-soft); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+    .generator { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 18px; }
+    .form-row { display: grid; gap: 6px; margin-bottom: 12px; }
+    label { font-weight: 700; }
+    input[type="text"], textarea, select {
+      width: 100%; border: 1px solid var(--line); border-radius: 9px; padding: 9px 10px; background: var(--panel); color: var(--text); font: inherit;
+    }
+    .module-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; }
+    .module-list label { font-weight: 500; }
+    .output-box { min-height: 450px; white-space: pre; }
+    .status-pill { display: inline-flex; border-radius: 999px; padding: 3px 9px; font-weight: 800; font-size: .82rem; }
+    .status-pill.ready { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
+    .status-pill.review { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--accent); }
+    .status-pill.blocked { background: color-mix(in srgb, var(--danger) 16%, transparent); color: var(--danger); }
+    .quiz-option { display: block; width: 100%; text-align: left; margin: 7px 0; }
+    .quiz-feedback { min-height: 28px; font-weight: 700; margin-top: 8px; }
+    footer { color: var(--muted); text-align: center; padding: 30px 10px 0; }
+    .mobile-nav { display: none; }
+    @media (max-width: 920px) {
+      .layout { grid-template-columns: 1fr; }
+      aside { display: none; position: fixed; left: 0; top: 56px; z-index: 70; width: min(86vw, 340px); box-shadow: var(--shadow); }
+      aside.open { display: block; }
+      .mobile-nav { display: inline-flex; }
+      main { padding: 20px 14px 60px; }
+      .generator { grid-template-columns: 1fr; }
+      .flow div:not(:last-child)::after { display: none; }
+      .step-head { flex-direction: column; }
+      .top-actions .desktop-link { display: none; }
+    }
+    @media print {
+      .topbar, aside, .copy-button, .complete-toggle, .generator-controls, .quiz { display: none !important; }
+      .layout { display: block; }
+      main { padding: 0; }
+      section.step, section.reference-section, .hero { box-shadow: none; break-inside: avoid; }
+      body { background: white; color: black; }
+      pre { white-space: pre-wrap; color: black; background: #f2f2f2; }
+    }
+  </style>
+</head>
+<body>
+<a class="skip-link" href="#main">跳到正文</a>
+<header class="topbar">
+  <div class="brand">
+    <button class="mobile-nav" id="menuToggle" aria-label="打开目录">☰</button>
+    <span class="brand-mark">PF</span>
+    <strong>PanFamFlow 小白教学</strong>
+  </div>
+  <div class="top-actions">
+    <a class="button desktop-link" href="../README.zh-CN.md">中文 README</a>
+    <a class="button desktop-link" href="../README.md">English README</a>
+    <button id="themeToggle" aria-label="切换明暗主题">◐ 主题</button>
+  </div>
+</header>
+<div class="layout">
+  <aside id="sidebar" aria-label="教程目录">
+    <div class="progress-card">
+      <strong>学习进度</strong>
+      <div class="progress-track" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-text" id="progressText">0 / 12 节完成</div>
+      <button id="resetProgress" style="margin-top:10px">重置进度</button>
+    </div>
+    <nav id="toc">
+      <a href="#overview">先看全局</a>
+      <a href="#step-0">0. 判断数据是否适用</a>
+      <a href="#step-1">1. 安装基础环境</a>
+      <a href="#step-2">2. 下载并初始化项目</a>
+      <a href="#step-3">3. 整理输入文件</a>
+      <a href="#step-4">4. 填写 config.yaml</a>
+      <a href="#step-5">5. 运行生物学启动门</a>
+      <a href="#step-6">6. 校验与预演</a>
+      <a href="#step-7">7. 正式运行或只跑部分模块</a>
+      <a href="#step-8">8. 报错后断点续跑</a>
+      <a href="#step-9">9. 查看结果目录</a>
+      <a href="#step-10">10. 生物学解释边界</a>
+      <a href="#step-11">11. 验收与归档</a>
+      <a href="#generator">交互式配置片段生成器</a>
+      <a href="#troubleshooting">常见报错</a>
+      <a href="#quiz">小测验</a>
+    </nav>
+  </aside>
+  <main id="main">
+    <section class="hero" id="overview">
+      <div class="eyebrow">目标泛基因家族分析 · 中文交互式教程</div>
+      <h1>从零开始，按步骤跑通 PanFamFlow</h1>
+      <p>本教程面向第一次接触 Linux、生物信息学工作流或 Snakemake 的使用者。你不需要理解每一行代码，但需要按顺序准备输入、修改一份 <code class="inline-code">config.yaml</code>、先校验再运行，并在出现错误时保留已经完成的结果。</p>
+      <div class="hero-actions">
+        <a class="button primary" href="#step-0">开始第一步</a>
+        <a class="button" href="#generator">先生成配置片段</a>
+        <button onclick="window.print()">打印 / 导出 PDF</button>
+      </div>
+      <div class="badges">
+        <span class="badge">中文为主</span>
+        <span class="badge">无需网页依赖</span>
+        <span class="badge">支持断点续跑</span>
+        <span class="badge">只改 config.yaml</span>
+        <span class="badge">目标家族，不做泛基因组组装</span>
+      </div>
+    </section>
+
+    <section class="reference-section">
+      <h2>先用一句话理解这套流程</h2>
+      <div class="callout">
+        <strong>PanFamFlow 做什么？</strong>
+        在多份已经组装和注释的基因组中，找出同一个目标基因家族的成员，然后比较其系统发育、HOG 占有率、Core/Soft-core/Shell/Cloud 类型、基因结构、复制、Ka/Ks、启动子和表达。
+      </div>
+      <div class="callout danger">
+        <strong>PanFamFlow 不做什么？</strong>
+        它不从原始测序 reads 组装基因组，不构建 graph pangenome，也不把“注释中没找到”直接写成“这个基因已经丢失”。
+      </div>
+      <div class="flow" aria-label="分析总体流程">
+        <div>输入审计</div><div>Canonical transcript</div><div>家族鉴定</div><div>家族树与 HOG</div><div>泛家族分类</div><div>进化与调控</div><div>整合报告</div>
+      </div>
+      <p>方法框架对应项目来源材料中的 HMMER/BLASTP 家族鉴定、IQ-TREE 系统树、Core/Soft-core/Shell/Cloud、复制与共线性、Ka/Ks、启动子和 RNA-seq；工程化实现进一步加入 canonical transcript、HOG、输入哈希、模块依赖与断点恢复。</p>
+    </section>
+
+    <section class="step" id="step-0" data-step="0">
+      <div class="step-head"><div><h2 class="step-title"><span class="step-number">0</span>先判断：你的数据适合吗？</h2></div><button class="complete-toggle" aria-pressed="false">标记本节完成</button></div>
+      <div class="grid">
+        <div class="card"><h3>最低可运行</h3><p>每个物种/材料至少有匹配的 <strong>genome FASTA</strong> 与 <strong>GFF3</strong>。</p></div>
+        <div class="card"><h3>完成 Ka/Ks</h3><p>还需要可靠的 <strong>CDS</strong>，且 CDS 与蛋白、GFF3 的 ID 能对应。</p></div>
+        <div class="card"><h3>完成复制分类</h3><p>需要合理外群；没有合适外群时，transposed duplication 必须降级解释。</p></div>
+        <div class="card"><h3>完成表达分析</h3><p>优先 FASTQ + 生物学重复；也可导入矩阵，但差异表达不能用 TPM 代替 raw counts。</p></div>
+      </div>
+      <div class="callout warn"><strong>常见误区</strong>多个样本的 BAM/VCF 即使材料不同，只要都比对到同一参考基因组，也不能直接当成多套独立 assembled genomes 做泛家族占有率。</div>
+      <ul class="checklist">
+        <li>每套 genome 与 GFF3 来自同一 assembly/annotation 版本。</li>
+        <li>物种或材料 ID 简短、唯一、以后不再随意更改。</li>
+        <li>明确目标家族名称，以及 Pfam/InterPro/HMM 或参考蛋白证据。</li>
+        <li>如果要比较群体，先定义 Wild、Cultivated 或其他分组，不能分析后再改。</li>
+      </ul>
+    </section>
+
+    <section class="step" id="step-1" data-step="1">
+      <div class="step-head"><div><h2 class="step-title"><span class="step-number">1</span>安装基础环境：mamba 管软件，uv 管 Python</h2></div><button class="complete-toggle" aria-pressed="false">标记本节完成</button></div>
+      <p>建议在 Linux x86_64 服务器或 HPC 上运行。外部生物信息学软件由 Conda/Mamba 隔离；PanFamFlow 的 Python 依赖由 uv 按 <code class="inline-code">uv.lock</code> 锁定。</p>
+      <h3>1.1 检查已有命令</h3>
+      <div class="code-wrap"><button class="copy-button">复制</button><pre><code>mamba --version
+uv --version
+git --version</code></pre></div>
+      <h3>1.2 安装后创建 Snakemake engine</h3>
+      <div class="code-wrap"><button class="copy-button">复制</button><pre><code>mamba env create -f environment.yaml
+mamba run -n panfamflow-engine snakemake --version</code></pre></div>
+      <h3>1.3 安装 Python CLI</h3>
+      <div class="code-wrap"><button class="copy-button">复制</button><pre><code>uv sync --locked --all-extras --dev
+uv run panfamflow --version
+uv run panfamflow list-modules</code></pre></div>
+      <div class="callout"><strong>为什么不是把所有软件装进一个环境？</strong>HMMER、OrthoFinder、BUSCO、RNA-seq 和绘图依赖复杂。规则级 Conda 环境能减少版本冲突，并让失败任务可重现。</div>
+    </section>
+
+    <section class="step" id="step-2" data-step="2">
+      <div class="step-head"><div><h2 class="step-title"><span class="step-number">2</span>下载代码并初始化分析项目</h2></div><button class="complete-toggle" aria-pressed="false">标记本节完成</button></div>
+      <h3>2.1 克隆独立仓库</h3>
+      <div class="code-wrap"><button class="copy-button">复制</button><pre><code>git clone https://github.com/lianglunping/PanFamFlow.git
+cd PanFamFlow</code></pre></div>
+      <h3>2.2 新建分析目录</h3>
+      <div class="code-wrap"><button class="copy-button">复制</button><pre><code>uv run panfamflow init runs/my_family_project
+cd runs/my_family_project</code></pre></div>
+      <p>初始化后会得到：</p>
+      <div class="code-wrap"><button class="copy-button">复制</button><pre><code>my_family_project/
+├── config.yaml
+├── .panfamflow/config.schema.json
+├── data/
+├── references/
+├── results/
+├── work/
+└── logs/</code></pre></div>
+      <div class="callout danger"><strong>不要覆盖原始数据</strong>建议把原始文件放在只读位置，再用符号链接接入项目。不要为了“重新跑”而删除整个 <code>results/</code>、<code>work/</code> 或 <code>.snakemake/</code>。</div>
+    </section>
+
+    <section class="step" id="step-3" data-step="3">
+      <div class="step-head"><div><h2 class="step-title"><span class="step-number">3</span>按统一目录整理输入文件</h2></div><button class="complete-toggle" aria-pressed="false">标记本节完成</button></div>
+      <p>推荐每个物种/材料一个目录，路径全部相对于项目根目录。</p>
+      <div class="code-wrap"><button class="copy-button">复制</button><pre><code>data/
+├── Os/
+│   ├── genome.fa
+│   ├── annotation.gff3
+│   ├── protein.fa      # 可选来源审计
+│   └── cds.fa          # Ka/Ks 强烈建议提供
+├── Og/
+│   ├── genome.fa
+│   └── annotation.gff3
+└── ...
+
+references/
+├── family.hmm
+├── family_reference.pep.fa
+└── motifs/</code></pre></div>
+      <h3>3.1 先做最简单的人工检查</h3>
+      <div class="code-wrap"><button class="copy-button">复制</button><pre><code>head data/Os/genome.fa
+head data/Os/annotation.gff3
+grep -v '^#' data/Os/annotation.gff3 | head
+sha256sum data/Os/genome.fa data/Os/annotation.gff3</code></pre></div>
+      <div class="table-scroll"><table>
+        <thead><tr><th>检查项</th><th>正确表现</th><th>常见问题</th></tr></thead>
+        <tbody>
+          <tr><td>FASTA</td><td>第一条有效行以 <code>&gt;</code> 开头</td><td>下载到 HTML 错误页、压缩格式未识别</td></tr>
+          <tr><td>GFF3</td><td>主体记录为 9 列，染色体名能在 FASTA 中找到</td><td>GTF 冒充 GFF3、chr 名称不一致</td></tr>
+          <tr><td>ID</td><td>gene/transcript/protein/CDS 可映射</td><td>不同数据库版本混用</td></tr>
+          <tr><td>组装层级</td><td>染色体级最适合定位和共线性</td><td>scaffold 级结果被过度解释</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section class="step" id="step-4" data-step="4">
+      <div class="step-head"><div><h2 class="step-title"><span class="step-number">4</span>只修改一份 config.yaml</h2></div><button class="complete-toggle" aria-pressed="false">标记本节完成</button></div>
+      <p>初学者最容易出错的地方不是命令，而是路径、缩进、物种 ID 和家族证据。YAML 使用空格缩进，不要混用 Tab。</p>
+      <h3>4.1 最小可理解配置</h3>
+      <div class="code-wrap"><button class="copy-button">复制</button><pre><code>schema_version: "1.0"
+
+project:
+  analysis_scope: target_pan_gene_family
+  name: GPAT_pan_family
+  root: .
+  seed: 20260807
+  results_dir: results
+  work_dir: work
+  logs_dir: logs
+
+run:
+  modules: [family, phylogeny, orthology, pan_family, report]
+  cores: 32
+  jobs: 32
+  resume_mode: smart
+  keep_going: true
+  rerun_incomplete: true
+  retries: 1
+
+inputs:
+  species:
+    - id: Os
+      name: Oryza_sativa
+      genome: data/Os/genome.fa
+      gff3: data/Os/annotation.gff3
+      group: Cultivated
+      representative: true
+      outgroup: Og
+    - id: Og
+      name: Oryza_granulata
+      genome: data/Og/genome.fa
+      gff3: data/Og/annotation.gff3
+      group: Wild
+      representative: false
+      outgroup: null
+
+family:
+  name: GPAT
+  combine_evidence: intersection
+  hmm:
+    enabled: true
+    hmm: references/family.hmm
+    evalue: 1.0e-5
+    domain_evalue: 1.0e-3
+    cut_ga: false
+  blast:
+    enabled: true
+    reference_proteins: references/family_reference.pep.fa
+    evalue: 1.0e-5
+    min_identity: 30.0
+    min_query_coverage: 50.0
+
+pan_family:
+  core_min: 0.99
+  soft_core_min: 0.90
+  shell_min: 0.10
+  rarefaction_iterations: 1000</code></pre></div>
+      <h3>4.2 四个必须理解的字段</h3>
+      <div class="grid">
+        <div class="card"><h4><code>analysis_scope</code></h4><p>固定为 <code>target_pan_gene_family</code>，防止范围漂移到全基因组泛基因组。</p></div>
+        <div class="card"><h4><code>species.id</code></h4><p>形成稳定 ID 的前缀，建议只用字母、数字、点、短横线，不要中途更换。</p></div>
+        <div class="card"><h4><code>combine_evidence</code></h4><p><code>intersection</code> 更严格，<code>union</code> 更敏感。正式阈值应由正负例校准。</p></div>
+        <div class="card"><h4><code>hog_node</code></h4><p>探索期可用 <code>auto</code>，正式分析要根据物种树节点冻结为具体 <code>N*</code>。</p></div>
+      </div>
+      <p>页面下方提供<a href="#generator">交互式配置片段生成器</a>，可先生成框架再粘贴到 <code>config.yaml</code>。</p>
+    </section>
+
+    <section class="step" id="step-5" data-step="5">
+      <div class="step-head"><div><h2 class="step-title"><span class="step-number">5</span>真实项目先过“生物学启动门”</h2></div><button class="complete-toggle" aria-pressed="false">标记本节完成</button></div>
+      <p>软件测试通过不等于生物学结论可靠。正式水稻 pilot 建议先冻结一个目标家族、5–10 套独立 assembled genomes、输入版本、SHA256 和人工正负例。</p>
+      <div class="code-wrap"><button class="copy-button">复制</button><pre><code>uv run panfamflow benchmark init benchmarks/rice_pilot
+cd benchmarks/rice_pilot
+
+# 先填写 benchmark.yaml、species.tsv 和 manual_review/manual_truth_set.tsv
+uv run panfamflow benchmark audit \
+  --manifest benchmark.yaml \
+  --output audits/intake_001 \
+  --allow-blocked</code></pre></div>
+      <div class="grid">
+        <div class="card"><h3><span class="status-pill ready">READY</span></h3><p>没有阻断项和警告，可进入正式 pilot。</p></div>
+        <div class="card"><h3><span class="status-pill review">REVIEW</span></h3><p>没有阻断项，但存在需要人工接受的降级项。</p></div>
+        <div class="card"><h3><span class="status-pill blocked">BLOCKED</span></h3><p>至少一个 P0 条件未满足，不能把后续结果表述为已完成生物学验收。</p></div>
+      </div>
+      <p>审计输出包括中文 HTML、JSON、TSV、XLSX、输入文件清单和 SHA256 receipt。详细规则见 <a href="BIOLOGICAL_BENCHMARK.md">BIOLOGICAL_BENCHMARK.md</a>。</p>
+    </section>
+
+    <section class="step" id="step-6" data-step="6">
+      <div class="step-head"><div><h2 class="step-title"><span class="step-number">6</span>先校验、再看计划、最后 dry-run</h2></div><button class="complete-toggle" aria-pressed="false">标记本节完成</button></div>
+      <h3>6.1 配置与路径校验</h3>
+      <div class="code-wrap"><button class="copy-button">复制</button><pre><code>uv run panfamflow validate -c config.yaml</code></pre></div>
+      <h3>6.2 查看依赖展开后的模块顺序</h3>
+      <div class="code-wrap"><button class="copy-button">复制</button><pre><code>uv run panfamflow plan -c config.yaml</code></pre></div>
+      <h3>6.3 只构建 DAG，不真正计算</h3>
+      <div class="code-wrap"><button class="copy-button">复制</button><pre><code>uv run panfamflow run -c config.yaml --dry-run</code></pre></div>
+      <div class="callout"><strong>验收标准</strong>只有当 <code>validate</code> 无 ERROR、<code>plan</code> 的模块顺序符合预期、dry-run 没有 MissingInputException 时，才进入长时间计算。</div>
+    </section>
+
+    <section class="step" id="step-7" data-step="7">
+      <div class="step-head"><div><h2 class="step-title"><span class="step-number">7</span>正式运行，或只跑你需要的部分</h2></div><button class="complete-toggle" aria-pressed="false">标记本节完成</button></div>
+      <h3>7.1 按 config.yaml 运行</h3>
+      <div class="code-wrap"><button class="copy-button">复制</button><pre><code>uv run panfamflow run -c config.yaml</code></pre></div>
+      <h3>7.2 临时只运行家族鉴定与系统树</h3>
+      <div class="code-wrap"><button class="copy-button">复制</button><pre><code>uv run panfamflow run -c config.yaml \
+  -m family \
+  -m phylogeny</code></pre></div>
+      <h3>7.3 只运行泛家族分类</h3>
+      <div class="code-wrap"><button class="copy-button">复制</button><pre><code>uv run panfamflow run -c config.yaml -m pan_family</code></pre></div>
+      <p>依赖会自动补齐。例如选择 <code>pan_family</code> 时，会自动包含 <code>qc → normalize → family</code> 和 <code>orthology</code>，但不会无故触发表达或启动子模块。</p>
+      <div class="table-scroll"><table>
+        <thead><tr><th>目的</th><th>模块</th><th>主要结果</th></tr></thead>
+        <tbody>
+          <tr><td>先找家族成员</td><td><code>family</code></td><td><code>02_family/family_members.tsv</code>、拒绝候选表</td></tr>
+          <tr><td>构建家族树</td><td><code>phylogeny</code></td><td>MSA、trimmed MSA、IQ-TREE treefile</td></tr>
+          <tr><td>做泛家族分类</td><td><code>pan_family</code></td><td>HOG occupancy、分类、presence/absence、rarefaction</td></tr>
+          <tr><td>复制与共线性</td><td><code>duplication</code></td><td>WGD/TD/PD/TRD/DSD/Singleton 与审计字段</td></tr>
+          <tr><td>选择压力</td><td><code>kaks</code></td><td>受约束 gene pairs、Ka、Ks、Ka/Ks、QC</td></tr>
+          <tr><td>最终汇总</td><td><code>report</code></td><td>Master table、HTML 报告、结果 manifest</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section class="step" id="step-8" data-step="8">
+      <div class="step-head"><div><h2 class="step-title"><span class="step-number">8</span>报错后不要从头来：修复后断点续跑</h2></div><button class="complete-toggle" aria-pressed="false">标记本节完成</button></div>
+      <p>默认 <code>resume_mode: smart</code>。Snakemake 会跳过完整且仍有效的任务，只重跑失败、不完整、缺失、输入变化、参数变化、代码变化或软件环境变化的任务。</p>
+      <h3>8.1 查看状态和日志</h3>
+      <div class="code-wrap"><button class="copy-button">复制</button><pre><code>uv run panfamflow status -c config.yaml
+find logs -type f -maxdepth 3 | sort
+# 查看某个失败日志末尾
+ tail -n 80 logs/&lt;module&gt;/&lt;job&gt;.log</code></pre></div>
+      <h3>8.2 修复原因后继续</h3>
+      <div class="code-wrap"><button class="copy-button">复制</button><pre><code># 推荐：仍然执行原命令
+uv run panfamflow run -c config.yaml
+
+# 或显式恢复
+uv run panfamflow resume -c config.yaml
+
+# 只恢复表达模块及依赖
+uv run panfamflow retry -c config.yaml -m expression</code></pre></div>
+      <div class="callout warn"><strong>只有确认没有其他 Snakemake 进程时才解锁</strong>如果异常退出留下 stale lock，可先确认没有正在运行的作业，再执行 <code>uv run panfamflow run -c config.yaml --unlock</code>。</div>
+      <div class="callout danger"><strong>禁止伪造完成</strong>不要手工 <code>touch</code> 结果或 <code>.done</code> 文件，不要随意删除 <code>.snakemake/</code>。这些操作会破坏 provenance 与自动跳过。</div>
+      <p>完整恢复策略见 <a href="RESUME.md">RESUME.md</a>。</p>
+    </section>
+
+    <section class="step" id="step-9" data-step="9">
+      <div class="step-head"><div><h2 class="step-title"><span class="step-number">9</span>学会看结果，而不是只看图片</h2></div><button class="complete-toggle" aria-pressed="false">标记本节完成</button></div>
+      <div class="code-wrap"><button class="copy-button">复制</button><pre><code>results/
+├── 00_qc/
+├── 01_normalized/
+├── 02_family/
+├── 03_phylogeny/
+├── 04_gene_structure/
+├── 05_orthology/
+├── 06_pan_family/
+├── 07_chromosome/
+├── 08_duplication/
+├── 09_kaks/
+├── 10_promoter/
+├── 11_expression/
+├── 12_integrated/
+└── report/index.html</code></pre></div>
+      <h3>推荐阅读顺序</h3>
+      <ol>
+        <li><strong>先看 QC 与输入哈希</strong>：确认使用的文件版本、物种数和 ID 映射。</li>
+        <li><strong>再看家族成员表</strong>：查看 HMM/BLAST/domain 证据、拒绝原因和异常长度。</li>
+        <li><strong>再看树与 HOG</strong>：检查支持率、HOG 节点和未分配成员。</li>
+        <li><strong>最后看泛家族、复制、Ka/Ks、启动子和表达</strong>：结论必须能回到具体 gene/HOG。</li>
+        <li><strong>综合结果</strong>：以 <code>master_gene_table.tsv/.xlsx</code> 为主，不要只依赖单张图。</li>
+      </ol>
+      <div class="callout"><strong>图表不是结果的唯一载体</strong>所有图都应能追溯到 TSV/XLSX、配置参数、软件版本、随机种子和输入 SHA256。</div>
+    </section>
+
+    <section class="step" id="step-10" data-step="10">
+      <div class="step-head"><div><h2 class="step-title"><span class="step-number">10</span>四条生物学解释红线</h2></div><button class="complete-toggle" aria-pressed="false">标记本节完成</button></div>
+      <div class="grid">
+        <div class="card"><h3>树上 clade ≠ 自动成为 HOG</h3><p>亚家族、树分支、OrthoFinder HOG 和材料间 pan-locus 是不同概念，不能用一个编号代替全部。</p></div>
+        <div class="card"><h3>注释缺失 ≠ 已验证 gene loss</h3><p>还可能是 assembly gap、annotation miss、fragment 或 ID 映射失败。重点缺失要做基因组回搜与共线性验证。</p></div>
+        <div class="card"><h3>pairwise Ka/Ks &gt; 1 ≠ 已证明正选择</h3><p>它只是候选信号。重点基因需追加 branch/site model、LRT 和多重检验。</p></div>
+        <div class="card"><h3>motif/TPM 差异 ≠ 已证明调控机制</h3><p>motif 是序列匹配，TPM 主要用于描述。功能机制还需 TF、表达方向、结合或实验支持。</p></div>
+      </div>
+      <h3>Core/Soft-core/Shell/Cloud 阈值</h3>
+      <p>默认阈值是可执行口径，不是普适自然定律。正式分析应记录阈值并做敏感性分析；低质量材料和 <code>UNCERTAIN</code> 状态不能简单进入“缺失”分母。</p>
+    </section>
+
+    <section class="step" id="step-11" data-step="11">
+      <div class="step-head"><div><h2 class="step-title"><span class="step-number">11</span>最终验收与归档</h2></div><button class="complete-toggle" aria-pressed="false">标记本节完成</button></div>
+      <ul class="checklist">
+        <li>输入 genome/GFF3/protein/CDS 版本和 SHA256 已冻结。</li>
+        <li>canonical transcript 规则统一，gene/transcript ID 映射闭合。</li>
+        <li>家族正例、负例、拒绝候选和 fragment 都有审计记录。</li>
+        <li>家族树保存原始 MSA、trimmed MSA、模型和支持率。</li>
+        <li>OrthoFinder 使用明确 HOG node，并检查 unassigned family members。</li>
+        <li>泛家族分类阈值、分母和随机种子写入配置。</li>
+        <li>DupGen 外群和唯一分类优先级明确。</li>
+        <li>Ka/Ks pair 来源、无效 pair、Ks=0 和 saturation 均有统计。</li>
+        <li>启动子坐标、截断、上游基因重叠和 motif 数据库版本可追溯。</li>
+        <li>表达分析保存样本设计、文库方向、生物学重复、batch 和 contrast。</li>
+        <li>结构化结果同时输出 TSV/XLSX，正式图同时输出 PDF/高分辨率 PNG。</li>
+        <li>重新执行相同命令时，已完成且有效的任务自动跳过。</li>
+      </ul>
+      <h3>建议归档命令</h3>
+      <div class="code-wrap"><button class="copy-button">复制</button><pre><code># 保存配置、版本和输入清单
+cp config.yaml provenance/config.used.yaml
+uv run panfamflow --version &gt; provenance/panfamflow.version.txt
+mamba env export -n panfamflow-engine --from-history &gt; provenance/engine.history.yaml
+find results -type f -print0 | sort -z | xargs -0 sha256sum &gt; provenance/results.sha256</code></pre></div>
+    </section>
+
+    <section class="reference-section" id="generator">
+      <h2>交互式 config.yaml 片段生成器</h2>
+      <p>该工具只生成起始框架，不替代严格校验。物种路径按 <code>data/&lt;ID&gt;/genome.fa</code> 和 <code>annotation.gff3</code> 生成；请在粘贴后逐项核对。</p>
+      <div class="generator">
+        <div class="generator-controls">
+          <div class="form-row"><label for="projectName">项目名</label><input id="projectName" type="text" value="GPAT_pan_family"></div>
+          <div class="form-row"><label for="familyName">目标家族</label><input id="familyName" type="text" value="GPAT"></div>
+          <div class="form-row"><label for="speciesIds">物种/材料 ID（逗号分隔，建议 5–10 个用于 pilot）</label><input id="speciesIds" type="text" value="Os,Og"></div>
+          <div class="form-row"><label for="representativeId">代表基因组 ID</label><input id="representativeId" type="text" value="Os"></div>
+          <div class="form-row"><label for="hmmPath">HMM 路径</label><input id="hmmPath" type="text" value="references/family.hmm"></div>
+          <div class="form-row"><label for="referencePath">参考蛋白路径</label><input id="referencePath" type="text" value="references/family_reference.pep.fa"></div>
+          <fieldset style="border:1px solid var(--line);border-radius:10px;padding:12px"><legend>选择模块</legend>
+            <div class="module-list" id="moduleList">
+              <label><input type="checkbox" value="family" checked> family</label>
+              <label><input type="checkbox" value="phylogeny" checked> phylogeny</label>
+              <label><input type="checkbox" value="gene_structure" checked> gene_structure</label>
+              <label><input type="checkbox" value="orthology" checked> orthology</label>
+              <label><input type="checkbox" value="pan_family" checked> pan_family</label>
+              <label><input type="checkbox" value="chromosome" checked> chromosome</label>
+              <label><input type="checkbox" value="duplication"> duplication</label>
+              <label><input type="checkbox" value="kaks"> kaks</label>
+              <label><input type="checkbox" value="promoter"> promoter</label>
+              <label><input type="checkbox" value="expression"> expression</label>
+              <label><input type="checkbox" value="report" checked> report</label>
+            </div>
+          </fieldset>
+          <button class="button primary" id="generateConfig" style="margin-top:14px">生成配置片段</button>
+        </div>
+        <div class="code-wrap"><button class="copy-button">复制</button><pre class="output-box"><code id="configOutput"></code></pre></div>
+      </div>
+    </section>
+
+    <section class="reference-section" id="troubleshooting">
+      <h2>常见报错与最小修复动作</h2>
+      <details><summary>Configuration error / YAML 解析失败</summary><div><p>常见原因是缩进、Tab、字段拼写或类型错误。先运行：</p><div class="code-wrap"><button class="copy-button">复制</button><pre><code>uv run panfamflow validate -c config.yaml</code></pre></div><p>不要跳过校验直接运行。</p></div></details>
+      <details><summary>MissingInputException</summary><div><p>说明 DAG 需要的输入文件不存在或路径不对。检查相对路径是相对于项目根目录，而不是当前随意所在的目录。</p></div></details>
+      <details><summary>Conda 环境求解失败</summary><div><p>先确认 channel 顺序和 mamba 版本，再删除对应的失败规则环境缓存，而不是删除全部结果。保留日志与失败环境信息以便复现。</p></div></details>
+      <details><summary>OrthoFinder 没有目标成员或 HOG 节点不对</summary><div><p>先检查 stable ID 是否进入 canonical proteome，再查看 <code>SpeciesTree_rooted_node_labels.txt</code>，最后审计 <code>unassigned_family_members.tsv</code>。不要把未分配直接解释为缺失。</p></div></details>
+      <details><summary>IQ-TREE 中断</summary><div><p>保留相同签名工作目录和 <code>.ckp.gz</code>，用相同输入、prefix 和参数恢复；不要默认加 <code>-redo</code>。</p></div></details>
+      <details><summary>LockException</summary><div><p>先确认没有其他 Snakemake/PanFamFlow 进程。仅当锁来自异常退出时：</p><div class="code-wrap"><button class="copy-button">复制</button><pre><code>uv run panfamflow run -c config.yaml --unlock
+uv run panfamflow resume -c config.yaml</code></pre></div></div></details>
+      <details><summary>第二次运行仍把所有任务重跑</summary><div><p>检查是否改变了输入 mtime、分析参数、代码或 Conda 环境；检查输出是否通过原子写入和完成校验；不要把 CPU/内存等执行参数误放进分析签名。</p></div></details>
+    </section>
+
+    <section class="reference-section quiz" id="quiz">
+      <h2>三道小测验</h2>
+      <div class="card">
+        <h3>1. 80 个材料都只有 BAM 和 VCF，可以直接当作 80 套 assembled genomes 吗？</h3>
+        <button class="quiz-option" data-correct="false">可以，样本数相同即可</button>
+        <button class="quiz-option" data-correct="true">不可以，它们仍共享一个参考坐标，存在参考偏倚</button>
+        <div class="quiz-feedback" aria-live="polite"></div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <h3>2. 某材料的 GFF3 中没有一个家族基因，能直接写“该基因已丢失”吗？</h3>
+        <button class="quiz-option" data-correct="false">可以，注释中没有就是丢失</button>
+        <button class="quiz-option" data-correct="true">不可以，还要排查 assembly gap、annotation miss、fragment 和基因组回搜</button>
+        <div class="quiz-feedback" aria-live="polite"></div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <h3>3. 一个样本失败后，修复问题的正确操作是什么？</h3>
+        <button class="quiz-option" data-correct="true">保留结果和 .snakemake，重新执行原命令或 resume</button>
+        <button class="quiz-option" data-correct="false">删除整个 results、work 和 .snakemake 后从头运行</button>
+        <div class="quiz-feedback" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <footer>
+      <p>PanFamFlow v0.1.2-alpha · 本页为离线静态教程，不上传任何数据。</p>
+      <p><a href="../README.zh-CN.md">中文 README</a> · <a href="../README.md">English README</a> · <a href="SCOPE.md">范围合同</a> · <a href="CONFIG.md">完整配置说明</a></p>
+    </footer>
+  </main>
+</div>
+<script>
+(() => {
+  const storageKey = 'panfamflowTutorialProgressV1';
+  const themeKey = 'panfamflowTutorialTheme';
+  const steps = [...document.querySelectorAll('section.step[data-step]')];
+  const stored = JSON.parse(localStorage.getItem(storageKey) || '{}');
+  const progressFill = document.getElementById('progressFill');
+  const progressText = document.getElementById('progressText');
+
+  function updateProgress() {
+    const done = steps.filter(s => stored[s.dataset.step]).length;
+    const pct = steps.length ? Math.round(done / steps.length * 100) : 0;
+    progressFill.style.width = pct + '%';
+    progressText.textContent = `${done} / ${steps.length} 节完成（${pct}%）`;
+    localStorage.setItem(storageKey, JSON.stringify(stored));
+  }
+
+  steps.forEach(step => {
+    const button = step.querySelector('.complete-toggle');
+    const id = step.dataset.step;
+    button.setAttribute('aria-pressed', stored[id] ? 'true' : 'false');
+    button.textContent = stored[id] ? '✓ 已完成' : '标记本节完成';
+    button.addEventListener('click', () => {
+      stored[id] = !stored[id];
+      button.setAttribute('aria-pressed', stored[id] ? 'true' : 'false');
+      button.textContent = stored[id] ? '✓ 已完成' : '标记本节完成';
+      updateProgress();
+    });
+  });
+  document.getElementById('resetProgress').addEventListener('click', () => {
+    steps.forEach(step => { stored[step.dataset.step] = false; });
+    steps.forEach(step => {
+      const b = step.querySelector('.complete-toggle');
+      b.setAttribute('aria-pressed', 'false'); b.textContent = '标记本节完成';
+    });
+    updateProgress();
+  });
+  updateProgress();
+
+  document.querySelectorAll('.copy-button').forEach(button => {
+    button.addEventListener('click', async () => {
+      const code = button.parentElement.querySelector('code');
+      if (!code) return;
+      try {
+        await navigator.clipboard.writeText(code.textContent);
+        button.textContent = '已复制'; button.classList.add('copied');
+        setTimeout(() => { button.textContent = '复制'; button.classList.remove('copied'); }, 1500);
+      } catch (_) {
+        const range = document.createRange(); range.selectNodeContents(code);
+        const selection = window.getSelection(); selection.removeAllRanges(); selection.addRange(range);
+        button.textContent = '请按 Ctrl/Cmd+C';
+      }
+    });
+  });
+
+  const themeToggle = document.getElementById('themeToggle');
+  const preferred = localStorage.getItem(themeKey) || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  document.documentElement.dataset.theme = preferred;
+  themeToggle.addEventListener('click', () => {
+    const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem(themeKey, next);
+  });
+
+  const sidebar = document.getElementById('sidebar');
+  document.getElementById('menuToggle').addEventListener('click', () => sidebar.classList.toggle('open'));
+  document.querySelectorAll('#toc a').forEach(a => a.addEventListener('click', () => sidebar.classList.remove('open')));
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      document.querySelectorAll('#toc a').forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + entry.target.id));
+    });
+  }, {rootMargin: '-20% 0px -70% 0px'});
+  document.querySelectorAll('main section[id]').forEach(section => observer.observe(section));
+
+  function yamlSafe(value, fallback) {
+    const text = (value || fallback).trim().replace(/[^A-Za-z0-9_.-]/g, '_');
+    return text || fallback;
+  }
+  function generateConfig() {
+    const project = yamlSafe(document.getElementById('projectName').value, 'TARGET_FAMILY_pan_family');
+    const family = yamlSafe(document.getElementById('familyName').value, 'TARGET_FAMILY');
+    let ids = document.getElementById('speciesIds').value.split(',').map(v => yamlSafe(v, '')).filter(Boolean);
+    ids = [...new Set(ids)];
+    if (!ids.length) ids = ['Sp1', 'Sp2'];
+    const representative = yamlSafe(document.getElementById('representativeId').value, ids[0]);
+    const hmm = document.getElementById('hmmPath').value.trim() || 'references/family.hmm';
+    const ref = document.getElementById('referencePath').value.trim() || 'references/family_reference.pep.fa';
+    const modules = [...document.querySelectorAll('#moduleList input:checked')].map(i => i.value);
+    const species = ids.map((id, index) => [
+      `    - id: ${id}`,
+      `      name: ${id}`,
+      `      genome: data/${id}/genome.fa`,
+      `      gff3: data/${id}/annotation.gff3`,
+      `      group: ${index === 0 ? 'Cultivated' : 'Wild'}`,
+      `      representative: ${id === representative ? 'true' : 'false'}`,
+      `      outgroup: null`
+    ].join('\n')).join('\n');
+    const text = `schema_version: "1.0"
+
+project:
+  analysis_scope: target_pan_gene_family
+  name: ${project}
+  root: .
+  seed: 20260807
+  results_dir: results
+  work_dir: work
+  logs_dir: logs
+
+run:
+  modules: [${modules.join(', ')}]
+  cores: 32
+  jobs: 32
+  resume_mode: smart
+  keep_going: true
+  rerun_incomplete: true
+  retries: 1
+
+inputs:
+  species:
+${species}
+  rnaseq_samples: []
+  expression_matrix: null
+  sample_metadata: null
+
+family:
+  name: ${family}
+  combine_evidence: intersection
+  hmm:
+    enabled: true
+    hmm: ${hmm}
+    evalue: 1.0e-5
+    domain_evalue: 1.0e-3
+    cut_ga: false
+  blast:
+    enabled: true
+    reference_proteins: ${ref}
+    evalue: 1.0e-5
+    min_identity: 30.0
+    min_query_coverage: 50.0
+
+orthofinder:
+  hog_node: auto
+
+pan_family:
+  core_min: 0.99
+  soft_core_min: 0.90
+  shell_min: 0.10
+  rarefaction_iterations: 1000
+`;
+    document.getElementById('configOutput').textContent = text;
+  }
+  document.getElementById('generateConfig').addEventListener('click', generateConfig);
+  ['projectName','familyName','speciesIds','representativeId','hmmPath','referencePath'].forEach(id => document.getElementById(id).addEventListener('input', generateConfig));
+  document.querySelectorAll('#moduleList input').forEach(i => i.addEventListener('change', generateConfig));
+  generateConfig();
+
+  document.querySelectorAll('.quiz-option').forEach(button => {
+    button.addEventListener('click', () => {
+      const feedback = button.parentElement.querySelector('.quiz-feedback');
+      const ok = button.dataset.correct === 'true';
+      feedback.textContent = ok ? '回答正确。关键是保持分析单位、证据和结论强度一致。' : '还不对。回到上面的“数据适用性、解释红线或断点续跑”再看一次。';
+      feedback.style.color = ok ? 'var(--ok)' : 'var(--danger)';
+    });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,241 @@
+{
+  "$defs": {
+    "BenchmarkAcceptance": {
+      "additionalProperties": false,
+      "description": "Pre-registered software and biological intake gates.",
+      "properties": {
+        "approval_state": {
+          "default": "unresolved",
+          "enum": [
+            "unresolved",
+            "proposed",
+            "approved",
+            "rejected"
+          ],
+          "title": "Approval State",
+          "type": "string"
+        },
+        "require_family_approved": {
+          "default": true,
+          "title": "Require Family Approved",
+          "type": "boolean"
+        },
+        "require_sha256": {
+          "default": true,
+          "title": "Require Sha256",
+          "type": "boolean"
+        },
+        "require_manual_truth_set": {
+          "default": true,
+          "title": "Require Manual Truth Set",
+          "type": "boolean"
+        },
+        "min_positive_controls": {
+          "default": 5,
+          "minimum": 1,
+          "title": "Min Positive Controls",
+          "type": "integer"
+        },
+        "min_negative_controls": {
+          "default": 5,
+          "minimum": 1,
+          "title": "Min Negative Controls",
+          "type": "integer"
+        },
+        "require_representative": {
+          "default": true,
+          "title": "Require Representative",
+          "type": "boolean"
+        },
+        "require_annotation_version": {
+          "default": true,
+          "title": "Require Annotation Version",
+          "type": "boolean"
+        },
+        "chromosome_level_policy": {
+          "default": "warn",
+          "enum": [
+            "ignore",
+            "warn",
+            "block"
+          ],
+          "title": "Chromosome Level Policy",
+          "type": "string"
+        }
+      },
+      "title": "BenchmarkAcceptance",
+      "type": "object"
+    },
+    "BenchmarkFamily": {
+      "additionalProperties": false,
+      "description": "Frozen target-family definition required before a biological run.",
+      "properties": {
+        "name": {
+          "default": "UNRESOLVED",
+          "title": "Name",
+          "type": "string"
+        },
+        "approval_state": {
+          "default": "unresolved",
+          "enum": [
+            "unresolved",
+            "proposed",
+            "approved",
+            "rejected"
+          ],
+          "title": "Approval State",
+          "type": "string"
+        },
+        "pfam_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Pfam Ids",
+          "type": "array"
+        },
+        "interpro_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Interpro Ids",
+          "type": "array"
+        },
+        "hmm": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hmm"
+        },
+        "reference_proteins": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reference Proteins"
+        },
+        "manual_truth_set": {
+          "default": "manual_review/manual_truth_set.tsv",
+          "format": "path",
+          "title": "Manual Truth Set",
+          "type": "string"
+        },
+        "notes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notes"
+        }
+      },
+      "title": "BenchmarkFamily",
+      "type": "object"
+    },
+    "BenchmarkPanel": {
+      "additionalProperties": false,
+      "description": "Candidate assembled-genome panel and intended pilot size.",
+      "properties": {
+        "species_table": {
+          "default": "species.tsv",
+          "format": "path",
+          "title": "Species Table",
+          "type": "string"
+        },
+        "min_genomes": {
+          "default": 5,
+          "minimum": 2,
+          "title": "Min Genomes",
+          "type": "integer"
+        },
+        "max_genomes": {
+          "default": 10,
+          "minimum": 2,
+          "title": "Max Genomes",
+          "type": "integer"
+        }
+      },
+      "title": "BenchmarkPanel",
+      "type": "object"
+    },
+    "BenchmarkProject": {
+      "additionalProperties": false,
+      "description": "Benchmark project identity and deterministic seed.",
+      "properties": {
+        "name": {
+          "default": "rice_target_family_pilot",
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "analysis_scope": {
+          "const": "target_pan_gene_family",
+          "default": "target_pan_gene_family",
+          "title": "Analysis Scope",
+          "type": "string"
+        },
+        "seed": {
+          "default": 20260807,
+          "title": "Seed",
+          "type": "integer"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        }
+      },
+      "title": "BenchmarkProject",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Top-level biological benchmark manifest.",
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "project": {
+      "$ref": "#/$defs/BenchmarkProject"
+    },
+    "family": {
+      "$ref": "#/$defs/BenchmarkFamily"
+    },
+    "panel": {
+      "$ref": "#/$defs/BenchmarkPanel"
+    },
+    "acceptance": {
+      "$ref": "#/$defs/BenchmarkAcceptance"
+    }
+  },
+  "title": "BenchmarkManifest",
+  "type": "object"
+}
