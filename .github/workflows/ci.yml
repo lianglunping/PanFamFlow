@@ -1,0 +1,181 @@
+name: PanFamFlow CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: panfamflow-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-scope-resume-and-benchmark:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Verify standalone layout, bilingual entry points and scientific scope
+        run: |
+          set -euo pipefail
+          test -f README.md
+          test -f README.zh-CN.md
+          test -f pyproject.toml
+          test -f uv.lock
+          test -f src/panfamflow/cli.py
+          test -f src/panfamflow/workflow/Snakefile
+          test -f src/panfamflow/workflow/rules/pan_family.smk
+          test -f docs/BIOLOGICAL_BENCHMARK.md
+          test -f docs/MIGRATION.md
+          test -f docs/index.html
+          test ! -e _panfamflow_publish
+          test ! -e _panfamflow_staging
+          grep -q '^# PanFamFlow — Target Pan-Gene-Family Analysis Workflow' README.md
+          grep -q '^# PanFamFlow — 泛基因家族分析流程' README.zh-CN.md
+          grep -q '\[简体中文\](README.zh-CN.md)' README.md
+          grep -q '\[English\](README.md)' README.zh-CN.md
+          grep -q '\[交互式小白教程\](docs/index.html)' README.zh-CN.md
+          grep -q '\[中文交互式教程\](docs/index.html)' README.md
+          grep -q '<title>PanFamFlow 中文入门教程' docs/index.html
+          grep -q '目标家族，不做泛基因组组装' docs/index.html
+          grep -q '交互式 config.yaml 片段生成器' docs/index.html
+          grep -q 'not a pangenome assembly workflow' README.md
+          grep -q '不是泛基因组组装流程' README.zh-CN.md
+          grep -q '^pan_family:$' src/panfamflow/templates/config.yaml
+          ! grep -q '^pangenome:$' src/panfamflow/templates/config.yaml
+          grep -q 'analysis_scope: target_pan_gene_family' src/panfamflow/templates/config.yaml
+          grep -q 'Repository = "https://github.com/lianglunping/PanFamFlow"' pyproject.toml
+          grep -q 'Issues = "https://github.com/lianglunping/PanFamFlow/issues"' pyproject.toml
+          grep -q 'repository-code: "https://github.com/lianglunping/PanFamFlow"' CITATION.cff
+          ! grep -R 'https://github.com/lianglunping/Wild-rice-Pangenome-Project' \
+            README.md README.zh-CN.md pyproject.toml CITATION.cff .github
+          ! grep -R '^from __future__ import annotations' src/panfamflow/workflow/scripts
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.12.3"
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Sync locked environment
+        run: |
+          set -euo pipefail
+          uv python install 3.12
+          uv sync --locked --all-extras --dev
+
+      - name: Static, unit and package quality gates
+        run: |
+          set -euo pipefail
+          uv run ruff check .
+          uv run ruff format --check .
+          uv run mypy src/panfamflow
+          uv run pytest -q
+          uv build
+
+      - name: Benchmark fail-closed smoke test
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/panfamflow-benchmark-smoke
+          uv run panfamflow benchmark init /tmp/panfamflow-benchmark-smoke
+          uv run panfamflow benchmark audit \
+            --manifest /tmp/panfamflow-benchmark-smoke/benchmark.yaml \
+            --output /tmp/panfamflow-benchmark-smoke/audits/intake_001 \
+            --allow-blocked | tee /tmp/panfamflow-benchmark-audit.txt
+          grep -q 'BLOCKED' /tmp/panfamflow-benchmark-audit.txt
+          test -s /tmp/panfamflow-benchmark-smoke/audits/intake_001/benchmark_readiness.html
+          test -s /tmp/panfamflow-benchmark-smoke/audits/intake_001/benchmark_readiness.xlsx
+          test -s /tmp/panfamflow-benchmark-smoke/audits/intake_001/benchmark_readiness.json
+
+      - name: CLI, scope and DAG gates
+        run: |
+          set -euo pipefail
+          uv run panfamflow --version | tee /tmp/panfamflow-version.txt
+          grep -q '0.1.2a0' /tmp/panfamflow-version.txt
+          uv run panfamflow list-modules | tee /tmp/panfamflow-modules.txt
+          grep -q 'pan_family' /tmp/panfamflow-modules.txt
+          ! grep -qE '(^|[[:space:]])pangenome([[:space:]]|$)' /tmp/panfamflow-modules.txt
+          uv run panfamflow validate -c examples/toy/config.yaml -m qc
+          uv run panfamflow plan -c examples/toy/config.yaml -m pan_family
+          uv run --with 'snakemake==9.25.1' snakemake \
+            --snakefile "${GITHUB_WORKSPACE}/src/panfamflow/workflow/Snakefile" \
+            --configfile "${GITHUB_WORKSPACE}/examples/toy/config.yaml" \
+            --directory "${GITHUB_WORKSPACE}/examples/toy" \
+            --cores 2 \
+            --dry-run \
+            results/00_qc/qc.done
+
+      - name: Execute first-run, automatic-skip and local-recovery test
+        run: |
+          set -euo pipefail
+          rm -rf examples/toy/{results,work,logs,.snakemake,.panfamflow}
+          run_qc() {
+            uv run --with 'snakemake==9.25.1' panfamflow run \
+              -c examples/toy/config.yaml -m qc
+          }
+
+          run_qc
+          audit='examples/toy/results/00_qc/input_audit.tsv'
+          done_file='examples/toy/results/00_qc/qc.done'
+          test -s "$audit" && test -s "$done_file"
+          audit_sha=$(sha256sum "$audit" | awk '{print $1}')
+          audit_mtime=$(stat -c %Y "$audit")
+          done_sha=$(sha256sum "$done_file" | awk '{print $1}')
+          done_mtime=$(stat -c %Y "$done_file")
+
+          sleep 1
+          run_qc
+          test "$audit_sha" = "$(sha256sum "$audit" | awk '{print $1}')"
+          test "$audit_mtime" = "$(stat -c %Y "$audit")"
+          test "$done_sha" = "$(sha256sum "$done_file" | awk '{print $1}')"
+          test "$done_mtime" = "$(stat -c %Y "$done_file")"
+
+          rm "$done_file"
+          sleep 1
+          run_qc
+          test -s "$done_file"
+          test "$audit_sha" = "$(sha256sum "$audit" | awk '{print $1}')"
+          test "$audit_mtime" = "$(stat -c %Y "$audit")"
+
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          paths = sorted(Path("examples/toy/.panfamflow/provenance/runs").glob("*.json"))
+          records = [json.loads(path.read_text(encoding="utf-8")) for path in paths[-3:]]
+          if len(records) != 3:
+              raise RuntimeError(f"Expected three run records, found {len(records)}")
+          states = [(record.get("status"), record.get("exit_code")) for record in records]
+          if states != [("COMPLETED", 0)] * 3:
+              raise RuntimeError(f"Unexpected provenance states: {states}")
+          Path("ci-verification.txt").write_text(
+              "\n".join(
+                  [
+                      "PanFamFlow standalone smart-resume verification",
+                      f"commit={os.environ.get('GITHUB_SHA', '')}",
+                      f"input_audit_sha256={os.popen('sha256sum examples/toy/results/00_qc/input_audit.tsv').read().split()[0]}",
+                      f"run_ids={','.join(record['run_id'] for record in records)}",
+                      "states=COMPLETED:0,COMPLETED:0,COMPLETED:0",
+                  ]
+              )
+              + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Upload CI verification evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: panfamflow-ci-verification-${{ github.sha }}
+          path: ci-verification.txt
+          if-no-files-found: error
+          retention-days: 30
