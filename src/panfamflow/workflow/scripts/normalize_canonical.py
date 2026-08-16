@@ -11,6 +11,7 @@ from workflow_utils import (
     copy_atomic,
     first_parent,
     iter_gff,
+    materialize_uncompressed,
     read_fasta,
     run_command,
     save_table,
@@ -25,12 +26,14 @@ raw_gff = work_dir / "canonical.raw.gff3"
 raw_transcripts = work_dir / "transcripts.raw.fa"
 raw_cds = work_dir / "cds.raw.fa"
 raw_proteins = work_dir / "proteins.raw.fa"
+staged_gff = materialize_uncompressed(snakemake.input.gff3, work_dir / "input.annotation.gff3")
+staged_genome = materialize_uncompressed(snakemake.input.genome, work_dir / "input.genome.fa")
 
 run_command(
     [
         "agat_sp_keep_longest_isoform.pl",
         "--gff",
-        str(snakemake.input.gff3),
+        str(staged_gff),
         "--output",
         str(raw_gff),
     ],
@@ -42,7 +45,7 @@ run_command(
         "gffread",
         str(raw_gff),
         "-g",
-        str(snakemake.input.genome),
+        str(staged_genome),
         "-w",
         str(raw_transcripts),
         "-x",

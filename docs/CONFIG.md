@@ -211,3 +211,9 @@ uv run panfamflow resume -c config.yaml
 ```
 
 完整语义见 [RESUME.md](RESUME.md)。
+
+## gzip 输入
+
+`genome`、`gff3`、`protein` 和 `cds` 可以使用 `.gz`。Python 审计脚本直接流式读取 gzip；需要调用 AGAT、gffread 或 BUSCO 的规则会先在 `work/` 中原子解压，并在失败重试时复用完整的 staged 文件。原始压缩文件不会被覆盖。
+
+真实示例见 `examples/rice_3group_pilot/`。

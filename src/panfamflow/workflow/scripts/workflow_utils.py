@@ -4,6 +4,7 @@ import gzip
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import uuid
 from collections import OrderedDict
@@ -43,13 +44,58 @@ def write_text_atomic(text: str, path: str | Path) -> None:
 def copy_atomic(source: str | Path, target: str | Path) -> None:
     """Copy a file without exposing a partially written destination."""
 
-    import shutil
-
     destination = Path(target)
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = partial_path(destination)
     shutil.copy2(source, temporary)
     commit_partial(temporary, destination)
+
+
+def materialize_uncompressed(source: str | Path, target: str | Path) -> Path:
+    """Return a plain-text path for a possibly gzip-compressed input.
+
+    External tools do not handle ``.gz`` consistently.  Compressed inputs are
+    therefore expanded into the rule work directory through an atomic partial
+    file.  A lightweight source stamp allows a failed job to reuse a complete
+    staged file on retry without re-expanding hundreds of megabytes.  Successful
+    Snakemake jobs are skipped at the DAG level, so this cache is only a retry aid.
+    """
+
+    source_path = Path(source)
+    if source_path.suffix.lower() != ".gz":
+        return source_path
+    if not source_path.is_file() or source_path.stat().st_size == 0:
+        raise FileNotFoundError(f"Missing or empty gzip input: {source_path}")
+
+    destination = Path(target)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    stamp_path = destination.with_name(f".{destination.name}.source.json")
+    source_stat = source_path.stat()
+    stamp = {
+        "source": str(source_path.resolve()),
+        "size_bytes": source_stat.st_size,
+        "mtime_ns": source_stat.st_mtime_ns,
+    }
+    if destination.is_file() and destination.stat().st_size > 0 and stamp_path.is_file():
+        try:
+            cached = json.loads(stamp_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            cached = None
+        if cached == stamp:
+            return destination
+
+    temporary = partial_path(destination)
+    try:
+        with gzip.open(source_path, "rb") as source_handle, temporary.open("wb") as target_handle:
+            shutil.copyfileobj(source_handle, target_handle, length=4 * 1024 * 1024)
+        if temporary.stat().st_size == 0:
+            raise RuntimeError(f"Gzip input expanded to an empty file: {source_path}")
+        commit_partial(temporary, destination)
+        write_text_atomic(json.dumps(stamp, sort_keys=True) + "\n", stamp_path)
+    except Exception:
+        temporary.unlink(missing_ok=True)
+        raise
+    return destination
 
 
 def ensure_nonempty(path: str | Path) -> None:

@@ -1,0 +1,13 @@
+species_id	group	accession	role	file_name	relative_target	size_bytes	sha256	gzip_ok	source
+GJ_GP523	GJ	GP523	genome	GP523.fa.gz	data/GJ_GP523/GP523.fa.gz	105464103	a6ad18245f159e9d683269c63a862bd5b595a2e928444547d5074f671c6bd2df	True	user-provided Drive/GJ (URL intentionally not committed)
+GJ_GP523	GJ	GP523	gff3	GP523.gff3.gz	data/GJ_GP523/GP523.gff3.gz	5151798	d90100de2f9eb030e403187712f7c0905d0d4e3e74c414294d296b45b7240890	True	user-provided Drive/GJ (URL intentionally not committed)
+GJ_GP523	GJ	GP523	protein	GP523_pep.fa.gz	data/GJ_GP523/GP523_pep.fa.gz	10999202	e6b2640fee6a30346c3cdf4d1484a1b46b86723f8ccf305b87adcc34a0d79f69	True	user-provided Drive/GJ (URL intentionally not committed)
+GJ_GP523	GJ	GP523	cds	GP523_cds.fa.gz	data/GJ_GP523/GP523_cds.fa.gz	16261808	6b8a68dd36f46d9a73750192238fc4910f7b4c6660f1ab991ea8d6a3a7f59cc6	True	user-provided Drive/GJ (URL intentionally not committed)
+Wild_GP543	Wild	GP543	genome	GP543.fa.gz	data/Wild_GP543/GP543.fa.gz	109740631	6b47fa163796c3f0301f05ff69b1af8822aeeb12fa2f9a88439946a0442b68a6	True	user-provided Drive/Wild (URL intentionally not committed)
+Wild_GP543	Wild	GP543	gff3	GP543.gff3.gz	data/Wild_GP543/GP543.gff3.gz	3475516	57f47a793ce5373e614a5a643a4171f0dbdcd4ed9d9a6b3f8edf230d40f4f637	True	user-provided Drive/Wild (URL intentionally not committed)
+Wild_GP543	Wild	GP543	protein	GP543_pep.fa.gz	data/Wild_GP543/GP543_pep.fa.gz	8346840	d9db20b8cd273a570aa80fa89d4f1fbe6e1a85d154ac179cebb8b05072deeb71	True	user-provided Drive/Wild (URL intentionally not committed)
+Wild_GP543	Wild	GP543	cds	GP543_cds.fa.gz	data/Wild_GP543/GP543_cds.fa.gz	14050553	bc4788d7a30bd7882861b30377aa6500281588974ff6031e74322cd59628b004	True	user-provided Drive/Wild (URL intentionally not committed)
+XI_534M	XI	534M	genome	534M.fa.gz	data/XI_534M/534M.fa.gz	107813553	7cd549b62deb10fc1325dcf983f79c69c82283d4376ff095d5eacc0b77f8b0bb	True	user-provided Drive/XI (URL intentionally not committed)
+XI_534M	XI	534M	gff3	534M.gff3.gz	data/XI_534M/534M.gff3.gz	3472293	4314a337c3a8fef68e33afc5098a15973f865f0d932b5bda3dfc30a75d7d0102	True	user-provided Drive/XI (URL intentionally not committed)
+XI_534M	XI	534M	protein	534M_pep.fa.gz	data/XI_534M/534M_pep.fa.gz	8342362	9faebd920baac4f3f8028220686b25c0ac319813fa07ef819e051ef7a36ff37a	True	user-provided Drive/XI (URL intentionally not committed)
+XI_534M	XI	534M	cds	534M_cds.fa.gz	data/XI_534M/534M_cds.fa.gz	14078330	87d5e36c195460bed548a02fedb7028e2df0ec3fc2ea91e70f0846486d97a5ba	True	user-provided Drive/XI (URL intentionally not committed)

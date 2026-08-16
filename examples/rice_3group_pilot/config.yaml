@@ -1,0 +1,165 @@
+schema_version: '1.0'
+project:
+  analysis_scope: target_pan_gene_family
+  name: rice_3group_input_smoke
+  root: .
+  seed: 20260807
+  results_dir: results
+  work_dir: work
+  logs_dir: logs
+run:
+  modules:
+  - qc
+  cores: 4
+  jobs: 4
+  engine_runner: current
+  engine_env: null
+  use_conda: false
+  resume_mode: smart
+  keep_going: true
+  rerun_incomplete: true
+  latency_wait: 60
+  retries: 1
+  rerun_triggers:
+  - mtime
+  - input
+  - params
+  - code
+  - software-env
+  printshellcmds: true
+  show_failed_logs: true
+  profile: null
+  extra_snakemake_args: []
+inputs:
+  species:
+  - id: GJ_GP523
+    name: GP523 (GJ; taxon unresolved)
+    genome: data/GJ_GP523/GP523.fa.gz
+    gff3: data/GJ_GP523/GP523.gff3.gz
+    protein: data/GJ_GP523/GP523_pep.fa.gz
+    cds: data/GJ_GP523/GP523_cds.fa.gz
+    group: GJ
+    subfamily: null
+    representative: true
+    outgroup: null
+    busco_lineage: null
+  - id: Wild_GP543
+    name: GP543 (Wild; taxon unresolved)
+    genome: data/Wild_GP543/GP543.fa.gz
+    gff3: data/Wild_GP543/GP543.gff3.gz
+    protein: data/Wild_GP543/GP543_pep.fa.gz
+    cds: data/Wild_GP543/GP543_cds.fa.gz
+    group: Wild
+    subfamily: null
+    representative: false
+    outgroup: null
+    busco_lineage: null
+  - id: XI_534M
+    name: 534M (XI; taxon unresolved)
+    genome: data/XI_534M/534M.fa.gz
+    gff3: data/XI_534M/534M.gff3.gz
+    protein: data/XI_534M/534M_pep.fa.gz
+    cds: data/XI_534M/534M_cds.fa.gz
+    group: XI
+    subfamily: null
+    representative: false
+    outgroup: null
+    busco_lineage: null
+  rnaseq_samples: []
+  expression_matrix: null
+  sample_metadata: null
+qc:
+  calculate_sha256: true
+  busco:
+    enabled: false
+    mode: genome
+    threads: 4
+    offline: false
+    download_path: null
+    extra_args: []
+canonical_transcript:
+  method: longest_cds
+  sequence_source: gffread
+  stable_id_separator: __
+family:
+  name: PILOT_TARGET_UNRESOLVED
+  combine_evidence: union
+  calculate_protein_properties: true
+  hmm:
+    enabled: false
+    hmm: null
+    evalue: 1.0e-05
+    domain_evalue: 0.001
+    cut_ga: false
+  blast:
+    enabled: false
+    reference_proteins: null
+    evalue: 1.0e-05
+    min_identity: 30.0
+    min_query_coverage: 50.0
+    max_target_seqs: 100
+  subfamily_assignments: null
+  domain_validation_table: null
+  subcellular_localization_table: null
+  precomputed_members: references/family_members.placeholder.tsv
+phylogeny:
+  mafft_mode: auto
+  trim_mode: smart-gap
+  model: MFP
+  ultrafast_bootstrap: 1000
+  sh_alrt: 1000
+  min_sequences: 4
+orthofinder:
+  hog_node: auto
+  search_threads: 4
+  analysis_threads: 2
+  extra_args: []
+pan_family:
+  core_min: 0.99
+  soft_core_min: 0.9
+  shell_min: 0.1
+  rarefaction_iterations: 100
+  max_exact_combinations: 100
+duplication:
+  backend: precomputed
+  targets: null
+  precomputed_table: null
+  dupgen_executable: DupGen_finder-unique.pl
+  diamond_evalue: 1.0e-10
+  max_target_seqs: 5
+  proximal_max_gene_distance: 10
+  extra_args: []
+kaks:
+  pair_source: orthology
+  reference_species: GJ_GP523
+  method: MA
+  max_pairs_per_group: null
+  saturation_ks: 2.0
+  workers: 2
+promoter:
+  backend: fimo
+  upstream_bp: 2000
+  downstream_bp: 0
+  motif_database: null
+  category_map: null
+  precomputed_table: null
+  fimo_threshold: 0.0001
+  top_n_elements: 20
+expression:
+  mode: imported_matrix
+  min_tpm_detected: 1.0
+  heatmap_transform: log2_tpm1_zscore
+  fastp_extra_args: []
+  hisat2_extra_args: []
+  stringtie_extra_args: []
+chromosome:
+  representative_only: false
+  density_window_bp: 1000000
+plot:
+  pdf: true
+  png: true
+  png_dpi: 300
+  language: English
+report:
+  title: Rice three-group engineering smoke test
+  include_existing_results: true

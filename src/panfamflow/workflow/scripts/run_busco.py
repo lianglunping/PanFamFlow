@@ -11,7 +11,13 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
-from workflow_utils import executable_version, run_command, save_table, sha256_file
+from workflow_utils import (
+    executable_version,
+    materialize_uncompressed,
+    run_command,
+    save_table,
+    sha256_file,
+)
 
 species = str(snakemake.params.species)
 lineage = str(snakemake.params.lineage)
@@ -31,6 +37,9 @@ signature = hashlib.sha256(
 ).hexdigest()
 run_name = f"{species}_busco_{signature[:12]}"
 run_dir = work_dir / run_name
+staged_genome = materialize_uncompressed(
+    snakemake.input.genome, work_dir / f"{species}.busco.input.fa"
+)
 summary_candidates = sorted(run_dir.glob("short_summary*.txt")) if run_dir.exists() else []
 if not summary_candidates:
     if run_dir.exists() and any(run_dir.iterdir()):
@@ -41,7 +50,7 @@ if not summary_candidates:
     command = [
         "busco",
         "-i",
-        str(snakemake.input.genome),
+        str(staged_genome),
         "-m",
         "genome",
         "-l",

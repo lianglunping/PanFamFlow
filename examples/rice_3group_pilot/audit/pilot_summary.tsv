@@ -1,0 +1,4 @@
+species_id	group	accession	genome_records	genome_bp	protein_records	cds_records	gff_genes	gff_transcripts	gff_bad_rows	chromosome_like_records	all_gzip_ok
+GJ_GP523	GJ	GP523	22	374988626	39153	39153	39511	39511	0	12	True
+Wild_GP543	Wild	GP543	18	382452475	39081	39081	39081	39081	0	12	True
+XI_534M	XI	534M	105	398659260	39694	39694	39694	39694	0	12	True

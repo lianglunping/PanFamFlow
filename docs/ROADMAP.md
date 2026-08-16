@@ -6,7 +6,7 @@
 - 完成 5–10 个真实水稻 assembled genomes 和一个人工核验目标家族的端到端 pilot。
 - 记录每个 rule 的真实软件版本和命令清单。
 - 增加 Snakemake end-to-end toy execution（使用小型 mock/binary fixtures）。
-- 增加 GFF3 方言、gzipped input 和异常 ID 测试。
+- 已增加 gzip 输入原子 staging 与真实三组水稻输入测试；继续扩展 GFF3 方言和异常 ID 回归。
 - 固化 OrthoFinder HOG node 审阅流程。
 - 对 DupGen_finder 输出格式做更多版本 fixture 测试。
 

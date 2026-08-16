@@ -8,6 +8,7 @@
 - Migrated PanFamFlow into a standalone repository with complete English and Simplified Chinese README files.
 - Added a self-contained Chinese beginner tutorial at `docs/index.html`, including step tracking, copyable commands, a config snippet generator, resume guidance, troubleshooting, and interpretation guardrails.
 - Added a reusable rice pilot scaffold and regression tests proving that missing files, checksum drift, and reference-aligned samples block readiness.
+- Added a GJ/XI/Wild three-genome real-input smoke test, gzip-safe atomic staging for AGAT/gffread/BUSCO inputs, and a GitHub Pages beginner tutorial deployment.
 
 ## 0.1.1 - 2026-08-09
 - Added immutable `project.analysis_scope: target_pan_gene_family` validation and provenance fingerprinting.

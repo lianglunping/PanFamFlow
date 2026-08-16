@@ -64,3 +64,38 @@ def test_run_command_atomically_publishes_success(
     run_command(["fake"], stdout_path=output)
     assert output.read_text(encoding="utf-8") == "complete\n"
     assert not list(tmp_path.glob(".result.tsv.partial.*"))
+
+
+def test_materialize_uncompressed_is_atomic_and_reusable(tmp_path: Path) -> None:
+    import gzip
+
+    from panfamflow.workflow.scripts.workflow_utils import materialize_uncompressed
+
+    source = tmp_path / "input.fa.gz"
+    with gzip.open(source, "wt", encoding="utf-8") as handle:
+        handle.write(">a\nACGT\n")
+    target = tmp_path / "work" / "input.fa"
+
+    observed = materialize_uncompressed(source, target)
+    assert observed == target
+    assert target.read_text(encoding="utf-8") == ">a\nACGT\n"
+    first_mtime = target.stat().st_mtime_ns
+    assert materialize_uncompressed(source, target) == target
+    assert target.stat().st_mtime_ns == first_mtime
+    assert not list(target.parent.glob(".input.fa.partial.*"))
+
+
+def test_materialize_uncompressed_refreshes_when_source_changes(tmp_path: Path) -> None:
+    import gzip
+
+    from panfamflow.workflow.scripts.workflow_utils import materialize_uncompressed
+
+    source = tmp_path / "input.gff3.gz"
+    target = tmp_path / "staged.gff3"
+    with gzip.open(source, "wt", encoding="utf-8") as handle:
+        handle.write("##gff-version 3\n")
+    materialize_uncompressed(source, target)
+    with gzip.open(source, "wt", encoding="utf-8") as handle:
+        handle.write("##gff-version 3\nchr1\tX\tgene\t1\t2\t.\t+\t.\tID=g1\n")
+    materialize_uncompressed(source, target)
+    assert "ID=g1" in target.read_text(encoding="utf-8")

@@ -1,0 +1,4 @@
+species_id	compressed_file	compressed_bytes	uncompressed_bytes	first_stage_seconds	second_stage_seconds	mtime_reused	uncompressed_sha256
+GJ_GP523	GP523.fa.gz	105464103	378739944	2.087	0.000209	True	3f329f6863d8a5145ea62e00f6aa53a400ca8410bf6349f9151c6ff12c74bdb1
+Wild_GP543	GP543.fa.gz	109740631	388826834	2.099	0.000099	True	38aeb1cb7e6e4da8fe96afc46d36d58ee0a22cdeb930124ab75d06fd12625720
+XI_534M	534M.fa.gz	107813553	405304637	2.159	0.000094	True	25e87438194057b398bdaf90491334d3df475767ced6b5a7e238afeea412881d

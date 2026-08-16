@@ -1,0 +1,4 @@
+species_id	mapping_mode	status	protein_records	cds_records	gff_transcripts	protein_cds_exact_overlap	protein_gff_transcript_exact_overlap	notes
+GJ_GP523	GWH_HEADER_METADATA	REVIEW	39153	39153	39511	0	0	Protein primary IDs are GWHP*, CDS primary IDs are GWHT*, and GFF IDs are EVM IDs. The FASTA headers and GFF Accession/Parent_Accession fields provide the mapping; direct primary-ID equality must not be required.
+Wild_GP543	EXACT_PRIMARY_ID	PASS	39081	39081	39081	39081	39081	Protein, CDS and GFF transcript IDs are directly compatible.
+XI_534M	EXACT_PRIMARY_ID	PASS	39694	39694	39694	39694	39694	Protein, CDS and GFF transcript IDs are directly compatible.

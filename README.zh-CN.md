@@ -1,6 +1,6 @@
 # PanFamFlow — 泛基因家族分析流程
 
-[English](README.md) | **简体中文** | [交互式小白教程](docs/index.html)
+[English](README.md) | **简体中文** | [交互式小白教程](docs/index.html) | [在线教程](https://lianglunping.github.io/PanFamFlow/)
 
 [![Version](https://img.shields.io/badge/version-0.1.2--alpha-orange)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/Python-3.11--3.13-blue)](pyproject.toml)
@@ -58,6 +58,7 @@ PanFamFlow 的输入是**已经组装并注释的 genome FASTA + GFF3**。OrthoF
 - **发表型输出**：结构化结果 TSV + XLSX，图件 PDF + 高分辨率 PNG。
 - **本地与 HPC**：提供 local 和 SLURM profile。
 - **生物学启动门**：在真实分析前对目标家族冻结、5–10 个 assembled-genome panel、输入 SHA256 和人工正负例执行 fail-closed 审计。
+- **真实数据 smoke test**：`examples/rice_3group_pilot/` 记录 GJ/XI/Wild 三组 gzip 输入审计，原始基因组不进入 Git。
 - **小白教学 HTML**：中文为主，逐步讲解安装、输入整理、配置、部分运行、断点续跑、结果阅读和解释边界，并提供交互式配置片段生成器。
 
 ## 总体数据流

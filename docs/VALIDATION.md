@@ -105,3 +105,9 @@ CI 还应阻断任何重新引入旧仓库克隆命令、旧仓库元数据或�
 - 来源模板全部图件的逐图复现。
 
 因此当前独立仓库版本标记为 `v0.1.2-alpha`；在真实水稻目标家族 benchmark 完成前，不应被表述为生产级生物学结果流程。
+
+## Three-group rice input smoke test
+
+A user-provided GJ/XI/Wild Drive panel was sampled as GP523, GP543 and 534M. All twelve compressed genome/GFF3/protein/CDS files passed the actual PanFamFlow input-audit logic; genome sizes were 374,988,626–398,659,260 bp and annotations contained 39,081–39,511 genes. All three real genome archives also passed atomic decompression and immediate cache-reuse testing. GP523 requires GWH header/Accession namespace mapping, while GP543 and 534M use directly matching primary IDs. The committed `examples/rice_3group_pilot/` contains only metadata, checksums and audit evidence, not raw genomes or Drive file IDs.
+
+This validates input feasibility for a three-genome engineering smoke test, not biological validation of any target family.

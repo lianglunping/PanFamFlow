@@ -1,0 +1,30 @@
+schema_version: '1.0'
+project:
+  name: rice_3group_engineering_smoke
+  analysis_scope: target_pan_gene_family
+  seed: 20260807
+  description: Three-group input and resume smoke test; not a publication-level biological
+    benchmark.
+family:
+  name: UNRESOLVED
+  approval_state: unresolved
+  pfam_ids: []
+  interpro_ids: []
+  hmm: null
+  reference_proteins: null
+  manual_truth_set: manual_review/manual_truth_set.tsv
+  notes: Target family must be frozen before family analysis.
+panel:
+  species_table: species.tsv
+  min_genomes: 3
+  max_genomes: 3
+acceptance:
+  approval_state: unresolved
+  require_family_approved: true
+  require_sha256: true
+  require_manual_truth_set: true
+  min_positive_controls: 5
+  min_negative_controls: 5
+  require_representative: true
+  require_annotation_version: true
+  chromosome_level_policy: warn

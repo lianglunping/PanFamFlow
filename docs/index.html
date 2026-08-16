@@ -355,6 +355,12 @@ sha256sum data/Os/genome.fa data/Os/annotation.gff3</code></pre></div>
           <tr><td>组装层级</td><td>染色体级最适合定位和共线性</td><td>scaffold 级结果被过度解释</td></tr>
         </tbody>
       </table></div>
+      <h3>3.2 仓库中的真实水稻三组示例</h3>
+      <p><code>examples/rice_3group_pilot/</code> 给出 GJ、XI、Wild 各一个基因组的真实 gzip 输入布局、SHA256 清单和兼容性审计。原始基因组不会提交到 Git；把文件放到对应 <code>data/</code> 目录后，只运行 <code>qc</code> 即可测试输入与断点续跑。</p>
+      <div class="code-wrap"><button class="copy-button">复制</button><pre><code>uv run panfamflow validate -c examples/rice_3group_pilot/config.yaml -m qc
+uv run panfamflow run -c examples/rice_3group_pilot/config.yaml -m qc
+uv run panfamflow resume -c examples/rice_3group_pilot/config.yaml -m qc</code></pre></div>
+      <div class="callout warn"><strong>GP523 的 ID 不是坏数据</strong>GP523 的 protein、CDS 和 GFF 使用 GWHP、GWHT、GWHG 与 EVM 多套命名空间，需要读取 FASTA header 和 GFF 的 <code>Accession</code> 字段进行映射，不能只比较主 ID 是否完全相同。</div>
     </section>
 
     <section class="step" id="step-4" data-step="4">

@@ -1,6 +1,6 @@
 # PanFamFlow — Target Pan-Gene-Family Analysis Workflow
 
-**English** | [简体中文](README.zh-CN.md) | [中文交互式教程](docs/index.html)
+**English** | [简体中文](README.zh-CN.md) | [中文交互式教程](docs/index.html) | [Online tutorial](https://lianglunping.github.io/PanFamFlow/)
 
 [![Version](https://img.shields.io/badge/version-0.1.2--alpha-orange)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/Python-3.11--3.13-blue)](pyproject.toml)
@@ -58,6 +58,7 @@ Those materials define a target-family workflow involving HMMER/BLASTP, IQ-TREE,
 - **Publication-oriented deliverables**: structured results are written as TSV and XLSX; figures are designed for PDF and high-resolution PNG output.
 - **Local and HPC execution**: local and SLURM profiles are provided.
 - **Biological start gate**: a fail-closed benchmark audit can freeze the target family, 5–10 assembled genomes, input SHA256 values, and manually reviewed positive/negative controls before a real run starts.
+- **Real-data smoke test**: `examples/rice_3group_pilot/` records a three-group GJ/XI/Wild gzip-input audit without committing raw genomes.
 - **Beginner tutorial**: a self-contained Chinese HTML guide teaches installation, input preparation, configuration, selective execution, smart resume, result reading, and interpretation boundaries step by step.
 
 ## Workflow overview
