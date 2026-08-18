@@ -65,7 +65,7 @@
 3. 以 `site/` 为受控静态源，构建 `_site/`；只复制首页、教程和必需静态资源，并加入 `.nojekyll`。
 4. `upload-pages-artifact` 只上传 `_site/`，不上传仓库根目录。
 5. 对 `/PanFamFlow/` 基路径、站内链接、HTTP 混合内容和禁止发布目录执行 fail-closed 检查。
-6. 在明确评估用户站点和其他项目站点影响后，单独处理 `lianglunping/lianglunping.github.io` 的 `CNAME=llp98.work`；该跨仓库变更不包含在本 PR 中。
+6. 经用户明确授权后，通过独立 PR 移除 `lianglunping/lianglunping.github.io` 的 `CNAME=llp98.work`；该跨仓库变更不混入 PanFamFlow PR。
 7. 在修复分支、PR head 和合并后的 main head 分别记录 exact-SHA CI、Pages run、deployment 与 HTTP 验收证据。
 
 ## 修复分支实测
@@ -80,9 +80,21 @@
 
 这些结果证明仓库内 workflow、受控 `_site/` artifact 和 Pages deployment 链路已经可运行；它们不能证明账号级自定义域名已经修复，也不能替代合并后 `main` exact-head 的最终复验。临时修复分支规则必须在合并验证完成后移除。
 
+## 账号级域名修复实测
+
+- 用户授权：2026-08-19（Asia/Shanghai）明确授权处理账号级 Pages 自定义域名；
+- 用户站点 PR：<https://github.com/lianglunping/lianglunping.github.io/pull/1>；
+- 删除 `CNAME` 的精确提交：`95ae2d3a7c071f148d840c30595c4b73637bd2ca`；
+- 合并后的 `hexo` head：`04a188c948a3a80cc6d8a9bf4c3b6ae8d74f1303`；
+- 用户站点 Pages run：<https://github.com/lianglunping/lianglunping.github.io/actions/runs/32167770598>；
+- 合并后 `hexo:CNAME`：GitHub Contents API 返回 `404 Not Found`；
+- 设置页：正式地址恢复为 `https://lianglunping.github.io/`，自定义域名输入框为空，HTTPS redirect 已启用。
+
+PanFamFlow 当前 PR head 的 CI 已通过；为绕过 GitHub 手动触发控件的加载错误，使用默认分支上的一次性、精确分支 Pages 验证 workflow 生成 PR-head 部署证据。该 workflow 与临时分支触发器必须在最终清理 PR 中一并移除。
+
 ## 风险
 
-- 账号级自定义域名变更是可逆的，但会影响 `lianglunping.github.io` 用户站点及可能继承该域名的其他项目站点；在未获得跨仓库变更授权前不得执行。
+- 账号级自定义域名变更已获得明确授权并通过独立 PR 执行；原 `CNAME` 可由 blob `e64938fc93c2ee58f0105e2f28ac0e47a7da4f33` 或父提交 `49a9dfe131436344ce003b3145e2e4195fa46a08` 恢复。
 - Pages deployment 只能证明工程发布成功，不能改变 HSP 科学结果或 benchmark 的 `BLOCKED` 状态。
 - 外部 Google Drive 链接可能受共享权限、账号登录或 Google 风控影响；必须用第三方会话逐项复验。
 
@@ -91,10 +103,10 @@
 以下项目仅在获得真实结果后填写，不预先声明成功：
 
 - 修复 PR：<https://github.com/lianglunping/PanFamFlow/pull/1>（draft，待最终验证）
-- 当前已验证 PR head SHA：`42cbb302b828882e4492bf374c430fdbb76668a7`（本报告更新后需对新 head 重跑）
-- CI run：<https://github.com/lianglunping/PanFamFlow/actions/runs/32155974837>（成功；本报告更新后需对新 head 重跑）
+- 当前已验证 PR head SHA：`9f76cb1ec6fd7a7bbc00f1cdc6868acce5d15fce`（本报告更新提交后需对新 head 重跑）
+- CI run：<https://github.com/lianglunping/PanFamFlow/actions/runs/32168187657>（成功；本报告更新提交后需对新 head 重跑）
 - Pages run：<https://github.com/lianglunping/PanFamFlow/actions/runs/32157464159>（重试成功；本报告更新后需对新 head 重跑）
-- github-pages deployment：分支级部署成功；账号级域名仍阻断目标 URL 验收
+- github-pages deployment：分支级部署链路已成功；账号级域名已移除；当前 PR exact-head 和最终 main exact-head 仍需复验
 - 公共首页 HTTP 200：待验证
 - `/PanFamFlow/tutorial/` HTTP 200：待验证
 - 合并后 main exact-head 复验：待完成
