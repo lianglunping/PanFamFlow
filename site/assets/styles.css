@@ -36,7 +36,7 @@ h2 { margin-top: 0; font-size: clamp(1.55rem, 3vw, 2.2rem); }
 h3 { margin-top: 0; }
 .grid { display: grid; gap: 1rem; }
 .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-article { padding: 1.25rem; border: 1px solid var(--border); border-radius: .75rem; background: var(--surface); }
+article { min-width: 0; padding: 1.25rem; border: 1px solid var(--border); border-radius: .75rem; background: var(--surface); }
 pre { overflow-x: auto; padding: 1rem; border-radius: .55rem; background: #122019; color: #edf8f0; font-size: .9rem; }
 code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 ul { padding-left: 1.25rem; }
