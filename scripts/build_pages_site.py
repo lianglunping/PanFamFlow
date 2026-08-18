@@ -33,6 +33,14 @@ def build(source: Path, tutorial: Path, output: Path) -> None:
     output = output.resolve()
     if output == output.parent or output.name in {"", ".", ".."}:
         raise ValueError(f"Unsafe output directory: {output}")
+    if (
+        output in (source, tutorial)
+        or output in source.parents
+        or source in output.parents
+        or output in tutorial.parents
+        or tutorial in output.parents
+    ):
+        raise ValueError(f"Unsafe output directory (overlaps inputs): {output}")
     if not (source / "index.html").is_file():
         raise FileNotFoundError(source / "index.html")
     if not tutorial.is_file():
