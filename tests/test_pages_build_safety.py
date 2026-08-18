@@ -1,8 +1,14 @@
+import importlib.util
 from pathlib import Path
 
 import pytest
 
-from scripts.build_pages_site import build
+SCRIPT_PATH = Path(__file__).resolve().parents[1] / "scripts" / "build_pages_site.py"
+SPEC = importlib.util.spec_from_file_location("panfamflow_build_pages_site", SCRIPT_PATH)
+assert SPEC is not None and SPEC.loader is not None
+MODULE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(MODULE)
+build = MODULE.build
 
 
 @pytest.mark.parametrize("output_name", [".", "site", "site/nested", "docs"])
