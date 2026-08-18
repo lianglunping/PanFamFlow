@@ -2,9 +2,7 @@ name: Deploy PanFamFlow tutorial
 
 on:
   push:
-    # Temporary exact-branch trigger for pre-merge deployment evidence.
-    # Removed by the post-merge cleanup PR after main is verified.
-    branches: [main, fix/github-pages-deployment-v0.1.3]
+    branches: [main]
     paths:
       - "site/**"
       - "docs/index.html"
