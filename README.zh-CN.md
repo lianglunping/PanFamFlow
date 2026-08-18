@@ -1,6 +1,6 @@
 # PanFamFlow — 泛基因家族分析流程
 
-[English](README.md) | **简体中文** | [交互式小白教程](docs/index.html) | [在线教程](https://lianglunping.github.io/PanFamFlow/)
+[English](README.md) | **简体中文** | [交互式小白教程](docs/index.html) | [项目网站](https://lianglunping.github.io/PanFamFlow/) | [在线教程](https://lianglunping.github.io/PanFamFlow/tutorial/)
 
 [![Version](https://img.shields.io/badge/version-0.1.2--alpha-orange)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/Python-3.11--3.13-blue)](pyproject.toml)
@@ -334,6 +334,29 @@ results/
 8. v0.1.2-alpha 尚未自动执行 DESeq2 contrasts、codeml、缺失基因 genome rescue 和所有模板组合图。
 
 详细审计见 [docs/AUDIT.md](docs/AUDIT.md)，扩展计划见 [docs/ROADMAP.md](docs/ROADMAP.md)。
+
+## 分析结果与交接
+
+大型分析归档不提交到 GitHub。仓库只保存说明、结果指针、manifest、SHA256、当前状态和小型示例；版本化交接包与当前 HSP 结果保存在 [PanFamFlow Google Drive 交接总目录](https://drive.google.com/drive/folders/19hvhBow_Kctuz_xOhEAuqqM64t0xbj1E)。
+
+- **完整交接包**
+  - [完整交接 ZIP](https://drive.google.com/file/d/16uBmPgq7hn4okky19LqL4Z2j89p2WLvG/view)
+  - [中文交接说明](https://drive.google.com/file/d/1un8XYECtKdF53C0XzxWyBppMFrXym7w3/view)
+  - [交接 HTML](https://drive.google.com/file/d/12B1QQDAHzc70w9f3DngWCuS_VuYHw1i-/view)
+- **当前分析结果与人工浏览报告**
+  - [七材料 Pfam 38 结果 ZIP](https://drive.google.com/file/d/1hC--IjYnTnaqV9GtP70lTnXtT3CBMO6G/view)
+  - [当前审计工作簿](https://docs.google.com/spreadsheets/d/1a2TtOKq1byNI5r2_n2dOgXfqh-SXdGSh/edit)
+  - [当前中文分析报告](https://drive.google.com/file/d/1q-pX8bJChoKfyf8HNJDM69WITBLppkvC/view)
+  - [正式交付报告](https://drive.google.com/file/d/1QAq3S_25uYdiku1jYGp1hCMkUlco66E_/view)
+- **机器可读状态**
+  - [HANDOFF_STATUS.json](https://drive.google.com/file/d/1UvcLRF2hgK0tXmUpbRp46Kj4G8gELER5/view)
+  - [FILE_INDEX.tsv](https://drive.google.com/file/d/1ieihYM_dz7GC0ioBM8s3rRKrJjv_ma_L/view)
+  - [Drive 上传清单](https://drive.google.com/file/d/1exvhDGtUYNf3OVFd8uXF9mlQmu-TQJ1W/view)
+- **完整性校验**
+  - [完整交接 ZIP SHA256](https://drive.google.com/file/d/19NGVNbX3yoHTLP8BdlePaSjix4y_DT3U/view)
+  - [当前结果 ZIP SHA256](https://drive.google.com/file/d/13HH8Myyqjrjn8GV9LG7wiYHmKRm6TZ5B/view)
+
+当前科学基线为：7 个材料、6 条分别分析的 HSP 家族轨道、1,635 条 evidence records、1,323 条 PASS、205 条 REVIEW、107 条 REJECT、1,254 条 double-evidence PASS。Benchmark 仍为 **BLOCKED**，唯一 blocker 是 `acceptance.approval_state = proposed`；本次 Pages 与文档修复不会改变该科学状态。
 
 ## HPC / SLURM
 

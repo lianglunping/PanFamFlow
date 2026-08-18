@@ -36,6 +36,12 @@ jobs:
           test -f docs/BIOLOGICAL_BENCHMARK.md
           test -f docs/MIGRATION.md
           test -f docs/index.html
+          test -f docs/GITHUB_PAGES_ROOT_CAUSE.zh-CN.md
+          test -f site/index.html
+          test -f site/.nojekyll
+          test -f site/assets/styles.css
+          test -f scripts/build_pages_site.py
+          test -f scripts/check_site_links.py
           test ! -e _panfamflow_publish
           test ! -e _panfamflow_staging
           grep -q '^# PanFamFlow — Target Pan-Gene-Family Analysis Workflow' README.md
@@ -58,6 +64,22 @@ jobs:
           ! grep -R 'https://github.com/lianglunping/Wild-rice-Pangenome-Project' \
             README.md README.zh-CN.md pyproject.toml CITATION.cff .github
           ! grep -R '^from __future__ import annotations' src/panfamflow/workflow/scripts
+
+      - name: Build and audit minimal GitHub Pages site
+        run: |
+          set -euo pipefail
+          site_output="${RUNNER_TEMP}/panfamflow-pages-${GITHUB_SHA}"
+          python3 scripts/build_pages_site.py --output "${site_output}"
+          python3 scripts/check_site_links.py --site "${site_output}" --base-path /PanFamFlow/
+          test -s "${site_output}/index.html"
+          test -s "${site_output}/tutorial/index.html"
+          test -s "${site_output}/SITE_MANIFEST.tsv"
+          test -e "${site_output}/.nojekyll"
+          test ! -e "${site_output}/.git"
+          test ! -e "${site_output}/.github"
+          test ! -e "${site_output}/src"
+          test ! -e "${site_output}/tests"
+          test ! -e "${site_output}/uv.lock"
 
       - name: Install uv
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0

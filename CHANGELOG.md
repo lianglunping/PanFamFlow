@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased - documentation and deployment repair
+
+- Documented the exact GitHub Pages failure root cause from workflow run `31958304609` and job `95192287726`.
+- Replaced repository-root Pages publication with a minimal `_site/` artifact built from controlled static sources.
+- Added fail-closed project-base-path, internal-link, mixed-content, and forbidden-directory checks.
+- Added a responsive, dark-mode-compatible Chinese project homepage and preserved the existing interactive tutorial at `/PanFamFlow/tutorial/`.
+- Added bilingual, structured Google Drive result and handoff links without committing large analysis archives.
+
 ## 0.1.2-alpha - 2026-08-16
 
 - Added a fail-closed `panfamflow benchmark` command group with non-destructive `init`, strict `audit`, and schema export commands.

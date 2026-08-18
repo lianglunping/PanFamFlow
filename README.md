@@ -1,6 +1,6 @@
 # PanFamFlow — Target Pan-Gene-Family Analysis Workflow
 
-**English** | [简体中文](README.zh-CN.md) | [中文交互式教程](docs/index.html) | [Online tutorial](https://lianglunping.github.io/PanFamFlow/)
+**English** | [简体中文](README.zh-CN.md) | [中文交互式教程](docs/index.html) | [Project site](https://lianglunping.github.io/PanFamFlow/) | [Online tutorial](https://lianglunping.github.io/PanFamFlow/tutorial/)
 
 [![Version](https://img.shields.io/badge/version-0.1.2--alpha-orange)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/Python-3.11--3.13-blue)](pyproject.toml)
@@ -334,6 +334,29 @@ See [docs/OUTPUT_SCHEMA.md](docs/OUTPUT_SCHEMA.md) for field definitions.
 8. v0.1.2-alpha does not yet automate DESeq2 contrasts, codeml, genome-level rescue of apparent absence, or every composite figure in the source template.
 
 See [docs/AUDIT.md](docs/AUDIT.md) for the independent-style audit and [docs/ROADMAP.md](docs/ROADMAP.md) for planned extensions.
+
+## Analysis results and handoff
+
+Large analysis archives are not stored in GitHub. The repository retains documentation, pointers, manifests, checksums, current status, and small examples; versioned delivery packages and current HSP results are stored in the [PanFamFlow Google Drive handoff folder](https://drive.google.com/drive/folders/19hvhBow_Kctuz_xOhEAuqqM64t0xbj1E).
+
+- **Complete handoff package**
+  - [Complete handoff ZIP](https://drive.google.com/file/d/16uBmPgq7hn4okky19LqL4Z2j89p2WLvG/view)
+  - [Chinese handoff notes](https://drive.google.com/file/d/1un8XYECtKdF53C0XzxWyBppMFrXym7w3/view)
+  - [Handoff HTML](https://drive.google.com/file/d/12B1QQDAHzc70w9f3DngWCuS_VuYHw1i-/view)
+- **Current analysis results and human-readable reports**
+  - [Seven-material Pfam 38 result ZIP](https://drive.google.com/file/d/1hC--IjYnTnaqV9GtP70lTnXtT3CBMO6G/view)
+  - [Current audit workbook](https://docs.google.com/spreadsheets/d/1a2TtOKq1byNI5r2_n2dOgXfqh-SXdGSh/edit)
+  - [Current Chinese analysis report](https://drive.google.com/file/d/1q-pX8bJChoKfyf8HNJDM69WITBLppkvC/view)
+  - [Formal delivery report](https://drive.google.com/file/d/1QAq3S_25uYdiku1jYGp1hCMkUlco66E_/view)
+- **Machine-readable state**
+  - [HANDOFF_STATUS.json](https://drive.google.com/file/d/1UvcLRF2hgK0tXmUpbRp46Kj4G8gELER5/view)
+  - [FILE_INDEX.tsv](https://drive.google.com/file/d/1ieihYM_dz7GC0ioBM8s3rRKrJjv_ma_L/view)
+  - [Drive upload manifest](https://drive.google.com/file/d/1exvhDGtUYNf3OVFd8uXF9mlQmu-TQJ1W/view)
+- **Integrity verification**
+  - [Complete handoff ZIP SHA256](https://drive.google.com/file/d/19NGVNbX3yoHTLP8BdlePaSjix4y_DT3U/view)
+  - [Current result ZIP SHA256](https://drive.google.com/file/d/13HH8Myyqjrjn8GV9LG7wiYHmKRm6TZ5B/view)
+
+Current scientific baseline: 7 materials, 6 independently analysed HSP family tracks, 1,635 evidence records, 1,323 PASS, 205 REVIEW, 107 REJECT, and 1,254 double-evidence PASS. The benchmark remains **BLOCKED** because `acceptance.approval_state = proposed`; this deployment and documentation repair does not change that scientific status.
 
 ## HPC / SLURM
 

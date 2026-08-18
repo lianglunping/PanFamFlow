@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="PanFamFlow：面向目标泛基因家族的可复现分析流程。">
+  <title>PanFamFlow｜目标泛基因家族分析流程</title>
+  <link rel="stylesheet" href="/PanFamFlow/assets/styles.css">
+</head>
+<body>
+  <header class="hero">
+    <nav aria-label="语言与项目导航">
+      <a class="brand" href="/PanFamFlow/">PanFamFlow</a>
+      <span class="nav-links">
+        <a href="https://github.com/lianglunping/PanFamFlow/blob/main/README.zh-CN.md">中文 README</a>
+        <a lang="en" href="https://github.com/lianglunping/PanFamFlow/blob/main/README.md">English README</a>
+        <a href="/PanFamFlow/tutorial/">中文教程</a>
+      </span>
+    </nav>
+    <div class="hero-copy">
+      <p class="eyebrow">Target Pan-Gene-Family Analysis</p>
+      <h1>目标泛基因家族分析流程</h1>
+      <p class="scope-lock">PanFamFlow 分析目标基因家族；它不是泛基因组组装流程，也不构建 graph pangenome。</p>
+      <p>从成员鉴定、家族系统发育和 OrthoFinder HOG，到目标家族 Core / Soft-core / Shell / Cloud 分类、结构、定位、复制与共线性、Ka/Ks、启动子和表达整合。</p>
+      <div class="actions">
+        <a class="button primary" href="/PanFamFlow/tutorial/">打开中文交互式教程</a>
+        <a class="button" href="https://github.com/lianglunping/PanFamFlow/releases">GitHub Releases</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <h2>快速开始</h2>
+      <div class="grid two">
+        <article>
+          <h3>安装</h3>
+          <pre><code>git clone https://github.com/lianglunping/PanFamFlow.git
+cd PanFamFlow
+mamba env create -f environment.yaml
+uv sync --locked --dev</code></pre>
+        </article>
+        <article>
+          <h3>一个配置入口</h3>
+          <p>日常分析由 <code>config.yaml</code> 控制。先校验和查看执行计划，再启动工作流。</p>
+          <pre><code>uv run panfamflow validate -c config.yaml
+uv run panfamflow plan -c config.yaml
+uv run panfamflow run -c config.yaml</code></pre>
+          <p><a href="https://github.com/lianglunping/PanFamFlow/blob/main/src/panfamflow/templates/config.yaml">查看 config.yaml 模板</a></p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>Smart resume / 断点接续</h2>
+      <p>Snakemake 负责增量执行；PanFamFlow 记录配置与执行指纹，使用原子输出、失败重试及模块级恢复。修正输入、参数、软件环境或资源问题后，可直接重跑原命令，完整且仍有效的结果会跳过。</p>
+      <pre><code>uv run panfamflow status -c config.yaml
+uv run panfamflow resume -c config.yaml</code></pre>
+      <p><a href="https://github.com/lianglunping/PanFamFlow/blob/main/docs/RESUME.md">阅读恢复机制与失败注入验收</a></p>
+    </section>
+
+    <section>
+      <h2>分析结果与交接</h2>
+      <p>大型 ZIP 不提交到 GitHub。仓库保存说明、指针、manifest 与校验信息；完整材料保存在 Google Drive 的版本化交接目录。</p>
+      <div class="grid two link-cards">
+        <article>
+          <h3>完整交接包</h3>
+          <ul>
+            <li><a href="https://drive.google.com/drive/folders/19hvhBow_Kctuz_xOhEAuqqM64t0xbj1E">Google Drive 总入口</a></li>
+            <li><a href="https://drive.google.com/file/d/16uBmPgq7hn4okky19LqL4Z2j89p2WLvG/view">完整交接 ZIP</a></li>
+            <li><a href="https://drive.google.com/file/d/1un8XYECtKdF53C0XzxWyBppMFrXym7w3/view">中文交接说明</a></li>
+            <li><a href="https://drive.google.com/file/d/12B1QQDAHzc70w9f3DngWCuS_VuYHw1i-/view">交接 HTML</a></li>
+          </ul>
+        </article>
+        <article>
+          <h3>当前分析结果</h3>
+          <ul>
+            <li><a href="https://drive.google.com/file/d/1hC--IjYnTnaqV9GtP70lTnXtT3CBMO6G/view">七材料 Pfam 38 结果 ZIP</a></li>
+            <li><a href="https://docs.google.com/spreadsheets/d/1a2TtOKq1byNI5r2_n2dOgXfqh-SXdGSh/edit">当前审计工作簿</a></li>
+            <li><a href="https://drive.google.com/file/d/1q-pX8bJChoKfyf8HNJDM69WITBLppkvC/view">当前中文分析报告</a></li>
+            <li><a href="https://drive.google.com/file/d/1QAq3S_25uYdiku1jYGp1hCMkUlco66E_/view">正式交付报告</a></li>
+          </ul>
+        </article>
+        <article>
+          <h3>机器可读状态</h3>
+          <ul>
+            <li><a href="https://drive.google.com/file/d/1UvcLRF2hgK0tXmUpbRp46Kj4G8gELER5/view">HANDOFF_STATUS.json</a></li>
+            <li><a href="https://drive.google.com/file/d/1ieihYM_dz7GC0ioBM8s3rRKrJjv_ma_L/view">FILE_INDEX.tsv</a></li>
+            <li><a href="https://drive.google.com/file/d/1exvhDGtUYNf3OVFd8uXF9mlQmu-TQJ1W/view">Drive 上传清单</a></li>
+          </ul>
+        </article>
+        <article>
+          <h3>完整性校验</h3>
+          <ul>
+            <li><a href="https://drive.google.com/file/d/19NGVNbX3yoHTLP8BdlePaSjix4y_DT3U/view">完整交接 ZIP SHA256</a></li>
+            <li><a href="https://drive.google.com/file/d/13HH8Myyqjrjn8GV9LG7wiYHmKRm6TZ5B/view">当前结果 ZIP SHA256</a></li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>当前科学状态</h2>
+      <div class="metrics" aria-label="当前结果基线">
+        <span><strong>7</strong> materials</span>
+        <span><strong>6</strong> HSP tracks</span>
+        <span><strong>1,635</strong> evidence records</span>
+        <span><strong>1,323</strong> PASS</span>
+        <span><strong>205</strong> REVIEW</span>
+        <span><strong>107</strong> REJECT</span>
+        <span><strong>1,254</strong> double-evidence PASS</span>
+      </div>
+      <div class="status blocked"><strong>Benchmark status: BLOCKED</strong><br>唯一 blocker 为 <code>acceptance.approval_state = proposed</code>。139 项检查通过，7 项 warning，1 项 blocking failure。</div>
+      <ul>
+        <li>HSP20、HSP40、HSP60、HSP70、HSP90、HSP100 分别分析；不构建 HSP 总树，也不跨家族计算 Ka/Ks。</li>
+        <li>HOG 完成前不声明 Core / Soft-core / Shell / Cloud。</li>
+        <li>GP543 与 GP635 是 intermediate，不是 wild。</li>
+        <li>OL3101 有 357 条 CDS 与 genome/GFF 重建序列不一致，这些记录不得进入 Ka/Ks。</li>
+        <li>PASS / REVIEW / REJECT 架构阈值仍为 proposed，并非 PI-approved。</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>当前限制与下一步</h2>
+      <p>工程 CI 成功不等于生物学验证完成。下一步需要 PI 审批家族架构阈值、冻结正式 HOG 节点，并在满足一致性约束后继续家族内比较；任何结论强度都必须与证据强度一致。</p>
+      <p><a href="https://github.com/lianglunping/PanFamFlow/blob/main/docs/ROADMAP.md">查看路线图</a> · <a href="https://github.com/lianglunping/PanFamFlow/blob/main/docs/SCOPE.md">查看分析边界</a></p>
+    </section>
+  </main>
+
+  <footer>
+    <p>PanFamFlow · <a href="https://github.com/lianglunping/PanFamFlow">GitHub repository</a> · <a href="/PanFamFlow/tutorial/">中文教程</a></p>
+  </footer>
+</body>
+</html>
