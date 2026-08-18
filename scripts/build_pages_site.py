@@ -34,8 +34,7 @@ def build(source: Path, tutorial: Path, output: Path) -> None:
     if output == output.parent or output.name in {"", ".", ".."}:
         raise ValueError(f"Unsafe output directory: {output}")
     if (
-        output == source
-        or output == tutorial
+        output in (source, tutorial)
         or output in source.parents
         or source in output.parents
         or output in tutorial.parents
