@@ -58,7 +58,21 @@
 - 对应 `main` SHA：`d60c22db5a27b07f08f626482f22afa085ff2bef`
 - 中文教程：`https://lianglunping.github.io/PanFamFlow/tutorial/`
 
-上述证据证明修复前的构建、artifact 与部署链路已经可运行。2026-08-19 的入口修复仍须在新的 PR head 和合并后的新 `main` head 上重新执行相同门禁，并从 README 实际点击项目网站链接完成最终验收。
+上述证据证明修复前的构建、artifact 与部署链路已经可运行。
+
+2026-08-19 的入口修复另完成以下精确版本验证：
+
+- 修复 PR：<https://github.com/lianglunping/PanFamFlow/pull/5>
+- 最终 PR head：`25b4e43940ca22b57a3f3d798c726d19bbf0c215`
+- PR-head CI：<https://github.com/lianglunping/PanFamFlow/actions/runs/32207701558>，结论 `success`
+- 合并后的 `main` SHA：`346071b66729b92ed9e787385f5a090d95d1d928`
+- 合并后 CI：<https://github.com/lianglunping/PanFamFlow/actions/runs/32207778341>，结论 `success`
+- 合并后 Pages：<https://github.com/lianglunping/PanFamFlow/actions/runs/32207778347>，`build` 与 `deploy` 均为 `success`
+- README 项目网站链接：`https://lianglunping.github.io/PanFamFlow/index.html?rev=pages-entry-fix-20260819`，HTTP `200`
+- 项目首页标题：`PanFamFlow｜目标泛基因家族分析流程`
+- 中文教程：`https://lianglunping.github.io/PanFamFlow/tutorial/`，HTTP `200`
+- 中文教程标题：`PanFamFlow 中文入门教程｜一步步完成目标泛基因家族分析`
+- 临时修复分支已在合并和验证后删除。
 
 ## 风险与边界
 
@@ -66,11 +80,11 @@
 - 外部 Google Drive 链接可能受共享权限、账号登录或平台风控影响，需在独立会话逐项验证。
 - GitHub Pages 与浏览器缓存存在传播延迟；最终验收必须记录合并后的精确 SHA、CI run、Pages run 和实际页面标题。
 
-## 本轮验收合同
+## 本轮验收结果
 
-- README 中“Project site / 项目网站”链接可直接打开；
-- 项目首页标题为 `PanFamFlow｜目标泛基因家族分析流程`；
-- 中文教程仍可打开且交互内容不回退；
-- 根入口与发布首页均不存在自动跳转到自身；
-- 仓库全文不再包含已停用域名及其配置说明；
-- 新 PR head 与合并后 `main` exact-head 的 CI、Pages 均成功。
+- PASS：README 中“Project site / 项目网站”链接返回 HTTP `200`；
+- PASS：项目首页标题为 `PanFamFlow｜目标泛基因家族分析流程`；
+- PASS：中文教程返回 HTTP `200`，标题正确，教程源文件未被修改；
+- PASS：根入口与发布首页均不存在自动跳转到自身；
+- PASS：仓库全文不再包含已停用域名及其配置说明；
+- PASS：最终 PR head 与合并后 `main` exact-head 的 CI、Pages 均成功。
