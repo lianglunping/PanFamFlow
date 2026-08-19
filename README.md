@@ -1,6 +1,6 @@
 # PanFamFlow — Target Pan-Gene-Family Analysis Workflow
 
-**English** | [简体中文](README.zh-CN.md) | [中文交互式教程](docs/index.html) | [Project site](https://lianglunping.github.io/PanFamFlow/) | [Online tutorial](https://lianglunping.github.io/PanFamFlow/tutorial/)
+**English** | [简体中文](README.zh-CN.md) | [中文交互式教程](docs/index.html) | [Project site](https://lianglunping.github.io/PanFamFlow/index.html?rev=pages-entry-fix-20260819) | [Online tutorial](https://lianglunping.github.io/PanFamFlow/tutorial/)
 
 [![Version](https://img.shields.io/badge/version-0.1.2--alpha-orange)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/Python-3.11--3.13-blue)](pyproject.toml)
