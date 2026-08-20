@@ -369,6 +369,47 @@
       "title": "FamilySettings",
       "type": "object"
     },
+    "GeneStructureSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "metrics": {
+          "items": {
+            "enum": [
+              "gene_length",
+              "protein_length",
+              "cds_length",
+              "exon_count",
+              "intron_count",
+              "total_intron_length"
+            ],
+            "type": "string"
+          },
+          "title": "Metrics",
+          "type": "array"
+        },
+        "inference_unit": {
+          "const": "species_median",
+          "default": "species_median",
+          "title": "Inference Unit",
+          "type": "string"
+        },
+        "min_group_units": {
+          "default": 2,
+          "minimum": 2,
+          "title": "Min Group Units",
+          "type": "integer"
+        },
+        "alpha": {
+          "default": 0.05,
+          "exclusiveMaximum": 1,
+          "exclusiveMinimum": 0,
+          "title": "Alpha",
+          "type": "number"
+        }
+      },
+      "title": "GeneStructureSettings",
+      "type": "object"
+    },
     "HMMSettings": {
       "additionalProperties": false,
       "properties": {
@@ -1242,6 +1283,9 @@
     },
     "pan_family": {
       "$ref": "#/$defs/PanFamilySettings"
+    },
+    "gene_structure": {
+      "$ref": "#/$defs/GeneStructureSettings"
     },
     "chromosome": {
       "$ref": "#/$defs/ChromosomeSettings"

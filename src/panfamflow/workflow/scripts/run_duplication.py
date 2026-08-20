@@ -11,6 +11,8 @@ from typing import Any
 
 import matplotlib.pyplot as plt
 import pandas as pd
+from gene_structure_statistics import compare_grouped_metrics, plot_grouped_metrics
+from stratified_summary_utils import build_duplication_summaries
 from workflow_utils import (
     read_delimited_table,
     read_fasta,
@@ -300,7 +302,43 @@ modes = modes[columns + [column for column in modes.columns if column not in col
 modes = modes.sort_values(["species_id", "stable_id"]).reset_index(drop=True)
 save_table(modes, snakemake.output.modes)
 save_table(pairs, snakemake.output.pairs)
-save_workbook({"duplication_mode": modes, "pairs": pairs}, snakemake.output.xlsx)
+pan_membership = pd.read_csv(snakemake.input.pan_membership, sep="\t")
+pan_classification = pd.read_csv(snakemake.input.pan_classification, sep="\t")
+stratified_summary = build_duplication_summaries(
+    modes,
+    members,
+    pan_membership,
+    pan_classification,
+)
+save_table(stratified_summary, snakemake.output.stratified_summary)
+gene_structure = pd.read_csv(snakemake.input.gene_structure, sep="\t")
+structure_with_modes = gene_structure.merge(
+    modes[["stable_id", "duplication_mode"]],
+    on="stable_id",
+    how="left",
+    validate="one_to_one",
+)
+structure_global_tests, structure_pairwise_tests, structure_statistics_qc = compare_grouped_metrics(
+    structure_with_modes,
+    group_field="duplication_mode",
+    metrics=list(snakemake.params.statistics_metrics),
+    min_group_units=int(snakemake.params.statistics_min_group_units),
+    alpha=float(snakemake.params.statistics_alpha),
+)
+save_table(structure_global_tests, snakemake.output.structure_global_tests)
+save_table(structure_pairwise_tests, snakemake.output.structure_pairwise_tests)
+save_table(structure_statistics_qc, snakemake.output.structure_statistics_qc)
+save_workbook(
+    {
+        "duplication_mode": modes,
+        "pairs": pairs,
+        "structure_global": structure_global_tests,
+        "structure_pairwise": structure_pairwise_tests,
+        "structure_stats_qc": structure_statistics_qc,
+        "stratified_summary": stratified_summary,
+    },
+    snakemake.output.xlsx,
+)
 
 counts = modes["duplication_mode"].value_counts().sort_values(ascending=False)
 fig, axis = plt.subplots(figsize=(7.2, 4.8))
@@ -313,3 +351,43 @@ fig.tight_layout()
 fig.savefig(snakemake.output.plot_pdf)
 fig.savefig(snakemake.output.plot_png, dpi=int(snakemake.params.png_dpi))
 plt.close(fig)
+
+stratifications = ["SPECIES", "SUBFAMILY", "PAN_CLASS"]
+fig, axes = plt.subplots(len(stratifications), 2, figsize=(12.0, 4.2 * len(stratifications)))
+for row_index, stratification in enumerate(stratifications):
+    subset = stratified_summary.loc[stratified_summary["stratification"] == stratification]
+    count_matrix = subset.pivot(index="stratum", columns="duplication_mode", values="gene_count")
+    fraction_matrix = subset.pivot(
+        index="stratum", columns="duplication_mode", values="within_stratum_fraction"
+    ).reindex(index=count_matrix.index, columns=count_matrix.columns)
+    count_matrix.plot(kind="bar", stacked=True, ax=axes[row_index, 0], legend=False)
+    fraction_matrix.plot(kind="bar", stacked=True, ax=axes[row_index, 1])
+    axes[row_index, 0].set_ylabel("Family gene count")
+    axes[row_index, 1].set_ylabel("Within-stratum fraction")
+    axes[row_index, 1].set_ylim(0, 1)
+    for axis in axes[row_index]:
+        axis.set_xlabel(stratification.replace("_", " ").title())
+        axis.tick_params(axis="x", rotation=35)
+        axis.spines[["top", "right"]].set_visible(False)
+        legend = axis.get_legend()
+        if legend is not None:
+            legend.set_frame_on(False)
+fig.suptitle("Duplication-mode counts and proportions by biological stratum")
+fig.tight_layout()
+fig.savefig(snakemake.output.stratified_plot_pdf, facecolor="white")
+fig.savefig(
+    snakemake.output.stratified_plot_png,
+    dpi=int(snakemake.params.png_dpi),
+    facecolor="white",
+)
+plt.close(fig)
+plot_grouped_metrics(
+    structure_with_modes,
+    group_fields=["duplication_mode"],
+    metrics=list(snakemake.params.statistics_metrics),
+    pdf_path=snakemake.output.structure_plot_pdf,
+    png_path=snakemake.output.structure_plot_png,
+    png_dpi=int(snakemake.params.png_dpi),
+    seed=int(snakemake.params.seed),
+    min_group_units=int(snakemake.params.statistics_min_group_units),
+)

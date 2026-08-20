@@ -30,6 +30,7 @@ project:
 | `orthofinder` | HOG node 和线程 |
 | `pan_family` | 目标家族 HOG 的四分类阈值与 rarefaction |
 | `chromosome` | representative 筛选与 density window |
+| `gene_structure` | 结构比较指标、物种中位数推断单位、最小物种单元数和显著性阈值 |
 | `duplication` | DupGen_finder 或预计算 backend |
 | `kaks` | pair source、reference species、方法和饱和阈值 |
 | `promoter` | promoter 长度、FIMO/PlantCARE backend |
@@ -148,7 +149,21 @@ pan_family:
 
 阈值必须满足 `core_min >= soft_core_min >= shell_min`。PanFamFlow 不接受 `whole_genome` scope；旧 `pangenome` 字段只在 `scope: target_family` 时自动迁移。
 
-## 8. expression 两种输入
+## 8. 基因结构组间统计
+
+```yaml
+gene_structure:
+  metrics: [gene_length, protein_length, cds_length, exon_count, intron_count, total_intron_length]
+  inference_unit: species_median
+  min_group_units: 2
+  alpha: 0.05
+```
+
+流程先在每个 `species_id × subfamily/group/duplication_mode` 单元内取中位数，再把这些物种单元用于整体和两两非参数检验。`min_group_units` 不能小于 2；任一比较组未达到阈值时，描述表和图仍会生成，但 P 值保持缺失并写入 `INSUFFICIENT_SPECIES_REPLICATION`。`alpha` 同时控制是否启动事后两两检验；多重校正在每个比较范围与指标内采用 BH-FDR。
+
+这套默认值用于阻止把同一物种的多个家族基因当作独立生物学重复。正式多物种研究仍应根据物种关系、群体构成和预注册假设评估层级模型或系统发育校正。
+
+## 9. expression 两种输入
 
 ### 导入矩阵
 
@@ -180,7 +195,7 @@ expression:
 
 v0.1 生成 TPM，不自动执行统计推断型差异表达。
 
-## 9. 配置校验
+## 10. 配置校验
 
 ```bash
 uv run panfamflow validate -c config.yaml

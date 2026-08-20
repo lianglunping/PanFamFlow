@@ -94,6 +94,28 @@ def test_module_dependency_expansion() -> None:
     )
 
 
+def test_duplication_expands_gene_structure_statistics_dependency() -> None:
+    config = load_config(TOY_CONFIG)
+    resolved = resolve_modules(["duplication"], config)
+    assert "gene_structure" in resolved
+    assert resolved[-1] == "duplication"
+
+
+def test_gene_structure_statistics_settings_are_strict_and_reproducible() -> None:
+    config = load_config(TOY_CONFIG)
+    assert config.gene_structure.metrics == [
+        "gene_length",
+        "protein_length",
+        "cds_length",
+        "exon_count",
+        "intron_count",
+        "total_intron_length",
+    ]
+    assert config.gene_structure.inference_unit == "species_median"
+    assert config.gene_structure.min_group_units == 2
+    assert config.gene_structure.alpha == 0.05
+
+
 def test_kaks_dynamic_dependency_expansion() -> None:
     raw = yaml.safe_load(TOY_CONFIG.read_text(encoding="utf-8"))
     raw["kaks"]["pair_source"] = "both"

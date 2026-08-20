@@ -6,6 +6,11 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pandas as pd
+import pytest
+
+from panfamflow.workflow.scripts.promoter_distribution_utils import (
+    build_promoter_distributions,
+)
 
 SCRIPT_DIR = Path(__file__).parents[1] / "src" / "panfamflow" / "workflow" / "scripts"
 TOY_DIR = Path(__file__).parents[1] / "examples" / "toy"
@@ -182,6 +187,17 @@ def test_normalize_canonical_portable_backend_does_not_call_agat(
     assert "portable_gff3" in Path(fake.log.agat_stdout).read_text(encoding="utf-8")
 
 
+def test_normalize_rule_uses_backend_specific_conda_environment() -> None:
+    rule = (SCRIPT_DIR.parent / "rules" / "normalize.smk").read_text(encoding="utf-8")
+    portable_environment = (SCRIPT_DIR.parent / "envs" / "normalize_portable.yaml").read_text(
+        encoding="utf-8"
+    )
+    assert 'if CANONICAL_BACKEND == "agat"' in rule
+    assert '"../envs/normalize_portable.yaml"' in rule
+    assert "agat" not in portable_environment.lower()
+    assert "gffread" in portable_environment.lower()
+
+
 def test_promoter_rule_passes_stable_id_separator() -> None:
     rule = (
         Path(__file__).parents[1] / "src" / "panfamflow" / "workflow" / "rules" / "promoter.smk"
@@ -229,9 +245,18 @@ def test_pan_family_parser(tmp_path: Path) -> None:
         unassigned_members=str(tmp_path / "unassigned.tsv"),
         rarefaction=str(tmp_path / "rarefaction.tsv"),
         rarefaction_summary=str(tmp_path / "rarefaction_summary.tsv"),
+        class_summary=str(tmp_path / "class_summary.tsv"),
+        species_class_summary=str(tmp_path / "species_class_summary.tsv"),
+        subfamily_class_summary=str(tmp_path / "subfamily_class_summary.tsv"),
         xlsx=str(tmp_path / "pan_family.xlsx"),
         class_plot_pdf=str(tmp_path / "classes.pdf"),
         class_plot_png=str(tmp_path / "classes.png"),
+        dual_denominator_plot_pdf=str(tmp_path / "dual.pdf"),
+        dual_denominator_plot_png=str(tmp_path / "dual.png"),
+        species_class_plot_pdf=str(tmp_path / "species_classes.pdf"),
+        species_class_plot_png=str(tmp_path / "species_classes.png"),
+        subfamily_class_plot_pdf=str(tmp_path / "subfamily_classes.pdf"),
+        subfamily_class_plot_png=str(tmp_path / "subfamily_classes.png"),
         rarefaction_plot_pdf=str(tmp_path / "rarefaction.pdf"),
         rarefaction_plot_png=str(tmp_path / "rarefaction.png"),
     )
@@ -288,9 +313,18 @@ def test_pan_family_parser_falls_back_to_public_orthogroups_in_auto_mode(
         unassigned_members=str(tmp_path / "unassigned.tsv"),
         rarefaction=str(tmp_path / "rarefaction.tsv"),
         rarefaction_summary=str(tmp_path / "rarefaction_summary.tsv"),
+        class_summary=str(tmp_path / "class_summary.tsv"),
+        species_class_summary=str(tmp_path / "species_class_summary.tsv"),
+        subfamily_class_summary=str(tmp_path / "subfamily_class_summary.tsv"),
         xlsx=str(tmp_path / "pan_family.xlsx"),
         class_plot_pdf=str(tmp_path / "classes.pdf"),
         class_plot_png=str(tmp_path / "classes.png"),
+        dual_denominator_plot_pdf=str(tmp_path / "dual.pdf"),
+        dual_denominator_plot_png=str(tmp_path / "dual.png"),
+        species_class_plot_pdf=str(tmp_path / "species_classes.pdf"),
+        species_class_plot_png=str(tmp_path / "species_classes.png"),
+        subfamily_class_plot_pdf=str(tmp_path / "subfamily_classes.pdf"),
+        subfamily_class_plot_png=str(tmp_path / "subfamily_classes.png"),
         rarefaction_plot_pdf=str(tmp_path / "rarefaction.pdf"),
         rarefaction_plot_png=str(tmp_path / "rarefaction.png"),
     )
@@ -470,13 +504,244 @@ def test_promoter_rule_declares_all_script_outputs_and_separator() -> None:
         "elements",
         "summary",
         "per_gene",
+        "distributions",
+        "distribution_qc",
         "xlsx",
         "class_plot_pdf",
         "class_plot_png",
         "top_plot_pdf",
         "top_plot_png",
+        "species_subfamily_plot_pdf",
+        "species_subfamily_plot_png",
+        "subfamily_plot_pdf",
+        "subfamily_plot_png",
+        "species_plot_pdf",
+        "species_plot_png",
+        "group_plot_pdf",
+        "group_plot_png",
     ):
         assert f"snakemake.output.{key}" in script
         assert f"{key}=" in rule
     assert "separator=SEPARATOR" in rule
     assert "promoter_elements_per_gene.tsv" in rule
+
+
+def test_gene_structure_and_duplication_rules_declare_statistical_outputs() -> None:
+    gene_rule = (SCRIPT_DIR.parent / "rules" / "gene_structure.smk").read_text(encoding="utf-8")
+    gene_script = (SCRIPT_DIR / "extract_gene_structure.py").read_text(encoding="utf-8")
+    duplication_rule = (SCRIPT_DIR.parent / "rules" / "duplication.smk").read_text(encoding="utf-8")
+    duplication_script = (SCRIPT_DIR / "run_duplication.py").read_text(encoding="utf-8")
+
+    for key in (
+        "global_tests",
+        "pairwise_tests",
+        "statistics_qc",
+        "comparison_plot_pdf",
+        "comparison_plot_png",
+    ):
+        assert f"{key}=" in gene_rule
+        assert f"snakemake.output.{key}" in gene_script
+    for key in (
+        "structure_global_tests",
+        "structure_pairwise_tests",
+        "structure_statistics_qc",
+        "structure_plot_pdf",
+        "structure_plot_png",
+    ):
+        assert f"{key}=" in duplication_rule
+        assert f"snakemake.output.{key}" in duplication_script
+    assert 'gene_structure=MODULE_TARGETS["gene_structure"]' in duplication_rule
+
+
+def test_template_stratified_outputs_are_declared_by_rules_and_scripts() -> None:
+    rules_dir = SCRIPT_DIR.parent / "rules"
+    contracts = {
+        "family": (
+            "family_distribution.tsv",
+            "family_distribution.pdf",
+        ),
+        "pan_family": (
+            "pan_family_class_summary.tsv",
+            "pan_family_species_class_summary.tsv",
+            "pan_family_subfamily_class_summary.tsv",
+            "pan_family_class_dual_denominator.pdf",
+        ),
+        "duplication": (
+            "duplication_stratified_summary.tsv",
+            "duplication_stratified_distributions.pdf",
+        ),
+        "kaks": (
+            "kaks_stratified_summary.tsv",
+            "kaks_stratified_distributions.pdf",
+        ),
+        "promoter": ("promoter_group_subfamily_zscore_heatmap.pdf",),
+    }
+    script_names = {
+        "family": "combine_family_evidence.py",
+        "pan_family": "parse_pan_family.py",
+        "duplication": "run_duplication.py",
+        "kaks": "run_kaks.py",
+        "promoter": "parse_promoter_elements.py",
+    }
+    for module, expected_paths in contracts.items():
+        rule = (rules_dir / f"{module}.smk").read_text(encoding="utf-8")
+        script = (SCRIPT_DIR / script_names[module]).read_text(encoding="utf-8")
+        for expected_path in expected_paths:
+            assert expected_path in rule
+        assert "stratified_summary_utils" in script or module == "promoter"
+    assert "GROUP_SUBFAMILY" in (SCRIPT_DIR / "parse_promoter_elements.py").read_text(
+        encoding="utf-8"
+    )
+
+
+def test_promoter_distributions_complete_zero_grid_and_auditable_denominators() -> None:
+    coordinates = pd.DataFrame(
+        {
+            "stable_id": ["A1", "A2", "A3", "B1", "B2"],
+            "species_id": ["SpA", "SpA", "SpA", "SpB", "SpB"],
+            "gene_id": ["A1", "A2", "A3", "B1", "B2"],
+            "promoter_length": [1000, 1000, 1000, 1000, 1000],
+            "promoter_qc": ["PASS"] * 5,
+        }
+    )
+    members = pd.DataFrame(
+        {
+            "stable_id": ["A1", "A2", "A3", "B1", "B2"],
+            "species_id": ["SpA", "SpA", "SpA", "SpB", "SpB"],
+            "gene_id": ["A1", "A2", "A3", "B1", "B2"],
+            "subfamily": ["S1", "S2", pd.NA, "S1", "S2"],
+            "group": ["G1", "G1", pd.NA, "G2", "G2"],
+        }
+    )
+    elements = pd.DataFrame(
+        {
+            "stable_id": [
+                "A1",
+                "A1",
+                "A2",
+                "A3",
+                "B1",
+                "B2",
+                "B2",
+                "A1",
+                "A2",
+                "A3",
+                "B1",
+                "B2",
+            ],
+            "element": [
+                "E1",
+                "E1",
+                "E2",
+                "E1",
+                "E1",
+                "E2",
+                "E2",
+                "E3",
+                "E3",
+                "E3",
+                "E3",
+                "E3",
+            ],
+        }
+    )
+
+    distributions, qc = build_promoter_distributions(elements, coordinates, members)
+
+    assert set(distributions["aggregation_level"]) == {
+        "SPECIES_SUBFAMILY",
+        "SUBFAMILY",
+        "SPECIES",
+        "GROUP",
+        "GROUP_SUBFAMILY",
+    }
+    cell = distributions.loc[
+        (distributions["aggregation_level"] == "SPECIES_SUBFAMILY")
+        & (distributions["species_id"] == "SpA")
+        & (distributions["subfamily"] == "S1")
+        & (distributions["element"] == "E2")
+    ].iloc[0]
+    assert cell["motif_hit_count"] == 0
+    assert cell["genes_with_hit"] == 0
+    assert cell["n_genes"] == 1
+    assert cell["total_promoter_bp"] == 1000
+    assert cell["hits_per_gene"] == 0.0
+    assert cell["hits_per_kb"] == 0.0
+
+    species_a_e1 = distributions.loc[
+        (distributions["aggregation_level"] == "SPECIES")
+        & (distributions["species_id"] == "SpA")
+        & (distributions["element"] == "E1")
+    ].iloc[0]
+    assert species_a_e1["motif_hit_count"] == 3
+    assert species_a_e1["n_genes"] == 3
+    assert species_a_e1["hits_per_kb"] == 1.0
+
+    qc_by_level = qc.set_index("aggregation_level")
+    assert qc_by_level.loc["SPECIES", "excluded_genes_missing_annotation"] == 0
+    assert qc_by_level.loc["SUBFAMILY", "excluded_genes_missing_annotation"] == 1
+    assert qc_by_level.loc["GROUP", "excluded_genes_missing_annotation"] == 1
+    assert qc_by_level.loc["SPECIES_SUBFAMILY", "excluded_genes_missing_annotation"] == 1
+    assert qc_by_level.loc["GROUP_SUBFAMILY", "excluded_genes_missing_annotation"] == 1
+
+    interaction = distributions.loc[
+        (distributions["aggregation_level"] == "GROUP_SUBFAMILY")
+        & (distributions["group"] == "G1")
+        & (distributions["subfamily"] == "S1")
+        & (distributions["element"] == "E2")
+    ].iloc[0]
+    assert interaction["motif_hit_count"] == 0
+    assert interaction["n_genes"] == 1
+
+
+def test_promoter_distribution_zscores_freeze_axis_and_edge_states() -> None:
+    coordinates = pd.DataFrame(
+        {
+            "stable_id": ["A1", "B1"],
+            "species_id": ["SpA", "SpB"],
+            "gene_id": ["A1", "B1"],
+            "promoter_length": [1000, 2000],
+            "promoter_qc": ["PASS", "PASS"],
+        }
+    )
+    members = pd.DataFrame(
+        {
+            "stable_id": ["A1", "B1"],
+            "species_id": ["SpA", "SpB"],
+            "gene_id": ["A1", "B1"],
+            "subfamily": ["S1", "S1"],
+            "group": ["Only", "Only"],
+        }
+    )
+    elements = pd.DataFrame(
+        {
+            "stable_id": ["A1", "A1", "B1", "A1", "B1"],
+            "element": ["E1", "E1", "E1", "E2", "E2"],
+        }
+    )
+
+    distributions, _ = build_promoter_distributions(elements, coordinates, members)
+    species_e1 = distributions.loc[
+        (distributions["aggregation_level"] == "SPECIES") & (distributions["element"] == "E1")
+    ].set_index("species_id")
+    assert species_e1.loc["SpA", "zscore_motif_hit_count"] == pytest.approx(1.0)
+    assert species_e1.loc["SpB", "zscore_motif_hit_count"] == pytest.approx(-1.0)
+    assert set(species_e1["raw_zscore_status"]) == {"PASS"}
+    assert species_e1.loc["SpA", "zscore_hits_per_kb"] == pytest.approx(1.0)
+    assert species_e1.loc["SpB", "zscore_hits_per_kb"] == pytest.approx(-1.0)
+    assert set(species_e1["rate_zscore_status"]) == {"PASS"}
+    assert set(species_e1["zscore_axis"]) == {"PER_ELEMENT_ACROSS_CELLS"}
+    assert set(species_e1["zscore_ddof"]) == {0}
+
+    species_e2 = distributions.loc[
+        (distributions["aggregation_level"] == "SPECIES") & (distributions["element"] == "E2")
+    ]
+    assert set(species_e2["raw_zscore_status"]) == {"ZERO_VARIANCE"}
+    assert set(species_e2["zscore_motif_hit_count"]) == {0.0}
+    assert set(species_e2["rate_zscore_status"]) == {"PASS"}
+
+    one_group = distributions.loc[
+        (distributions["aggregation_level"] == "GROUP") & (distributions["element"] == "E1")
+    ]
+    assert set(one_group["raw_zscore_status"]) == {"INSUFFICIENT_CELLS"}
+    assert one_group["zscore_motif_hit_count"].isna().all()

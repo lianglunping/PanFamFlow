@@ -17,7 +17,7 @@
 - Pages 构建和内部链接检查通过；
 - 6 个教程矩阵/审计附件与源文件逐字节一致；
 - 教程 HTML 为 378,700 bytes，构建后 SHA256 为 `459ea2852f2e9cb8883c54b28625f766f3ba97b4bfa3628917e4be04fbb2831a`；
-- 51 项状态与权威能力矩阵逐行一致，章节汇总为 11 `IMPLEMENTED`、29 `CONDITIONALLY_AVAILABLE`、2 `EXTERNAL_IMPORT`、9 `NOT_SUPPORTED`；
+- 58 项状态与权威能力矩阵逐行一致，章节汇总为 21 `IMPLEMENTED`、29 `CONDITIONALLY_AVAILABLE`、2 `EXTERNAL_IMPORT`、6 `NOT_SUPPORTED`；
 - 无已停用自定义域名、旧 result-pointer 文件名或 toy 待回填占位。
 
 ## 浏览器验收状态

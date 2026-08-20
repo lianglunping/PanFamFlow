@@ -8,8 +8,11 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
+from stratified_summary_utils import build_family_distribution
 from workflow_utils import (
     iter_fasta_records,
     read_delimited_table,
@@ -326,9 +329,56 @@ members = members[
 if rejected.empty:
     rejected = members.iloc[0:0].copy()
 
+distribution = build_family_distribution(members, species_ids=list(snakemake.params.species_ids))
 save_table(members, snakemake.output.members)
 save_table(rejected, snakemake.output.rejected)
-save_workbook({"members": members, "rejected": rejected}, snakemake.output.xlsx)
+save_table(distribution, snakemake.output.distribution)
+save_workbook(
+    {"members": members, "rejected": rejected, "species_subfamily": distribution},
+    snakemake.output.xlsx,
+)
+
+count_matrix = distribution.pivot(
+    index="species_id", columns="subfamily", values="gene_count"
+).sort_index()
+fraction_matrix = distribution.pivot(
+    index="species_id", columns="subfamily", values="within_species_fraction"
+).reindex(index=count_matrix.index, columns=count_matrix.columns)
+fig, axes = plt.subplots(
+    1,
+    2,
+    figsize=(
+        max(9.0, 0.7 * len(count_matrix.columns) + 6.0),
+        max(4.8, 0.4 * len(count_matrix) + 2.5),
+    ),
+)
+for axis, matrix, title, colorbar_label in (
+    (axes[0], count_matrix, "Target-family gene counts", "Gene count"),
+    (axes[1], fraction_matrix, "Within-species proportions", "Fraction"),
+):
+    image = axis.imshow(matrix.to_numpy(dtype=float, na_value=np.nan), aspect="auto", cmap="YlGnBu")
+    axis.set_xticks(range(len(matrix.columns)), matrix.columns.astype(str), rotation=45, ha="right")
+    axis.set_yticks(range(len(matrix.index)), matrix.index.astype(str))
+    axis.set_xlabel("Subfamily")
+    axis.set_ylabel("Species or accession")
+    axis.set_title(title)
+    fig.colorbar(image, ax=axis, pad=0.02).set_label(colorbar_label)
+    for spine in axis.spines.values():
+        spine.set_visible(False)
+fig.text(
+    0.01,
+    0.01,
+    "Zero means no annotated target-family member in the frozen member set; it is not validated gene loss.",
+    fontsize=8,
+)
+fig.tight_layout(rect=(0, 0.04, 1, 1))
+fig.savefig(snakemake.output.distribution_plot_pdf, facecolor="white")
+fig.savefig(
+    snakemake.output.distribution_plot_png,
+    dpi=int(snakemake.params.png_dpi),
+    facecolor="white",
+)
+plt.close(fig)
 write_fasta(
     OrderedDict((stable_id, proteins[stable_id]) for stable_id in sorted(selected_ids)),
     snakemake.output.proteins,

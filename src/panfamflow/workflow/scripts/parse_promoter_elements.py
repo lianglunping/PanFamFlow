@@ -6,7 +6,9 @@ sys.path.insert(0, str(_ScriptPath(snakemake.scriptdir)))
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
+from promoter_distribution_utils import build_promoter_distributions
 from workflow_utils import read_delimited_table, resolve_column, save_table, save_workbook
 
 backend = str(snakemake.params.backend)
@@ -134,11 +136,44 @@ per_gene = (
     .rename("element_count")
     .reset_index()
 )
+members = pd.read_csv(snakemake.input.members, sep="\t")
+distributions, distribution_qc = build_promoter_distributions(elements, coordinates, members)
 save_table(elements, snakemake.output.elements)
 save_table(summary, snakemake.output.summary)
 save_table(per_gene, snakemake.output.per_gene)
+save_table(distributions, snakemake.output.distributions)
+save_table(distribution_qc, snakemake.output.distribution_qc)
+
+
+def distribution_matrix(aggregation_level: str, value: str) -> pd.DataFrame:
+    subset = distributions.loc[distributions["aggregation_level"] == aggregation_level]
+    if subset.empty:
+        return pd.DataFrame()
+    return subset.pivot(index="cell_id", columns="element", values=value).sort_index()
+
+
+workbook_tables = {
+    "hits": elements,
+    "element_summary": summary,
+    "per_gene_class": per_gene,
+    "distributions": distributions,
+    "distribution_qc": distribution_qc,
+}
+for sheet_prefix, aggregation_level in (
+    ("sp_subfamily", "SPECIES_SUBFAMILY"),
+    ("subfamily", "SUBFAMILY"),
+    ("species", "SPECIES"),
+    ("group", "GROUP"),
+    ("group_subfamily", "GROUP_SUBFAMILY"),
+):
+    workbook_tables[f"{sheet_prefix}_raw"] = distribution_matrix(
+        aggregation_level, "motif_hit_count"
+    )
+    workbook_tables[f"{sheet_prefix}_z_per_kb"] = distribution_matrix(
+        aggregation_level, "zscore_hits_per_kb"
+    )
 save_workbook(
-    {"hits": elements, "element_summary": summary, "per_gene_class": per_gene},
+    workbook_tables,
     snakemake.output.xlsx,
 )
 
@@ -165,3 +200,103 @@ fig.tight_layout()
 fig.savefig(snakemake.output.top_plot_pdf)
 fig.savefig(snakemake.output.top_plot_png, dpi=int(snakemake.params.png_dpi))
 plt.close(fig)
+
+
+def save_distribution_heatmap(
+    aggregation_level: str,
+    title: str,
+    pdf_path: str,
+    png_path: str,
+) -> None:
+    subset = distributions.loc[distributions["aggregation_level"] == aggregation_level].copy()
+    if subset.empty:
+        fig, axis = plt.subplots(figsize=(7.2, 4.8))
+        axis.text(0.5, 0.5, "No eligible promoter-element cells", ha="center", va="center")
+        axis.set_axis_off()
+    else:
+        top_elements = (
+            subset.groupby("element", sort=False)["motif_hit_count"]
+            .sum()
+            .sort_values(ascending=False, kind="stable")
+            .head(int(snakemake.params.top_n_elements))
+            .index
+        )
+        matrix = (
+            subset.loc[subset["element"].isin(top_elements)]
+            .pivot(index="cell_id", columns="element", values="zscore_hits_per_kb")
+            .reindex(columns=top_elements)
+            .sort_index()
+        )
+        matrix.index = [
+            " | ".join(part.split("=", 1)[-1] for part in str(cell_id).split("|"))
+            for cell_id in matrix.index
+        ]
+        width = max(7.2, 0.55 * len(matrix.columns) + 3.2)
+        height = max(4.8, 0.38 * len(matrix.index) + 2.4)
+        fig, axis = plt.subplots(figsize=(width, height))
+        numeric = matrix.to_numpy(dtype=float, na_value=np.nan)
+        finite = numeric[np.isfinite(numeric)]
+        limit = max(1.0, float(np.max(np.abs(finite))) if finite.size else 1.0)
+        palette = plt.get_cmap("PuOr_r").copy()
+        palette.set_bad("#eeeeee")
+        image = axis.imshow(
+            np.ma.masked_invalid(numeric),
+            aspect="auto",
+            interpolation="nearest",
+            cmap=palette,
+            vmin=-limit,
+            vmax=limit,
+        )
+        axis.set_xticks(
+            range(len(matrix.columns)), matrix.columns.astype(str), rotation=45, ha="right"
+        )
+        axis.set_yticks(range(len(matrix.index)), matrix.index.astype(str))
+        axis.set_xlabel("Cis-element")
+        axis.set_ylabel("Aggregation cell")
+        colorbar = fig.colorbar(image, ax=axis, pad=0.02)
+        colorbar.set_label("z-score of hits per kb")
+        for spine in axis.spines.values():
+            spine.set_visible(False)
+    axis.set_title(title)
+    fig.text(
+        0.01,
+        0.01,
+        "Population z-score (ddof=0) across cells; gray=missing denominator; use raw/rate/n tables for interpretation.",
+        fontsize=8,
+    )
+    fig.tight_layout(rect=(0, 0.035, 1, 1))
+    fig.savefig(pdf_path, facecolor="white")
+    fig.savefig(png_path, dpi=int(snakemake.params.png_dpi), facecolor="white")
+    plt.close(fig)
+
+
+save_distribution_heatmap(
+    "SPECIES_SUBFAMILY",
+    "Species x subfamily promoter-element profile",
+    snakemake.output.species_subfamily_plot_pdf,
+    snakemake.output.species_subfamily_plot_png,
+)
+save_distribution_heatmap(
+    "SUBFAMILY",
+    "Subfamily promoter-element profile",
+    snakemake.output.subfamily_plot_pdf,
+    snakemake.output.subfamily_plot_png,
+)
+save_distribution_heatmap(
+    "SPECIES",
+    "Species promoter-element profile",
+    snakemake.output.species_plot_pdf,
+    snakemake.output.species_plot_png,
+)
+save_distribution_heatmap(
+    "GROUP",
+    "Group promoter-element profile",
+    snakemake.output.group_plot_pdf,
+    snakemake.output.group_plot_png,
+)
+save_distribution_heatmap(
+    "GROUP_SUBFAMILY",
+    "Group x subfamily promoter-element profile",
+    snakemake.output.group_subfamily_plot_pdf,
+    snakemake.output.group_subfamily_plot_png,
+)

@@ -6,7 +6,25 @@ rule gene_structure_metrics:
     output:
         metrics=MODULE_TARGETS["gene_structure"],
         summary=join_path(RESULTS, "04_gene_structure", "gene_structure_summary.tsv"),
+        global_tests=join_path(RESULTS, "04_gene_structure", "gene_structure_global_tests.tsv"),
+        pairwise_tests=join_path(RESULTS, "04_gene_structure", "gene_structure_pairwise_tests.tsv"),
+        statistics_qc=join_path(RESULTS, "04_gene_structure", "gene_structure_statistics_qc.tsv"),
         xlsx=join_path(RESULTS, "04_gene_structure", "gene_structure.xlsx"),
+        comparison_plot_pdf=join_path(RESULTS, "04_gene_structure", "gene_structure_group_comparisons.pdf"),
+        comparison_plot_png=join_path(RESULTS, "04_gene_structure", "gene_structure_group_comparisons.png"),
+    params:
+        metrics=config.get("gene_structure", {}).get("metrics", [
+            "gene_length",
+            "protein_length",
+            "cds_length",
+            "exon_count",
+            "intron_count",
+            "total_intron_length",
+        ]),
+        min_group_units=config.get("gene_structure", {}).get("min_group_units", 2),
+        alpha=config.get("gene_structure", {}).get("alpha", 0.05),
+        seed=SEED,
+        png_dpi=PNG_DPI,
     conda:
         "../envs/analysis.yaml"
     script:

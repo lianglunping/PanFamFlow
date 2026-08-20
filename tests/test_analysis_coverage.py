@@ -18,7 +18,7 @@ ALLOWED_STATES = {
 
 
 def expected_source_ids() -> list[str]:
-    ranges = ((4, 3), (5, 6), (6, 8), (7, 3), (8, 6), (9, 6), (10, 14), (11, 5))
+    ranges = ((4, 4), (5, 6), (6, 8), (7, 3), (8, 6), (9, 9), (10, 15), (11, 7))
     return [f"{chapter}.{item}" for chapter, count in ranges for item in range(1, count + 1)]
 
 
@@ -27,10 +27,10 @@ def read_coverage() -> list[dict[str, str]]:
         return list(csv.DictReader(stream, delimiter="\t"))
 
 
-def test_coverage_table_has_exact_51_source_items_and_audited_states() -> None:
+def test_coverage_table_has_exact_58_source_items_and_audited_states() -> None:
     rows = read_coverage()
     assert [row["source_id"] for row in rows] == expected_source_ids()
-    assert len({row["source_id"] for row in rows}) == 51
+    assert len({row["source_id"] for row in rows}) == 58
     assert set(rows[0]) == {
         "source_id",
         "source_title",
@@ -42,15 +42,15 @@ def test_coverage_table_has_exact_51_source_items_and_audited_states() -> None:
     }
     assert {row["state"] for row in rows} <= ALLOWED_STATES
     assert Counter(row["state"] for row in rows) == {
-        "IMPLEMENTED": 11,
+        "IMPLEMENTED": 21,
         "CONDITIONALLY_AVAILABLE": 29,
         "EXTERNAL_IMPORT": 2,
-        "NOT_SUPPORTED": 9,
+        "NOT_SUPPORTED": 6,
     }
     assert all(row["source_title"].strip() for row in rows)
     assert all(row["evidence"].strip() for row in rows)
     assert all(row["limitation"].strip() for row in rows)
-    assert len({row["tutorial_anchor"] for row in rows}) == 51
+    assert len({row["tutorial_anchor"] for row in rows}) == 58
 
 
 def test_tutorial_has_all_analysis_anchors_states_and_teaching_dimensions() -> None:
@@ -99,9 +99,9 @@ def test_tutorial_has_all_analysis_anchors_states_and_teaching_dimensions() -> N
         assert guardrail in decoded
 
 
-def test_public_descriptions_do_not_claim_all_51_items_are_implemented() -> None:
+def test_public_descriptions_do_not_claim_all_58_items_are_implemented() -> None:
     chinese_readme = (REPO_ROOT / "README.zh-CN.md").read_text(encoding="utf-8")
     audit = (REPO_ROOT / "docs" / "ANALYSIS_COVERAGE.zh-CN.md").read_text(encoding="utf-8")
-    assert "不声称 51 项均已自动实现" in chinese_readme
+    assert "不声称 58 项均已自动实现" in chinese_readme
     assert "不包含真实 HSP 数据复算" not in audit
     assert "不重算 HSP 数据" in audit

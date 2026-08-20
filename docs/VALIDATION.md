@@ -90,7 +90,37 @@ analysis_unit = ORTHOFINDER_ORTHOGROUP
 - 紧接着的同命令复跑返回 `Nothing to be done`，完整状态表全部为 `ok / no update`；
 - 在隔离副本中删除一个规范化蛋白输出后，dry-run 正确计划重建缺失文件及其完成标记。
 
-同一工作树最终质量门为：Ruff lint 通过、Ruff format 通过、mypy strict 通过、`71 passed`、wheel/sdist 构建通过、Pages 最小站点构建和内部链接检查通过。来源 MD 与 29 页 PDF 模板中的 51 个分析条目均进入 `ANALYSIS_COVERAGE.tsv` 和中文教程；状态分布为 11 `IMPLEMENTED`、29 `CONDITIONALLY_AVAILABLE`、2 `EXTERNAL_IMPORT`、9 `NOT_SUPPORTED`。
+同一工作树最终质量门为：Ruff lint 通过、Ruff format 通过、mypy strict 通过、`71 passed`、wheel/sdist 构建通过、Pages 最小站点构建和内部链接检查通过。来源 MD 与 29 页 PDF 模板中的 51 个分析条目均进入 `ANALYSIS_COVERAGE.tsv` 和中文教程；该次基线状态分布为 11 `IMPLEMENTED`、29 `CONDITIONALLY_AVAILABLE`、2 `EXTERNAL_IMPORT`、9 `NOT_SUPPORTED`。后续启动子多维分布批次的当前状态见下节与权威覆盖表。
+
+## 启动子多维分布与标准化本地验证（2026-08-20）
+
+在隔离的扩展 toy 副本中运行 `qc,normalize,family,promoter` 模块闭包，使用 4 个稳定基因、2 个物种、2 个亚家族、2 个群体和 4 种启动子元件。流程生成四个聚合层级的零值完整网格、显式分母、每基因/每 kb 命中率、逐元件总体 z-score（`ddof=0`）、QC 表、工作簿和四组 PDF/PNG 热图。
+
+隔离运行的工程证据包括：四个聚合层级 QC 均为 `PASS`；40 行完整分布网格；缺失分母、单单元和零方差使用独立状态而不伪造信号；相同代码重跑只重建受代码指纹影响的规则，最终相同输入下的规范输出保持确定性。该示例只验证计算与文件合同，不支持启动子元件显著富集、调控因果、适应性或群体历史结论。
+
+该启动子批次完成时的 51 项能力状态为 13 `IMPLEMENTED`、31 `CONDITIONALLY_AVAILABLE`、2 `EXTERNAL_IMPORT`、5 `NOT_SUPPORTED`；后续基因结构统计批次的最新口径见下一节与权威覆盖表。
+
+## 基因结构分组统计本地验证（2026-08-20）
+
+在 `temp_tests/gene-structure-statistics-20260820/` 隔离 toy 副本中运行 `qc,normalize,family,gene_structure,duplication` 依赖闭包。实际 Snakemake 9.25.1 运行完成 11/11 个步骤；代码变更后的定向复跑只重建 `gene_structure_metrics` 与 `duplication_classification` 两个受影响规则。
+
+新增路径以 `species_id × group` 中位数作为推断单位，执行 Kruskal-Wallis、总体显著后才执行的两侧 Mann-Whitney U、每个比较范围与指标内的 BH-FDR，并输出秩二列效应量。隔离结果包含 gene_structure 的 12 行整体检验与 12 行两两比较，以及 duplication 的 6 行整体检验与 6 行两两比较；所有统计表均写明 `analysis_unit=SPECIES_MEDIAN`。toy 的 group 和 duplication mode 每组只有 1 个物种单元，因此 P 值按设计保持缺失并标记 `INSUFFICIENT_SPECIES_REPLICATION`；subfamily 指标在物种单元间无变异，整体检验标记 `ZERO_VARIANCE`。这些状态只验证边界处理，不构成组间无差异的生物学结论。
+
+PDF/PNG 图件经人工复核：白底、无网格、物种中位数点可见，并在面板内明确显示推断暂停、低重复或无物种单元变异。对应单元、配置、规则/脚本合约和图件测试均已加入回归套件。
+
+更新后的 51 项能力状态为 13 `IMPLEMENTED`、34 `CONDITIONALLY_AVAILABLE`、2 `EXTERNAL_IMPORT`、2 `NOT_SUPPORTED`。其中 5.3、5.6 和 8.5 仍是有条件可用，而不是无条件已实现；正式结论需要完整分组、每组足够物种单元，并评估系统发育与组成混杂。
+
+## PDF/MD 模板等价性审计（2026-08-20）
+
+对 29 页 `03-泛基因家族分析-模板.pdf` 与 `comparative_genomics_gene_family_workflow_20260807.md` 进行了只读逐图核对。PDF 的 Fig01–Fig34 归并为 33 条可审计记录（Fig21–22 共用一条），结果为 3 条 `MATCHED_CORE`、20 条 `PARTIAL`、9 条 `NOT_IMPLEMENTED` 和 1 条 `EXTERNAL_REQUIRED`。原 51 项能力目录还漏掉 7 类独立模板交付：群体 Ka/Ks、亚家族×群体 Ka/Ks、核心结构域 sequence logo、pan class Ka/Ks、群体×亚家族启动子、分组织 pan class 表达、群体×亚家族表达。
+
+### 2026-08-21：模板完整性第二批
+
+原 51 项目录遗漏的 7 类独立主题已全部加入权威矩阵与教程，形成 58 项连续清单。新增 family species×subfamily、pan-family gene/HOG 双分母与 species/subfamily 分层、duplication species/subfamily/pan-class 分层、Ka/Ks subfamily/group/pan-class/mode 描述性分层，以及 promoter group×subfamily 输出。隔离最小示例真实执行后产生 21 个 PDF，新增表的唯一键、分母闭合、Mixed/Unassigned 语义和 promoter 二维网格均通过检查；同命令复跑为 `Nothing to be done`。当前能力状态为 21 `IMPLEMENTED`、29 `CONDITIONALLY_AVAILABLE`、2 `EXTERNAL_IMPORT`、6 `NOT_SUPPORTED`；模板逐图状态为 11 `MATCHED_CORE`、15 `PARTIAL`、6 `NOT_IMPLEMENTED`、1 `EXTERNAL_REQUIRED`。该运行只验证工程与语义合同，不重算或替代 HSP 科学结果。
+
+该审计证明“主题存在教程入口”不等于“模板图件、统计和交付合同已经实现”。逐图证据和修复优先级分别记录在 `TEMPLATE_FIGURE_EQUIVALENCE.tsv` 与 `TEMPLATE_EQUIVALENCE_AUDIT.zh-CN.md`，并已纳入 Pages 发布资产和回归测试。
+
+本批次最终工程质量门为：Ruff lint 通过、84 个文件格式检查通过、mypy 对 8 个源码文件检查通过、`114 passed`、wheel/sdist 构建通过、Pages 离线站点构建和内部链接检查通过。该结果只验证当前软件合同与审计材料的一致性，不改变模板尚未完整实现的结论。
 
 上述证据证明 toy 工程闭环和能力边界可审计，不替代真实水稻材料的生物学验收。正式多物种分析仍应固定目标 `N*` HOG node；不能把 toy 的 OG fallback、极短序列 Ka/Ks 或预计算 fixture 当作论文结果。
 

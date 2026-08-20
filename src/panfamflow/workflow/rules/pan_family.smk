@@ -24,6 +24,18 @@ rule pan_family_classification:
             join_path(RESULTS, "06_pan_family", "pan_family_rarefaction_summary.tsv"),
             non_empty=True,
         ),
+        class_summary=ensure(
+            join_path(RESULTS, "06_pan_family", "pan_family_class_summary.tsv"),
+            non_empty=True,
+        ),
+        species_class_summary=ensure(
+            join_path(RESULTS, "06_pan_family", "pan_family_species_class_summary.tsv"),
+            non_empty=True,
+        ),
+        subfamily_class_summary=ensure(
+            join_path(RESULTS, "06_pan_family", "pan_family_subfamily_class_summary.tsv"),
+            non_empty=True,
+        ),
         xlsx=ensure(
             join_path(RESULTS, "06_pan_family", "pan_family_results.xlsx"),
             non_empty=True,
@@ -33,6 +45,24 @@ rule pan_family_classification:
         ),
         class_plot_png=join_path(
             RESULTS, "06_pan_family", "pan_family_classification.png"
+        ),
+        dual_denominator_plot_pdf=join_path(
+            RESULTS, "06_pan_family", "pan_family_class_dual_denominator.pdf"
+        ),
+        dual_denominator_plot_png=join_path(
+            RESULTS, "06_pan_family", "pan_family_class_dual_denominator.png"
+        ),
+        species_class_plot_pdf=join_path(
+            RESULTS, "06_pan_family", "pan_family_species_class_distribution.pdf"
+        ),
+        species_class_plot_png=join_path(
+            RESULTS, "06_pan_family", "pan_family_species_class_distribution.png"
+        ),
+        subfamily_class_plot_pdf=join_path(
+            RESULTS, "06_pan_family", "pan_family_subfamily_class_distribution.pdf"
+        ),
+        subfamily_class_plot_png=join_path(
+            RESULTS, "06_pan_family", "pan_family_subfamily_class_distribution.png"
         ),
         rarefaction_plot_pdf=join_path(
             RESULTS, "06_pan_family", "pan_family_rarefaction.pdf"

@@ -16,6 +16,10 @@ def write_tutorial_assets(tutorial: Path) -> None:
     fixtures = {
         "ANALYSIS_COVERAGE.tsv": "source_id\tstate\n4.1\tIMPLEMENTED\n",
         "ANALYSIS_COVERAGE.zh-CN.md": "# coverage\n",
+        "TEMPLATE_EQUIVALENCE_AUDIT.zh-CN.md": "# template equivalence\n",
+        "TEMPLATE_FIGURE_EQUIVALENCE.tsv": (
+            "template_figure\tequivalence_status\nFig01\tMATCHED_CORE\n"
+        ),
         "TUTORIAL_CONTENT_MATRIX.tsv": "source_id\tstate\n4.1\tIMPLEMENTED\n",
         "TUTORIAL_GAP_AUDIT.zh-CN.md": "# gap audit\n",
         "TUTORIAL_REPOSITORY_INTEGRATION_QA.zh-CN.md": "# integration QA\n",

@@ -144,6 +144,19 @@ pan_family:
   rarefaction_iterations: 1000
   max_exact_combinations: 5000
 
+gene_structure:
+  metrics:
+    - gene_length
+    - protein_length
+    - cds_length
+    - exon_count
+    - intron_count
+    - total_intron_length
+  # Inferential tests use one median per species × group cell, not genes as replicates.
+  inference_unit: species_median
+  min_group_units: 2
+  alpha: 0.05
+
 chromosome:
   representative_only: false
   density_window_bp: 1000000

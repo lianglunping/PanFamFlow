@@ -66,7 +66,7 @@ def test_content_baseline_local_validation_and_pages_compatibility_are_explicit(
     text, _ = parse()
     assert "教程内容基线" in text
     assert PRO_CONTENT_BASELINE[:12] in text
-    assert "本地验证日期 2026-08-19" in text
+    assert "本地验证日期 2026-08-21" in text
     assert "修复尚未提交" not in text
     assert 'href="../README.zh-CN.md"' in text
     assert 'href="../README.md"' in text

@@ -12,6 +12,12 @@ from typing import Any
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from stratified_summary_utils import (
+    PAN_CLASS_ORDER,
+    build_pan_family_summaries,
+    nonzero_composition,
+    numeric_pivot,
+)
 from workflow_utils import resolve_column, save_table, save_workbook, split_multi_value
 
 # PanFamFlow analyses target-family members in a multi-genome context.  This
@@ -236,12 +242,24 @@ summary = rarefaction.groupby("n_species", as_index=False).agg(
     core_q025=("core_family_hog_count", lambda values: values.quantile(0.025)),
     core_q975=("core_family_hog_count", lambda values: values.quantile(0.975)),
 )
+pan_summaries = build_pan_family_summaries(
+    classification,
+    membership,
+    family_members,
+    species_ids=species_ids,
+)
+class_summary = pan_summaries["class_summary"]
+species_class_summary = pan_summaries["species_class_summary"]
+subfamily_class_summary = pan_summaries["subfamily_class_summary"]
 
 save_table(classification, snakemake.output.classification)
 save_table(membership, snakemake.output.membership)
 save_table(presence, snakemake.output.presence)
 save_table(rarefaction, snakemake.output.rarefaction)
 save_table(summary, snakemake.output.rarefaction_summary)
+save_table(class_summary, snakemake.output.class_summary)
+save_table(species_class_summary, snakemake.output.species_class_summary)
+save_table(subfamily_class_summary, snakemake.output.subfamily_class_summary)
 save_workbook(
     {
         "pan_family_classification": classification,
@@ -250,11 +268,14 @@ save_workbook(
         "unassigned_members": unassigned,
         "rarefaction_iterations": rarefaction,
         "rarefaction_summary": summary,
+        "class_summary": class_summary,
+        "species_class_summary": species_class_summary,
+        "subfamily_class_summary": subfamily_class_summary,
     },
     snakemake.output.xlsx,
 )
 
-class_order = ["Core", "Soft-core", "Shell", "Cloud"]
+class_order = PAN_CLASS_ORDER
 class_counts = classification["pan_family_class"].value_counts().reindex(class_order, fill_value=0)
 colors = {"Core": "#D55E00", "Soft-core": "#E69F00", "Shell": "#009E73", "Cloud": "#56B4E9"}
 fig, axis = plt.subplots(figsize=(6.4, 4.8))
@@ -268,6 +289,115 @@ fig.tight_layout()
 fig.savefig(snakemake.output.class_plot_pdf)
 fig.savefig(snakemake.output.class_plot_png, dpi=int(snakemake.params.png_dpi))
 plt.close(fig)
+
+fig, axes = plt.subplots(1, 2, figsize=(9.2, 4.8))
+for axis, counting_unit in zip(axes, ("HOG", "GENE"), strict=True):
+    subset = (
+        class_summary.loc[class_summary["counting_unit"] == counting_unit]
+        .set_index("pan_family_class")
+        .reindex(class_order)
+    )
+    labels, values = nonzero_composition(
+        subset.reset_index(),
+        label_column="pan_family_class",
+    )
+    if not values:
+        axis.text(0.5, 0.5, "No assigned units", ha="center", va="center")
+        axis.set_axis_off()
+    else:
+        denominator = sum(values)
+        axis.pie(
+            values,
+            labels=[
+                f"{label}\n{value} ({value / denominator:.1%})"
+                for label, value in zip(labels, values, strict=True)
+            ],
+            colors=[colors[label] for label in labels],
+            startangle=90,
+            wedgeprops={"width": 0.45, "edgecolor": "white"},
+        )
+    axis.set_title(f"{counting_unit} denominator")
+fig.suptitle("Target-family pan-class composition")
+fig.tight_layout()
+fig.savefig(snakemake.output.dual_denominator_plot_pdf, facecolor="white")
+fig.savefig(
+    snakemake.output.dual_denominator_plot_png,
+    dpi=int(snakemake.params.png_dpi),
+    facecolor="white",
+)
+plt.close(fig)
+
+
+def save_class_distribution(
+    table: pd.DataFrame,
+    index_column: str,
+    title: str,
+    pdf_path: str,
+    png_path: str,
+) -> None:
+    count_matrix = numeric_pivot(
+        table,
+        index=index_column,
+        columns="pan_family_class",
+        values="gene_count",
+        column_order=class_order,
+        fill_value=0.0,
+    )
+    fraction_matrix = numeric_pivot(
+        table,
+        index=index_column,
+        columns="pan_family_class",
+        values="gene_fraction",
+        column_order=class_order,
+        fill_value=0.0,
+    ).reindex(index=count_matrix.index)
+    fig, axes = plt.subplots(
+        1,
+        2,
+        figsize=(max(10.0, 0.45 * len(count_matrix) + 6.5), 5.2),
+    )
+    count_matrix.plot(
+        kind="bar",
+        stacked=True,
+        color=[colors[label] for label in class_order],
+        ax=axes[0],
+        legend=False,
+    )
+    fraction_matrix.plot(
+        kind="bar",
+        stacked=True,
+        color=[colors[label] for label in class_order],
+        ax=axes[1],
+    )
+    axes[0].set_ylabel("Number of target-family genes")
+    axes[1].set_ylabel("Within-stratum gene fraction")
+    axes[1].set_ylim(0, 1)
+    for axis in axes:
+        axis.set_xlabel(index_column.replace("_", " ").title())
+        axis.tick_params(axis="x", rotation=45)
+        axis.spines[["top", "right"]].set_visible(False)
+    axes[1].legend(frameon=False, title="Pan class", bbox_to_anchor=(1.02, 1), loc="upper left")
+    fig.suptitle(title)
+    fig.tight_layout()
+    fig.savefig(pdf_path, facecolor="white")
+    fig.savefig(png_path, dpi=int(snakemake.params.png_dpi), facecolor="white")
+    plt.close(fig)
+
+
+save_class_distribution(
+    species_class_summary,
+    "species_id",
+    "Pan-class distribution by species or accession",
+    snakemake.output.species_class_plot_pdf,
+    snakemake.output.species_class_plot_png,
+)
+save_class_distribution(
+    subfamily_class_summary,
+    "subfamily",
+    "Pan-class distribution by subfamily",
+    snakemake.output.subfamily_class_plot_pdf,
+    snakemake.output.subfamily_class_plot_png,
+)
 
 fig, axis = plt.subplots(figsize=(6.4, 4.8))
 axis.plot(summary["n_species"], summary["pan_mean"], marker="o", label="Pan-family groups")

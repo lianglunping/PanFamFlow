@@ -1,3 +1,10 @@
+NORMALIZE_ENV = (
+    "../envs/normalize.yaml"
+    if CANONICAL_BACKEND == "agat"
+    else "../envs/normalize_portable.yaml"
+)
+
+
 rule normalize_species:
     input:
         genome=lambda wildcards: species_field(wildcards, "genome"),
@@ -24,7 +31,7 @@ rule normalize_species:
         gffread_stdout=join_path(LOGS, "01_normalized", "{species}.gffread.stdout.log"),
         gffread_stderr=join_path(LOGS, "01_normalized", "{species}.gffread.stderr.log"),
     conda:
-        "../envs/normalize.yaml"
+        NORMALIZE_ENV
     script:
         "../scripts/normalize_canonical.py"
 
