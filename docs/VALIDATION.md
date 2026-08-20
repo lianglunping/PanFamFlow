@@ -63,6 +63,37 @@ PYTHONPATH=src pytest -q
 
 Ruff、mypy、wheel/sdist 和 benchmark CLI smoke test 由新分支长期 CI 在精确提交上复核。
 
+## v0.1.2-alpha 本地全模块实跑（2026-08-19）
+
+在 macOS arm64 主机上，以 Snakemake 9.25.1、OrthoFinder 3.1.5 和规则级 Conda 环境对扩展 toy 数据执行了完整模块闭包：
+
+```text
+qc, normalize, family, phylogeny, gene_structure, orthology,
+pan_family, chromosome, duplication, kaks, promoter, expression, report
+```
+
+该次运行不是 dry-run。规范化后的 4 个目标家族成员形成 2 个跨物种 Orthogroup；OrthoFinder 3 在双物种 toy 场景没有发布 `N*.tsv` HOG 表，因此 `pan_family` 按设计采用公开 `Orthogroups/Orthogroups.tsv`，并在结果中写明：
+
+```text
+orthology_group_type = ORTHOGROUP
+hog_node_status = AUTO_ORTHOGROUP_FALLBACK
+analysis_unit = ORTHOFINDER_ORTHOGROUP
+```
+
+实跑产物级验收结果：
+
+- 6 条输入审计记录全部 `PASS`；
+- 4 个 family member 均唯一，全部且仅一次进入 2 个 Core Orthogroup，无 unassigned member；
+- chromosome、duplication、promoter、expression 和 master table 均覆盖 4 个成员；
+- 2 个 Ka/Ks pair 均通过脚本 QC；数值仅为工程 fixture，不作生物学解释；
+- report 记录全部 13 个模块，80 条 manifest 文件的 SHA256 全部与磁盘内容一致；
+- 紧接着的同命令复跑返回 `Nothing to be done`，完整状态表全部为 `ok / no update`；
+- 在隔离副本中删除一个规范化蛋白输出后，dry-run 正确计划重建缺失文件及其完成标记。
+
+同一工作树最终质量门为：Ruff lint 通过、Ruff format 通过、mypy strict 通过、`71 passed`、wheel/sdist 构建通过、Pages 最小站点构建和内部链接检查通过。来源 MD 与 29 页 PDF 模板中的 51 个分析条目均进入 `ANALYSIS_COVERAGE.tsv` 和中文教程；状态分布为 11 `IMPLEMENTED`、29 `CONDITIONALLY_AVAILABLE`、2 `EXTERNAL_IMPORT`、9 `NOT_SUPPORTED`。
+
+上述证据证明 toy 工程闭环和能力边界可审计，不替代真实水稻材料的生物学验收。正式多物种分析仍应固定目标 `N*` HOG node；不能把 toy 的 OG fallback、极短序列 Ka/Ks 或预计算 fixture 当作论文结果。
+
 ## 研究范围验证
 
 标准配置固定为：

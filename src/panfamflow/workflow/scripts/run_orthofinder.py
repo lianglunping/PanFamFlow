@@ -22,7 +22,7 @@ proteomes = [Path(path) for path in snakemake.input.proteomes]
 if len(species_ids) != len(proteomes):
     raise ValueError("species_ids and proteome paths have different lengths")
 
-executable, version = executable_version(["orthofinder"], ["--version"])
+executable, version = executable_version(["orthofinder"], ["--version"], timeout=180)
 signature_payload = {
     "species": [
         {
@@ -42,7 +42,7 @@ signature = hashlib.sha256(
     json.dumps(signature_payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
 ).hexdigest()
 
-work_dir = Path(snakemake.params.work_dir)
+work_dir = Path(snakemake.params.work_dir).resolve()
 run_root = work_dir / "runs" / signature[:16]
 input_dir = run_root / "proteomes"
 result_dir = run_root / "results"
@@ -84,12 +84,15 @@ if actual_result_dir is None:
             "-X",
         ]
     else:
-        if result_dir.exists() and any(result_dir.iterdir()):
-            timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-            failed_dir = run_root / "failed" / timestamp
-            failed_dir.parent.mkdir(parents=True, exist_ok=True)
-            shutil.move(str(result_dir), failed_dir)
-        result_dir.mkdir(parents=True, exist_ok=True)
+        if result_dir.exists():
+            if any(result_dir.iterdir()):
+                timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+                failed_dir = run_root / "failed" / timestamp
+                failed_dir.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(result_dir), failed_dir)
+            else:
+                result_dir.rmdir()
+        result_dir.parent.mkdir(parents=True, exist_ok=True)
         command = [
             executable,
             "-f",

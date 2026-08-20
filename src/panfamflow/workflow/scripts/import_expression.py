@@ -6,10 +6,10 @@ sys.path.insert(0, str(_ScriptPath(snakemake.scriptdir)))
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from workflow_utils import resolve_column, save_table, save_workbook
+from workflow_utils import read_delimited_table, resolve_column, save_table, save_workbook
 
 members = pd.read_csv(snakemake.input.members, sep="\t")
-source = pd.read_csv(snakemake.input.matrix, sep=None, engine="python")
+source = read_delimited_table(snakemake.input.matrix)
 separator = str(snakemake.params.separator)
 
 stable_column = resolve_column(source, ["stable_id", "protein_id"], required=False)
@@ -53,6 +53,10 @@ if not sample_columns:
     raise ValueError("Expression matrix contains no sample columns.")
 for column in sample_columns:
     source[column] = pd.to_numeric(source[column], errors="raise")
+observed_values = source[sample_columns].to_numpy(dtype=float)
+invalid_values = np.isinf(observed_values) | (observed_values < 0)
+if invalid_values.any():
+    raise ValueError("Imported expression values must be finite and non-negative when present")
 if source["stable_id"].duplicated().any():
     duplicates = source.loc[source["stable_id"].duplicated(), "stable_id"].astype(str).tolist()
     raise ValueError(f"Expression matrix has duplicate stable IDs: {duplicates[:10]}")
@@ -64,15 +68,24 @@ matrix = source.loc[
 matrix = members[["stable_id", "species_id", "gene_id", "subfamily"]].merge(
     matrix, on="stable_id", how="left", validate="one_to_one"
 )
-missing_rows = matrix[sample_columns].isna().all(axis=1)
-matrix["expression_data_status"] = np.where(missing_rows, "MISSING", "AVAILABLE")
+available_counts = matrix[sample_columns].notna().sum(axis=1)
+matrix["expression_data_status"] = np.select(
+    [available_counts.eq(0), available_counts.lt(len(sample_columns))],
+    ["MISSING", "PARTIAL_MISSING"],
+    default="AVAILABLE",
+)
 long = matrix.melt(
     id_vars=["stable_id", "species_id", "gene_id", "subfamily", "expression_data_status"],
     value_vars=sample_columns,
     var_name="sample_id",
     value_name="expression_value",
 )
-long["detected"] = long["expression_value"] >= float(snakemake.params.min_tpm_detected)
+observed = long["expression_value"].notna()
+long["measurement_status"] = np.where(observed, "OBSERVED", "MISSING_IN_INPUT")
+long["detected"] = pd.Series(pd.NA, index=long.index, dtype="boolean")
+long.loc[observed, "detected"] = (
+    long.loc[observed, "expression_value"] >= float(snakemake.params.min_tpm_detected)
+).astype(bool)
 summary = long.groupby(["stable_id", "species_id", "gene_id"], as_index=False).agg(
     samples_available=("expression_value", "count"),
     expression_detected_samples=("detected", "sum"),
@@ -80,6 +93,7 @@ summary = long.groupby(["stable_id", "species_id", "gene_id"], as_index=False).a
     median_expression=("expression_value", "median"),
     max_expression=("expression_value", "max"),
 )
+summary["expression_detected_samples"] = summary["expression_detected_samples"].astype("Int64")
 save_table(matrix, snakemake.output.matrix)
 save_table(long, snakemake.output.long)
 save_table(summary, snakemake.output.summary)
@@ -88,13 +102,34 @@ save_workbook({"matrix": matrix, "long": long, "summary": summary}, snakemake.ou
 values = matrix[sample_columns].astype(float).to_numpy()
 transformed = np.log2(values + 1.0)
 if str(snakemake.params.heatmap_transform) == "log2_tpm1_zscore":
-    means = np.nanmean(transformed, axis=1, keepdims=True)
-    standard_deviations = np.nanstd(transformed, axis=1, keepdims=True)
-    standard_deviations[standard_deviations == 0] = 1.0
-    transformed = (transformed - means) / standard_deviations
+    valid = np.isfinite(transformed)
+    counts = valid.sum(axis=1, keepdims=True)
+    means = np.divide(
+        np.nansum(transformed, axis=1, keepdims=True),
+        counts,
+        out=np.zeros((transformed.shape[0], 1), dtype=float),
+        where=counts > 0,
+    )
+    centered = transformed - means
+    variance = np.divide(
+        np.nansum(centered**2, axis=1, keepdims=True),
+        counts,
+        out=np.zeros((transformed.shape[0], 1), dtype=float),
+        where=counts > 0,
+    )
+    standard_deviations = np.sqrt(variance)
+    standard_deviations[(standard_deviations == 0) | ~np.isfinite(standard_deviations)] = 1.0
+    transformed = centered / standard_deviations
+    transformed[~valid] = np.nan
 fig_height = max(4.8, min(18.0, 0.18 * max(1, matrix.shape[0])))
 fig, axis = plt.subplots(figsize=(max(7.0, 0.35 * len(sample_columns)), fig_height))
-image = axis.imshow(transformed, aspect="auto", interpolation="nearest", cmap="viridis")
+cmap = plt.get_cmap("viridis").with_extremes(bad="#d9d9d9")
+image = axis.imshow(
+    np.ma.masked_invalid(transformed),
+    aspect="auto",
+    interpolation="nearest",
+    cmap=cmap,
+)
 axis.set_xticks(range(len(sample_columns)), sample_columns, rotation=45, ha="right")
 if matrix.shape[0] <= 80:
     axis.set_yticks(range(matrix.shape[0]), matrix["stable_id"].astype(str), fontsize=6)

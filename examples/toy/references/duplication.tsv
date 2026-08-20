@@ -1,3 +1,5 @@
 stable_id	duplication_mode	partner_stable_id
-SpA__GeneA1	Singleton
+SpA__GeneA1	Tandem	SpA__GeneA2
+SpA__GeneA2	Tandem	SpA__GeneA1
 SpB__GeneB1	Singleton
+SpB__GeneB2	Singleton

@@ -91,6 +91,7 @@ qc:
 
 canonical_transcript:
   method: longest_cds
+  backend: agat
   sequence_source: gffread
   stable_id_separator: "__"
 

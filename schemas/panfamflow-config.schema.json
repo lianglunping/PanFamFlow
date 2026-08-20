@@ -109,6 +109,15 @@
           "title": "Method",
           "type": "string"
         },
+        "backend": {
+          "default": "agat",
+          "enum": [
+            "agat",
+            "portable_gff3"
+          ],
+          "title": "Backend",
+          "type": "string"
+        },
         "sequence_source": {
           "const": "gffread",
           "default": "gffread",

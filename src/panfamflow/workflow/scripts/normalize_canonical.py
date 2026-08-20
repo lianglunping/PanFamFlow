@@ -8,17 +8,23 @@ from pathlib import Path
 
 import pandas as pd
 from workflow_utils import (
+    commit_partial,
     copy_atomic,
+    ensure_nonempty,
     first_parent,
     iter_gff,
     materialize_uncompressed,
+    partial_path,
     read_fasta,
     run_command,
     save_table,
+    select_longest_cds_gff3,
     write_fasta,
+    write_text_atomic,
 )
 
 species = str(snakemake.params.species)
+backend = str(snakemake.params.backend)
 separator = str(snakemake.params.separator)
 work_dir = Path(snakemake.params.work_dir)
 work_dir.mkdir(parents=True, exist_ok=True)
@@ -29,33 +35,64 @@ raw_proteins = work_dir / "proteins.raw.fa"
 staged_gff = materialize_uncompressed(snakemake.input.gff3, work_dir / "input.annotation.gff3")
 staged_genome = materialize_uncompressed(snakemake.input.genome, work_dir / "input.genome.fa")
 
-run_command(
-    [
-        "agat_sp_keep_longest_isoform.pl",
-        "--gff",
-        str(staged_gff),
-        "--output",
-        str(raw_gff),
-    ],
-    stdout_path=snakemake.log.agat_stdout,
-    stderr_path=snakemake.log.agat_stderr,
-)
-run_command(
-    [
-        "gffread",
-        str(raw_gff),
-        "-g",
-        str(staged_genome),
-        "-w",
-        str(raw_transcripts),
-        "-x",
-        str(raw_cds),
-        "-y",
-        str(raw_proteins),
-    ],
-    stdout_path=snakemake.log.gffread_stdout,
-    stderr_path=snakemake.log.gffread_stderr,
-)
+raw_gff_temporary = partial_path(raw_gff)
+try:
+    if backend == "agat":
+        run_command(
+            [
+                "agat_sp_keep_longest_isoform.pl",
+                "--gff",
+                str(staged_gff),
+                "--output",
+                str(raw_gff_temporary),
+            ],
+            stdout_path=snakemake.log.agat_stdout,
+            stderr_path=snakemake.log.agat_stderr,
+        )
+    elif backend == "portable_gff3":
+        summary = select_longest_cds_gff3(staged_gff, raw_gff_temporary)
+        write_text_atomic(
+            "canonical_transcript.backend=portable_gff3\n"
+            + "\n".join(f"{key}={value}" for key, value in summary.items())
+            + "\n",
+            snakemake.log.agat_stdout,
+        )
+        write_text_atomic("", snakemake.log.agat_stderr)
+    else:
+        raise ValueError(f"Unsupported canonical transcript backend: {backend!r}")
+    ensure_nonempty(raw_gff_temporary)
+    commit_partial(raw_gff_temporary, raw_gff)
+except Exception:
+    raw_gff_temporary.unlink(missing_ok=True)
+    raise
+
+sequence_targets = (raw_transcripts, raw_cds, raw_proteins)
+sequence_temporaries = tuple(partial_path(path) for path in sequence_targets)
+try:
+    run_command(
+        [
+            "gffread",
+            str(raw_gff),
+            "-g",
+            str(staged_genome),
+            "-w",
+            str(sequence_temporaries[0]),
+            "-x",
+            str(sequence_temporaries[1]),
+            "-y",
+            str(sequence_temporaries[2]),
+        ],
+        stdout_path=snakemake.log.gffread_stdout,
+        stderr_path=snakemake.log.gffread_stderr,
+    )
+    for temporary in sequence_temporaries:
+        ensure_nonempty(temporary)
+    for temporary, target in zip(sequence_temporaries, sequence_targets, strict=True):
+        commit_partial(temporary, target)
+except Exception:
+    for temporary in sequence_temporaries:
+        temporary.unlink(missing_ok=True)
+    raise
 
 transcript_types = {"mrna", "transcript", "ncrna", "trna", "rrna"}
 genes: dict[str, dict[str, object]] = {}

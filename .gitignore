@@ -16,4 +16,5 @@ logs/
 /config.yaml
 .DS_Store
 .panfamflow/
+.codex/
 benchmarks/

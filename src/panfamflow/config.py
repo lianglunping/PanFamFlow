@@ -155,6 +155,7 @@ class QcSettings(StrictModel):
 
 class CanonicalTranscriptSettings(StrictModel):
     method: Literal["longest_cds"] = "longest_cds"
+    backend: Literal["agat", "portable_gff3"] = "agat"
     sequence_source: Literal["gffread"] = "gffread"
     stable_id_separator: str = "__"
 

@@ -35,6 +35,9 @@ def test_chinese_beginner_tutorial_is_self_contained() -> None:
     assert "交互式 config.yaml 片段生成器" in text
     assert "uv run panfamflow resume -c config.yaml" in text
     assert "树上 clade ≠ 自动成为 HOG" in text
+    assert "51 项不是同一种“可用”" in text
+    assert "ANALYSIS_COVERAGE.tsv" in text
+    assert "TUTORIAL_CONTENT_MATRIX.tsv" in text
 
     parser = TutorialParser()
     parser.feed(text)
@@ -48,5 +51,44 @@ def test_chinese_beginner_tutorial_is_self_contained() -> None:
         "generator",
         "troubleshooting",
         "quiz",
+        "filters",
+        "chapter-4",
+        "chapter-11",
     ):
         assert required_id in parser.ids
+    assert sum(item.startswith("analysis-") for item in parser.ids) == 51
+
+
+def test_scientific_coverage_explorer_and_mobile_navigation_controls_exist() -> None:
+    text = Path("docs/index.html").read_text(encoding="utf-8")
+    parser = TutorialParser()
+    parser.feed(text)
+
+    for control_id in (
+        "tutorialSearch",
+        "chapterFilter",
+        "stateFilter",
+        "filterSummary",
+        "noResults",
+        "clearFilters",
+        "menuToggle",
+        "themeToggle",
+    ):
+        assert control_id in parser.ids
+
+    for state in (
+        "ALL",
+        "IMPLEMENTED",
+        "CONDITIONALLY_AVAILABLE",
+        "EXTERNAL_IMPORT",
+        "NOT_SUPPORTED",
+    ):
+        if state != "ALL":
+            assert f'<option value="{state}">' in text
+
+    assert 'aria-controls="sidebar"' in text
+    assert 'aria-expanded="false"' in text
+    assert "function filter()" in text
+    assert "card.dataset.state===st" in text
+    assert "section.classList.toggle('chapter-filtered',!has)" in text
+    assert "MISSING_IN_INPUT" in text
