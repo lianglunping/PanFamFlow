@@ -1,7 +1,5 @@
 """Deterministic, auditable summaries reused by target-family modules."""
 
-from __future__ import annotations
-
 import itertools
 from collections.abc import Sequence
 from typing import Any

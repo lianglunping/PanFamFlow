@@ -1,7 +1,5 @@
 """Auditable non-parametric comparisons for target-family structure metrics."""
 
-from __future__ import annotations
-
 import math
 from collections.abc import Sequence
 from itertools import combinations
