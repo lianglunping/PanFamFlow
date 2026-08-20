@@ -22,6 +22,7 @@ REPRESENTATIVES = [record["id"] for record in SPECIES_RECORDS if record.get("rep
 SAMPLES = [record["id"] for record in config["inputs"].get("rnaseq_samples", [])]
 SAMPLE_BY_ID = {record["id"]: record for record in config["inputs"].get("rnaseq_samples", [])}
 SEPARATOR = config.get("canonical_transcript", {}).get("stable_id_separator", "__")
+CANONICAL_BACKEND = config.get("canonical_transcript", {}).get("backend", "agat")
 
 selected_override = config.get("panfamflow_selected_modules")
 if selected_override:

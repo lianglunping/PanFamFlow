@@ -12,6 +12,7 @@ import pandas as pd
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
 from workflow_utils import (
     iter_fasta_records,
+    read_delimited_table,
     resolve_column,
     save_table,
     save_workbook,
@@ -113,7 +114,7 @@ if blast_path.exists() and blast_path.stat().st_size:
 precomputed_ids: set[str] = set()
 precomputed_path = str(snakemake.params.precomputed_members or "").strip()
 if precomputed_path:
-    precomputed = pd.read_csv(precomputed_path, sep=None, engine="python")
+    precomputed = read_delimited_table(precomputed_path)
     stable_column = resolve_column(precomputed, ["stable_id", "protein_id"], required=False)
     if stable_column:
         precomputed_ids.update(precomputed[stable_column].dropna().astype(str))
@@ -182,7 +183,7 @@ cds = load_fasta_subset(snakemake.input.cds, selected_ids, "CDS")
 subfamily_by_id: dict[str, str] = {}
 subfamily_path = str(snakemake.params.subfamily_assignments or "").strip()
 if subfamily_path:
-    table = pd.read_csv(subfamily_path, sep=None, engine="python")
+    table = read_delimited_table(subfamily_path)
     stable_column = resolve_column(table, ["stable_id", "protein_id"], required=False)
     subfamily_column = resolve_column(table, ["subfamily", "clade", "ogg"])
     if stable_column:
@@ -205,7 +206,7 @@ if subfamily_path:
 def optional_annotations(path_value: str, prefix: str) -> pd.DataFrame | None:
     if not path_value:
         return None
-    table = pd.read_csv(path_value, sep=None, engine="python")
+    table = read_delimited_table(path_value)
     stable_column = resolve_column(table, ["stable_id", "protein_id"], required=False)
     if stable_column is None:
         species_column = resolve_column(table, ["species_id", "species"])

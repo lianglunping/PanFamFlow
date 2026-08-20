@@ -9,6 +9,8 @@
 
 原始文档不随代码仓库公开；本文件只记录需求摘要、实现决策和解释边界。
 
+两份来源材料的 4.1–11.5 共 51 个条目已经逐项审计。机器可读判定见 [`ANALYSIS_COVERAGE.tsv`](ANALYSIS_COVERAGE.tsv)，中文口径见 [`ANALYSIS_COVERAGE.zh-CN.md`](ANALYSIS_COVERAGE.zh-CN.md)。当前分布为 11 项 `IMPLEMENTED`、29 项 `CONDITIONALLY_AVAILABLE`、2 项 `EXTERNAL_IMPORT`、9 项 `NOT_SUPPORTED`；下表是模块级摘要，不能替代逐项状态。
+
 ## 2. 来源要求到实现的映射
 
 | 来源要求 | PanFamFlow 实现 | 状态/边界 |
@@ -26,7 +28,7 @@
 | ParaAT/KaKs_Calculator | MAFFT + PAL2NAL + KaKs_Calculator | 已实现 pairwise 路线；高 Ks 标记潜在饱和 |
 | 2 kb promoter + PlantCARE | strand-aware promoter；FIMO；PlantCARE 表格导入 | 自动 FIMO 已实现；PlantCARE 网页自动化未实现 |
 | fastp/HISAT2/StringTie | FASTQ 路线或矩阵导入 | TPM 已实现；DESeq2 contrasts 待补 |
-| 结果图表与主表 | TSV/XLSX、PDF/PNG、master table、HTML report | 数据层和代表性图已实现；模板全部组合图待补 |
+| 结果图表与主表 | TSV/XLSX、PDF/PNG、master table、HTML report | 数据层和代表性图已实现；不声称模板 51 项全部完成，逐项状态以 coverage audit 为准 |
 
 ## 3. 对综合方案文档的工程化落实
 
@@ -36,7 +38,7 @@
 
 ### 3.2 OrthoFinder HOG 与目标家族限定
 
-OrthoFinder 在 canonical proteomes 上获得 HOG 背景；`pan_family` 读取 `Phylogenetic_Hierarchical_Orthogroups/N*.tsv` 后与 `family_members.tsv` 取交集。流程不把旧式 `Orthogroups.tsv` 当作最终 HOG 结果，也不对全部 HOG 做 whole-genome 分类。OrthoFinder 调用加入 `-X`，因为 canonical protein 已经有全局唯一的物种前缀。
+OrthoFinder 在 canonical proteomes 上获得同源关系背景；`pan_family` 优先读取 `Phylogenetic_Hierarchical_Orthogroups/N*.tsv` 后与 `family_members.tsv` 取交集。在 `hog_node: auto` 且公开 HOG 表确实缺失时（OrthoFinder 3 双物种小数据集可出现），流程才使用公开 `Orthogroups/Orthogroups.tsv`，并把该结果明确标记为 `ORTHOGROUP`，绝不伪装成 HOG；显式配置 `N*` 时保持 fail-closed。两种路线均不对全部同源群做 whole-genome 分类。OrthoFinder 调用加入 `-X`，因为 canonical protein 已经有全局唯一的物种前缀。
 
 ### 3.3 模块化 QC
 
@@ -50,7 +52,7 @@ OrthoFinder 在 canonical proteomes 上获得 HOG 背景；`pan_family` 读取 `
 ### 3.4 跨物种解释边界
 
 - 染色体图按物种分面，不制造跨物种连续坐标轴。
-- 表达模块保留原始 TPM，但报告不自动给出跨物种绝对高低结论。
+- 表达模块对同物种已检测范围内的 omission 记为 0，对跨物种不适用单元保留 NA；检测比例分母只包含适用样本，报告不自动给出跨物种绝对高低结论。
 - pairwise Ka/Ks 不自动解释为正选择证据。
 - gene absence 不自动解释为真实丢失。
 

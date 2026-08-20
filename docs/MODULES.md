@@ -14,7 +14,7 @@
 
 ## `normalize`
 
-方法：AGAT `agat_sp_keep_longest_isoform.pl` + gffread。
+方法：默认使用 AGAT `agat_sp_keep_longest_isoform.pl` 选择最长 CDS 转录本，再由 gffread 提取序列。严格、结构清晰的 GFF3 也可显式选择 `portable_gff3` 后端；该后端遇到层级歧义会终止，不替代 AGAT 的注释清洗能力。
 
 输出：每物种 canonical GFF3、protein、CDS、transcript 和 `gene_transcript_map.tsv/.xlsx`。
 
@@ -52,7 +52,7 @@
 
 ## `pan_family`
 
-读取所选 OrthoFinder `Phylogenetic_Hierarchical_Orthogroups/N*.tsv`，并与 `family_members.tsv` 取交集。只处理目标家族 HOG；不提供 whole-genome 模式，也不构建泛基因组。
+优先读取所选 OrthoFinder `Phylogenetic_Hierarchical_Orthogroups/N*.tsv`，并与 `family_members.tsv` 取交集。`hog_node: auto` 下若没有公开 HOG 表（OrthoFinder 3 的双物种小数据集可出现此情况），则读取保留稳定 ID 的公开 `Orthogroups/Orthogroups.tsv`；结果明确标记 `orthology_group_type=ORTHOGROUP` 和 `AUTO_ORTHOGROUP_FALLBACK`。显式配置 `N*` 时不自动降级。流程只处理目标家族同源群；不提供 whole-genome 模式，也不构建泛基因组。
 
 输出：
 
@@ -62,7 +62,7 @@
 - `unassigned_family_members.tsv`
 - rarefaction 原始迭代、汇总和图件
 
-分类表使用 `HOG_ID` 与 `pan_family_class`，同时记录 `presence_basis` 和 `absence_validation_status`。矩阵中的 0 表示注释/HOG 层面未检出，不自动代表已验证的基因丢失。旧预发布模块名 `pangenome` 仅作为兼容别名。
+分类表为向后兼容保留 `HOG_ID` 列名，同时用 `orthology_group_type`、`orthology_source_file`、`analysis_unit` 区分 HOG 与普通 Orthogroup，并记录 `pan_family_class`、`presence_basis` 和 `absence_validation_status`。矩阵中的 0 表示注释/同源群层面未检出，不自动代表已验证的基因丢失。旧预发布模块名 `pangenome` 仅作为兼容别名。
 
 ## `chromosome`
 
@@ -105,15 +105,19 @@ backend：
 
 所有 ID 必须可映射到提取的 family promoter。
 
+规范输出包括逐命中 `promoter_elements.tsv`、逐元件汇总 `promoter_element_summary.tsv`、逐基因主类别汇总 `promoter_elements_per_gene.tsv`、工作簿、主类别计数图和 Top-N 元件图。跨亚家族、群体、HOG 或 scale 标准化分析不自动完成，逐项状态见 `ANALYSIS_COVERAGE.tsv`。
+
 ## `expression`
 
 ### `imported_matrix`
 
-导入 wide matrix，筛选 family genes，输出 wide/long/summary 和模式热图。
+导入 wide matrix，筛选 family genes，输出 wide/long/summary 和模式热图。输入中的空单元保留为 NA，在 long 表标记为 `MISSING_IN_INPUT`，不计入 detected fraction 分母；每个基因的 `expression_data_status` 为 `AVAILABLE`、`PARTIAL_MISSING` 或 `MISSING`。该路线没有 sample species metadata，因此不会把 NA 自动解释为跨物种不适用。
 
 ### `fastq_stringtie`
 
-fastp → HISAT2 → sorted BAM → StringTie `-e -A` → family TPM matrix。gene ID 映射按 sample 的 species scope 处理，允许不同物种存在相同原始 gene ID。
+fastp → HISAT2 → sorted BAM → StringTie `-e -A` → family TPM matrix。gene ID 映射按 sample 的 species scope 处理，允许不同物种存在相同原始 gene ID。同物种 abundance table 未报告的目标基因记为 `ASSAYED_ZERO`（0.0），跨物种不适用单元记为 `NOT_APPLICABLE`（NA），只有 StringTie 明确报告的单元记为 `MEASURED`。该解释以前提“abundance table 完整且上游成功”为条件。
+
+两条表达路线都只提供表达模式与汇总，不实现 DESeq2 contrasts、DEG 跨条件重叠或 abiotic/biotic stress 的统计设计。
 
 ## `report`
 

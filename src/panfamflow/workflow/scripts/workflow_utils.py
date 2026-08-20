@@ -3,16 +3,18 @@
 import gzip
 import hashlib
 import json
+import math
 import os
 import shutil
 import subprocess
 import uuid
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from pathlib import Path
-from typing import Any, TextIO
+from typing import TYPE_CHECKING, Any, TextIO
 
-import pandas as pd
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 def partial_path(path: str | Path) -> Path:
@@ -62,12 +64,47 @@ def materialize_uncompressed(source: str | Path, target: str | Path) -> Path:
     """
 
     source_path = Path(source)
+    destination = Path(target)
     if source_path.suffix.lower() != ".gz":
-        return source_path
+        if not source_path.is_file() or source_path.stat().st_size == 0:
+            raise FileNotFoundError(f"Missing or empty input: {source_path}")
+        if source_path.absolute() == destination.absolute():
+            return source_path
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        stamp_path = destination.with_name(f".{destination.name}.source.json")
+        source_stat = source_path.stat()
+        stamp = {
+            "source": str(source_path.resolve()),
+            "size_bytes": source_stat.st_size,
+            "mtime_ns": source_stat.st_mtime_ns,
+        }
+        cached = None
+        if stamp_path.is_file():
+            try:
+                cached = json.loads(stamp_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                cached = None
+        if (
+            cached == stamp
+            and destination.is_file()
+            and destination.stat().st_size > 0
+            and (not destination.is_symlink() or destination.resolve() == source_path.resolve())
+        ):
+            return destination
+        temporary = partial_path(destination)
+        try:
+            temporary.symlink_to(source_path.resolve())
+        except OSError:
+            temporary.unlink(missing_ok=True)
+            shutil.copy2(source_path, temporary)
+        commit_partial(temporary, destination)
+        for suffix in (".fai", ".gzi"):
+            destination.with_name(destination.name + suffix).unlink(missing_ok=True)
+        write_text_atomic(json.dumps(stamp, sort_keys=True) + "\n", stamp_path)
+        return destination
     if not source_path.is_file() or source_path.stat().st_size == 0:
         raise FileNotFoundError(f"Missing or empty gzip input: {source_path}")
 
-    destination = Path(target)
     destination.parent.mkdir(parents=True, exist_ok=True)
     stamp_path = destination.with_name(f".{destination.name}.source.json")
     source_stat = source_path.stat()
@@ -111,6 +148,28 @@ def open_text(path: str | Path, mode: str = "rt") -> TextIO:
     if file_path.suffix == ".gz":
         return gzip.open(file_path, mode, encoding="utf-8")  # type: ignore[return-value]
     return file_path.open(mode, encoding="utf-8")
+
+
+def read_delimited_table(path: str | Path, **kwargs: Any) -> "pd.DataFrame":
+    """Read CSV/TSV deterministically without delimiter sniffing on one-column files."""
+
+    import pandas as pd
+
+    source = Path(path)
+    suffix = source.suffix.lower()
+    if suffix == ".csv":
+        separator = ","
+    elif suffix in {".tsv", ".tab"}:
+        separator = "\t"
+    else:
+        first_data_line = ""
+        with open_text(source) as handle:
+            for raw in handle:
+                if raw.strip() and not raw.startswith("#"):
+                    first_data_line = raw
+                    break
+        separator = "\t" if "\t" in first_data_line or "," not in first_data_line else ","
+    return pd.read_csv(source, sep=separator, **kwargs)
 
 
 def sha256_file(path: str | Path, chunk_size: int = 1024 * 1024) -> str:
@@ -231,12 +290,23 @@ def iter_gff(path: str | Path) -> Iterator[dict[str, Any]]:
             if len(fields) != 9:
                 raise ValueError(f"Expected 9 GFF/GTF columns at {path}:{line_number}")
             seqid, source, feature, start, end, score, strand, phase, attributes = fields
+            if start != start.strip() or end != end.strip():
+                raise ValueError(
+                    f"Found whitespace-padded GFF/GTF coordinate at {path}:{line_number}"
+                )
+            start_value = int(start)
+            end_value = int(end)
+            if start_value < 1 or end_value < start_value:
+                raise ValueError(
+                    f"Invalid GFF/GTF coordinate interval at {path}:{line_number}: "
+                    f"{start_value}-{end_value}"
+                )
             yield {
                 "seqid": seqid,
                 "source": source,
                 "feature": feature,
-                "start": int(start),
-                "end": int(end),
+                "start": start_value,
+                "end": end_value,
                 "score": score,
                 "strand": strand,
                 "phase": phase,
@@ -245,7 +315,160 @@ def iter_gff(path: str | Path) -> Iterator[dict[str, Any]]:
             }
 
 
-def save_table(df: pd.DataFrame, tsv: str | Path, xlsx: str | Path | None = None) -> None:
+def select_longest_cds_gff3(source: str | Path, target: str | Path) -> dict[str, int]:
+    """Write one deterministic protein-coding transcript per gene from strict GFF3.
+
+    This portable selector is intentionally narrower than AGAT.  It accepts a
+    direct ``gene -> transcript -> child`` hierarchy expressed with GFF3
+    ``ID``/``Parent`` attributes and fails closed when parentage is ambiguous.
+    CDS lengths are summed after rejecting overlapping CDS segments.  Ties are
+    resolved by the lexicographically smallest transcript ID.
+    """
+
+    source_path = Path(source)
+    source_text = source_path.read_text(encoding="utf-8")
+    if any(line.strip() == "##FASTA" for line in source_text.splitlines()):
+        raise ValueError(
+            f"Portable canonical selection does not accept embedded FASTA: {source_path}"
+        )
+
+    records = list(iter_gff(source_path))
+    transcript_types = {"mrna", "transcript", "ncrna", "trna", "rrna"}
+    genes: dict[str, dict[str, Any]] = {}
+    transcripts: dict[str, tuple[str, dict[str, Any]]] = {}
+
+    for record in records:
+        feature_name = str(record["feature"]).lower()
+        attributes = record["attributes"]
+        if feature_name == "gene":
+            gene_id = attributes.get("ID")
+            if not gene_id:
+                raise ValueError(f"Portable canonical selection requires gene ID in {source_path}")
+            if gene_id in genes:
+                raise ValueError(f"Duplicate gene ID {gene_id!r} in {source_path}")
+            genes[gene_id] = record
+        elif feature_name in transcript_types:
+            transcript_id = attributes.get("ID")
+            parent_text = attributes.get("Parent")
+            if not transcript_id or not parent_text:
+                raise ValueError(
+                    "Portable canonical selection requires transcript ID and Parent "
+                    f"in {source_path}"
+                )
+            parents = [item for item in parent_text.split(",") if item]
+            if len(parents) != 1:
+                raise ValueError(
+                    f"Transcript {transcript_id!r} must have exactly one Parent in {source_path}"
+                )
+            if transcript_id in transcripts:
+                raise ValueError(f"Duplicate transcript ID {transcript_id!r} in {source_path}")
+            transcripts[transcript_id] = (parents[0], record)
+
+    for transcript_id, (gene_id, _) in transcripts.items():
+        if gene_id not in genes:
+            raise ValueError(
+                f"Transcript {transcript_id!r} references unknown gene {gene_id!r} in {source_path}"
+            )
+
+    children: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
+    for record in records:
+        feature_name = str(record["feature"]).lower()
+        if feature_name == "gene" or feature_name in transcript_types:
+            continue
+        parent_text = record["attributes"].get("Parent")
+        if not parent_text:
+            continue
+        parents = [item for item in parent_text.split(",") if item]
+        if len(parents) != 1:
+            raise ValueError(
+                f"Child feature {feature_name!r} must have exactly one Parent in {source_path}"
+            )
+        parent = parents[0]
+        if parent not in transcripts:
+            if feature_name in {"cds", "exon"}:
+                raise ValueError(
+                    f"Child feature {feature_name!r} references unknown transcript "
+                    f"{parent!r} in {source_path}"
+                )
+            continue
+        children[parent].append(record)
+
+    cds_lengths: dict[str, int] = {}
+    for transcript_id in transcripts:
+        cds_records = [
+            record
+            for record in children.get(transcript_id, [])
+            if str(record["feature"]).lower() == "cds"
+        ]
+        if not cds_records:
+            continue
+        ordered = sorted(
+            cds_records,
+            key=lambda record: (
+                str(record["seqid"]),
+                str(record["strand"]),
+                int(record["start"]),
+                int(record["end"]),
+            ),
+        )
+        previous: dict[str, Any] | None = None
+        for record in ordered:
+            if (
+                previous is not None
+                and record["seqid"] == previous["seqid"]
+                and record["strand"] == previous["strand"]
+                and int(record["start"]) <= int(previous["end"])
+            ):
+                raise ValueError(
+                    f"Overlapping CDS segments for transcript {transcript_id!r} in {source_path}"
+                )
+            previous = record
+        cds_lengths[transcript_id] = sum(
+            int(record["end"]) - int(record["start"]) + 1 for record in ordered
+        )
+
+    transcripts_by_gene: defaultdict[str, list[str]] = defaultdict(list)
+    for transcript_id, (gene_id, _) in transcripts.items():
+        if transcript_id in cds_lengths:
+            transcripts_by_gene[gene_id].append(transcript_id)
+
+    selected_by_gene: dict[str, str] = {}
+    for gene_id, candidates in transcripts_by_gene.items():
+        selected_by_gene[gene_id] = sorted(
+            candidates,
+            key=lambda transcript_id: (-cds_lengths[transcript_id], transcript_id),
+        )[0]
+    selected_transcripts = set(selected_by_gene.values())
+    selected_genes = set(selected_by_gene)
+    if not selected_transcripts:
+        raise ValueError(f"No protein-coding transcript with CDS was found in {source_path}")
+
+    comments = [line for line in source_text.splitlines() if line.startswith("#")]
+    output_lines = comments
+    for record in records:
+        feature_name = str(record["feature"]).lower()
+        attributes = record["attributes"]
+        keep = False
+        if feature_name == "gene":
+            keep = attributes.get("ID") in selected_genes
+        elif feature_name in transcript_types:
+            keep = attributes.get("ID") in selected_transcripts
+        else:
+            keep = attributes.get("Parent") in selected_transcripts
+        if keep:
+            output_lines.append(str(record["raw"]).rstrip("\n"))
+    write_text_atomic("\n".join(output_lines) + "\n", target)
+
+    return {
+        "genes_with_cds": len(selected_genes),
+        "selected_transcripts": len(selected_transcripts),
+        "skipped_genes": len(genes) - len(selected_genes),
+    }
+
+
+def save_table(df: "pd.DataFrame", tsv: str | Path, xlsx: str | Path | None = None) -> None:
+    import pandas as pd
+
     tsv_path = Path(tsv)
     tsv_path.parent.mkdir(parents=True, exist_ok=True)
     tsv_temporary = partial_path(tsv_path)
@@ -261,7 +484,9 @@ def save_table(df: pd.DataFrame, tsv: str | Path, xlsx: str | Path | None = None
         commit_partial(xlsx_temporary, xlsx_path)
 
 
-def save_workbook(tables: Mapping[str, pd.DataFrame], path: str | Path) -> None:
+def save_workbook(tables: Mapping[str, "pd.DataFrame"], path: str | Path) -> None:
+    import pandas as pd
+
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = partial_path(target)
@@ -326,7 +551,9 @@ def run_command(
         commit_partial(stdout_temporary, stdout_target)
 
 
-def executable_version(candidates: Sequence[str], arguments: Sequence[str]) -> tuple[str, str]:
+def executable_version(
+    candidates: Sequence[str], arguments: Sequence[str], *, timeout: int = 30
+) -> tuple[str, str]:
     for executable in candidates:
         try:
             completed = subprocess.run(
@@ -334,7 +561,7 @@ def executable_version(candidates: Sequence[str], arguments: Sequence[str]) -> t
                 check=False,
                 capture_output=True,
                 text=True,
-                timeout=30,
+                timeout=timeout,
             )
         except (FileNotFoundError, subprocess.TimeoutExpired):
             continue
@@ -349,7 +576,7 @@ def reverse_complement(sequence: str) -> str:
 
 
 def split_multi_value(value: Any) -> list[str]:
-    if value is None or (isinstance(value, float) and pd.isna(value)):
+    if value is None or (isinstance(value, float) and math.isnan(value)):
         return []
     text = str(value).strip()
     if not text or text.upper() == "NA":
@@ -359,7 +586,7 @@ def split_multi_value(value: Any) -> list[str]:
 
 
 def resolve_column(
-    df: pd.DataFrame, candidates: Sequence[str], required: bool = True
+    df: "pd.DataFrame", candidates: Sequence[str], required: bool = True
 ) -> str | None:
     lookup = {column.strip().lower().replace(" ", "_"): column for column in df.columns}
     for candidate in candidates:

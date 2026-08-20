@@ -411,7 +411,11 @@ def status(
         console.print(f"[bold red]Engine error:[/bold red] {error}")
         raise typer.Exit(code=2) from error
     with stack:
-        completed = execute_capture(command)
+        try:
+            completed = execute_capture(command)
+        except OSError as error:
+            console.print(f"[bold red]Launch error:[/bold red] {error}")
+            raise typer.Exit(code=127) from error
     if completed.returncode != 0:
         console.print(completed.stderr or completed.stdout)
         raise typer.Exit(code=completed.returncode)

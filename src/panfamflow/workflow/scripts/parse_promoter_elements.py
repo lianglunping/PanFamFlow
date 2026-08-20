@@ -7,7 +7,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from workflow_utils import resolve_column, save_table, save_workbook
+from workflow_utils import read_delimited_table, resolve_column, save_table, save_workbook
 
 backend = str(snakemake.params.backend)
 coordinates = pd.read_csv(snakemake.input.coordinates, sep="\t")
@@ -64,7 +64,7 @@ if backend == "fimo":
                 elements[column] = pd.NA
         elements = elements[keep]
 else:
-    source = pd.read_csv(snakemake.params.precomputed_table, sep=None, engine="python")
+    source = read_delimited_table(snakemake.params.precomputed_table)
     stable_column = resolve_column(source, ["stable_id", "sequence_id"], required=False)
     element_column = resolve_column(source, ["element", "motif_id", "cis_element"])
     if stable_column is not None:
@@ -105,7 +105,7 @@ if unknown_promoters:
 
 category_path = str(snakemake.params.category_map or "").strip()
 if category_path:
-    categories = pd.read_csv(category_path, sep=None, engine="python")
+    categories = read_delimited_table(category_path)
     motif_column = resolve_column(categories, ["element", "motif_id", "cis_element"])
     categories = categories.rename(columns={motif_column: "element"})
     elements = elements.merge(categories, on="element", how="left", validate="many_to_one")

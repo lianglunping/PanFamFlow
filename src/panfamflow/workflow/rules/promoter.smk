@@ -8,7 +8,7 @@ rule extract_family_promoters:
     input:
         members=MODULE_TARGETS["family"],
         maps=NORMALIZED_MAPS,
-        gff3=NORMALIZED_GFFS,
+        gff3s=NORMALIZED_GFFS,
         genomes=[record["genome"] for record in SPECIES_RECORDS],
     output:
         fasta=ensure(join_path(RESULTS, "10_promoter", "family_promoters.fa"), non_empty=True),
@@ -17,6 +17,7 @@ rule extract_family_promoters:
     params:
         species_ids=SPECIES,
         genome_paths=[record["genome"] for record in SPECIES_RECORDS],
+        separator=SEPARATOR,
         upstream_bp=int(config.get("promoter", {}).get("upstream_bp", 2000)),
         downstream_bp=int(config.get("promoter", {}).get("downstream_bp", 0)),
     conda:
@@ -73,14 +74,18 @@ rule parse_promoter_elements:
         optional=PROMOTER_OPTIONAL_INPUTS,
     output:
         elements=ensure(MODULE_TARGETS["promoter"], non_empty=True),
-        counts=ensure(join_path(RESULTS, "10_promoter", "promoter_element_counts.tsv"), non_empty=True),
+        summary=ensure(join_path(RESULTS, "10_promoter", "promoter_element_summary.tsv"), non_empty=True),
+        per_gene=ensure(join_path(RESULTS, "10_promoter", "promoter_elements_per_gene.tsv"), non_empty=True),
         xlsx=ensure(join_path(RESULTS, "10_promoter", "promoter_elements.xlsx"), non_empty=True),
-        plot_pdf=join_path(RESULTS, "10_promoter", "promoter_element_counts.pdf"),
-        plot_png=join_path(RESULTS, "10_promoter", "promoter_element_counts.png"),
+        class_plot_pdf=join_path(RESULTS, "10_promoter", "promoter_element_class_counts.pdf"),
+        class_plot_png=join_path(RESULTS, "10_promoter", "promoter_element_class_counts.png"),
+        top_plot_pdf=join_path(RESULTS, "10_promoter", "promoter_top_elements.pdf"),
+        top_plot_png=join_path(RESULTS, "10_promoter", "promoter_top_elements.png"),
     params:
         backend=PROMOTER_BACKEND,
         category_map=PROMOTER_CATEGORY_MAP,
         precomputed_table=PROMOTER_PRECOMPUTED,
+        separator=SEPARATOR,
         top_n_elements=int(config.get("promoter", {}).get("top_n_elements", 20)),
         png_dpi=PNG_DPI,
     conda:

@@ -13,7 +13,7 @@ run:
   jobs: 2
   engine_runner: current
   engine_env: null
-  use_conda: false
+  use_conda: true
   resume_mode: smart
   keep_going: true
   rerun_incomplete: true
@@ -62,6 +62,7 @@ qc:
     extra_args: []
 canonical_transcript:
   method: longest_cds
+  backend: portable_gff3
   sequence_source: gffread
   stable_id_separator: "__"
 family:

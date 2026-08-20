@@ -40,14 +40,14 @@ Tools such as minigraph, PGGB, Cactus, vg, PanGenome Research Toolkit or whole-g
 
 ## Why OrthoFinder still uses full proteomes
 
-Orthology inference benefits from complete canonical proteomes. OrthoFinder therefore runs on configured canonical proteomes, but the `pan_family` parser intersects the selected HOG table with `family_members.tsv`. HOGs without a target-family gene are discarded and never enter pan-family classification.
+Orthology inference benefits from complete canonical proteomes. OrthoFinder therefore runs on configured canonical proteomes, but the `pan_family` parser intersects the selected public HOG table with `family_members.tsv`. In `auto` mode only, if OrthoFinder does not publish a HOG table, the parser uses the public `Orthogroups.tsv` and labels the different grouping level explicitly. Groups without a target-family gene are discarded and never enter pan-family classification.
 
 The output records:
 
 ```text
 analysis_scope = TARGET_GENE_FAMILY_ONLY
-analysis_unit = ORTHOFINDER_HOG
-presence_basis = ANNOTATION_AND_HOG_MEMBERSHIP
+analysis_unit = ORTHOFINDER_HOG | ORTHOFINDER_ORTHOGROUP
+presence_basis = ANNOTATION_AND_HOG_MEMBERSHIP | ANNOTATION_AND_ORTHOGROUP_MEMBERSHIP
 absence_validation_status = NOT_GENOME_RESCUED
 ```
 
@@ -56,8 +56,9 @@ This prevents whole-genome HOG classification from being confused with target pa
 ## Terminology
 
 - **Family subfamily/clade**: a group defined from target-family phylogeny, reference genes and domain architecture.
+- **Orthogroup (OG)**: genes descended from one ancestral gene at the last common ancestor of the analysed species; it is not automatically a HOG at a user-selected internal node.
 - **HOG**: an OrthoFinder hierarchical orthogroup at a specified species-tree node.
-- **Pan-family class**: occupancy class of a target-family HOG in the configured genomes/accessions.
+- **Pan-family class**: occupancy class of a target-family HOG, or an explicitly labelled OG fallback, in the configured genomes/accessions.
 - **Pan-locus**: a syntenically homologous locus across accessions. PanFamFlow v0.1.1 does not yet infer pan-loci automatically.
 - **Validated absence**: absence supported by genome-level rescue checks and assessable sequence context. A zero in the current HOG matrix is not automatically validated absence.
 

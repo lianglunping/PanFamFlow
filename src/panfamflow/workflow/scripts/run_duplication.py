@@ -12,6 +12,7 @@ from typing import Any
 import matplotlib.pyplot as plt
 import pandas as pd
 from workflow_utils import (
+    read_delimited_table,
     read_fasta,
     resolve_column,
     run_command,
@@ -29,7 +30,7 @@ mode_rows: list[dict[str, Any]] = []
 pair_rows: list[dict[str, Any]] = []
 
 if backend == "precomputed":
-    table = pd.read_csv(snakemake.params.precomputed_table, sep=None, engine="python")
+    table = read_delimited_table(snakemake.params.precomputed_table)
     stable_column = resolve_column(table, ["stable_id", "protein_id"], required=False)
     if stable_column is None:
         species_column = resolve_column(table, ["species_id", "species"])

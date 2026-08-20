@@ -17,6 +17,15 @@ FORBIDDEN_TOP_LEVEL = {
     "results",
     "work",
 }
+TUTORIAL_ASSETS = (
+    "ANALYSIS_COVERAGE.tsv",
+    "ANALYSIS_COVERAGE.zh-CN.md",
+    "TUTORIAL_CONTENT_MATRIX.tsv",
+    "TUTORIAL_GAP_AUDIT.zh-CN.md",
+    "TUTORIAL_REPOSITORY_INTEGRATION_QA.zh-CN.md",
+    "TUTORIAL_TERMINOLOGY.tsv",
+    "TUTORIAL_TOY_EVIDENCE_SCHEMA.tsv",
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -45,6 +54,10 @@ def build(source: Path, tutorial: Path, output: Path) -> None:
         raise FileNotFoundError(source / "index.html")
     if not tutorial.is_file():
         raise FileNotFoundError(tutorial)
+    tutorial_assets = [tutorial.parent / name for name in TUTORIAL_ASSETS]
+    for asset in tutorial_assets:
+        if not asset.is_file():
+            raise FileNotFoundError(asset)
 
     if output.exists():
         shutil.rmtree(output)
@@ -67,6 +80,8 @@ def build(source: Path, tutorial: Path, output: Path) -> None:
     for source_link, published_link in tutorial_links.items():
         tutorial_html = tutorial_html.replace(f'href="{source_link}"', f'href="{published_link}"')
     tutorial_target.write_text(tutorial_html, encoding="utf-8")
+    for asset in tutorial_assets:
+        shutil.copy2(asset, tutorial_target.parent / asset.name)
     (output / ".nojekyll").touch()
 
     published = {item.name for item in output.iterdir()}

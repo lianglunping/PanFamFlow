@@ -15,6 +15,7 @@ rule normalize_species:
         species_name=lambda wildcards: SPECIES_BY_ID[wildcards.species]["name"],
         group=lambda wildcards: SPECIES_BY_ID[wildcards.species].get("group"),
         subfamily=lambda wildcards: SPECIES_BY_ID[wildcards.species].get("subfamily"),
+        backend=CANONICAL_BACKEND,
         separator=SEPARATOR,
         work_dir=lambda wildcards: join_path(WORK, "01_normalized", wildcards.species),
     log:

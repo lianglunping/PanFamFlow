@@ -6,6 +6,13 @@ on:
     paths:
       - "site/**"
       - "docs/index.html"
+      - "docs/ANALYSIS_COVERAGE.tsv"
+      - "docs/ANALYSIS_COVERAGE.zh-CN.md"
+      - "docs/TUTORIAL_CONTENT_MATRIX.tsv"
+      - "docs/TUTORIAL_GAP_AUDIT.zh-CN.md"
+      - "docs/TUTORIAL_REPOSITORY_INTEGRATION_QA.zh-CN.md"
+      - "docs/TUTORIAL_TERMINOLOGY.tsv"
+      - "docs/TUTORIAL_TOY_EVIDENCE_SCHEMA.tsv"
       - "scripts/build_pages_site.py"
       - "scripts/check_site_links.py"
       - "README.md"

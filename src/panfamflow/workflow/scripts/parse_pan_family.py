@@ -21,25 +21,38 @@ result_dir = Path(Path(snakemake.input.result_dir).read_text(encoding="utf-8").s
 hog_dir = result_dir / "Phylogenetic_Hierarchical_Orthogroups"
 if not hog_dir.is_dir():
     candidates = list(result_dir.rglob("Phylogenetic_Hierarchical_Orthogroups"))
-    if not candidates:
-        raise FileNotFoundError(f"Cannot find HOG directory under {result_dir}")
-    hog_dir = candidates[0]
+    if candidates:
+        hog_dir = candidates[0]
 
 requested_node = str(snakemake.params.hog_node)
 if requested_node.lower() == "auto":
     candidate = hog_dir / "N0.tsv"
     if not candidate.is_file():
         files = sorted(hog_dir.glob("N*.tsv"), key=lambda path: int(path.stem[1:]))
-        if not files:
-            raise FileNotFoundError(f"No N*.tsv HOG table found under {hog_dir}")
-        candidate = files[0]
-    node_status = "AUTO_DISCOVERY"
+        if files:
+            candidate = files[0]
+    if candidate.is_file():
+        node_status = "AUTO_DISCOVERY"
+        group_type = "HOG"
+        analysis_unit = "ORTHOFINDER_HOG"
+    else:
+        candidate = result_dir / "Orthogroups" / "Orthogroups.tsv"
+        if not candidate.is_file():
+            raise FileNotFoundError(
+                "No public N*.tsv HOG table or Orthogroups/Orthogroups.tsv was found "
+                f"under {result_dir}"
+            )
+        node_status = "AUTO_ORTHOGROUP_FALLBACK"
+        group_type = "ORTHOGROUP"
+        analysis_unit = "ORTHOFINDER_ORTHOGROUP"
 else:
     node_name = requested_node if requested_node.endswith(".tsv") else f"{requested_node}.tsv"
     candidate = hog_dir / node_name
     if not candidate.is_file():
         raise FileNotFoundError(f"Configured HOG node table does not exist: {candidate}")
     node_status = "CONFIGURED"
+    group_type = "HOG"
+    analysis_unit = "ORTHOFINDER_HOG"
 
 hog = pd.read_csv(candidate, sep="\t", dtype=str).fillna("")
 species_ids = [str(item) for item in snakemake.params.species_ids]
@@ -112,9 +125,11 @@ for row in hog.to_dict(orient="records"):
             "HOG_ID": hog_id,
             "hog_node": candidate.stem,
             "hog_node_status": node_status,
+            "orthology_group_type": group_type,
+            "orthology_source_file": str(candidate.relative_to(result_dir)),
             "analysis_scope": "TARGET_GENE_FAMILY_ONLY",
-            "analysis_unit": "ORTHOFINDER_HOG",
-            "presence_basis": "ANNOTATION_AND_HOG_MEMBERSHIP",
+            "analysis_unit": analysis_unit,
+            "presence_basis": f"ANNOTATION_AND_{group_type}_MEMBERSHIP",
             "absence_validation_status": "NOT_GENOME_RESCUED",
             "interpretation_flag": "ANNOTATION_OCCUPANCY_NOT_VALIDATED_GENE_LOSS",
             "species_occupancy": occupancy,
@@ -140,6 +155,7 @@ for row in hog.to_dict(orient="records"):
             membership_rows.append(
                 {
                     "HOG_ID": hog_id,
+                    "orthology_group_type": group_type,
                     "species_id": stable_species,
                     "gene_id": gene_id,
                     "stable_id": stable_id,
@@ -164,6 +180,8 @@ unassigned = family_members.loc[~family_members["stable_id"].isin(assigned_famil
 unassigned["reason"] = "NOT_FOUND_IN_SELECTED_HOG_NODE"
 unassigned["selected_hog_node"] = candidate.stem
 unassigned["hog_node_status"] = node_status
+unassigned["orthology_group_type"] = group_type
+unassigned["orthology_source_file"] = str(candidate.relative_to(result_dir))
 save_table(unassigned, snakemake.output.unassigned_members)
 
 matrix = presence.set_index("HOG_ID")[species_ids].astype(bool)
@@ -244,7 +262,7 @@ axis.bar(
     class_counts.index, class_counts.values, color=[colors[item] for item in class_counts.index]
 )
 axis.set_xlabel("Pan-family class")
-axis.set_ylabel("Number of target-family HOGs")
+axis.set_ylabel("Number of target-family orthology groups")
 axis.spines[["top", "right"]].set_visible(False)
 fig.tight_layout()
 fig.savefig(snakemake.output.class_plot_pdf)
@@ -252,12 +270,12 @@ fig.savefig(snakemake.output.class_plot_png, dpi=int(snakemake.params.png_dpi))
 plt.close(fig)
 
 fig, axis = plt.subplots(figsize=(6.4, 4.8))
-axis.plot(summary["n_species"], summary["pan_mean"], marker="o", label="Pan-family HOGs")
+axis.plot(summary["n_species"], summary["pan_mean"], marker="o", label="Pan-family groups")
 axis.fill_between(summary["n_species"], summary["pan_q025"], summary["pan_q975"], alpha=0.2)
-axis.plot(summary["n_species"], summary["core_mean"], marker="o", label="Core family HOGs")
+axis.plot(summary["n_species"], summary["core_mean"], marker="o", label="Core family groups")
 axis.fill_between(summary["n_species"], summary["core_q025"], summary["core_q975"], alpha=0.2)
 axis.set_xlabel("Number of species or accessions")
-axis.set_ylabel("Number of target-family HOGs")
+axis.set_ylabel("Number of target-family orthology groups")
 axis.legend(frameon=False)
 axis.spines[["top", "right"]].set_visible(False)
 fig.tight_layout()

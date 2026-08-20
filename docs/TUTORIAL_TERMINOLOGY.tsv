@@ -1,0 +1,70 @@
+term_id	chinese_primary	technical_form	category	plain_definition_zh	panfamflow_usage_zh	is_internal	first_use_anchor
+canonical-transcript	代表性转录本	canonical transcript	STANDARD_TERM	从一个基因的多个转录本中选出一条用于统一比较，避免同一基因被重复计算。	PanFamFlow 默认按最长编码序列选择，并在所有后续模块中沿用同一条记录。	FALSE	glossary
+candidate-gene	候选基因	candidate gene	STANDARD_TERM	初步搜索命中的基因，还没有经过全部证据和质量门槛确认。	家族鉴定会保留候选及拒绝原因，避免只看到最终成员而无法追溯。	FALSE	glossary
+domain-architecture	结构域组成与顺序	domain architecture	STANDARD_TERM	蛋白中各结构域的种类、排列顺序和覆盖范围。	用于区分完整家族成员与仅有局部相似性的候选。	FALSE	glossary
+clade	树上分支	clade	STANDARD_TERM	系统树上由共同祖先连接的一组叶节点。	可帮助描述家族分化，但不能自动当作 OrthoFinder 的正交组。	FALSE	glossary
+subfamily	亚家族	subfamily	STANDARD_TERM	在目标基因家族内部，根据参考基因、树形关系和结构域等证据定义的分类。	可作为绘图和统计分组；PanFamFlow 不会凭树色自动完成可靠命名。	FALSE	glossary
+gene-tree	基因树	gene tree	STANDARD_TERM	由某个基因家族的序列推断出的关系树。	用于查看家族成员关系；不等于物种分化关系。	FALSE	glossary
+species-tree	物种树	species tree	STANDARD_TERM	描述物种之间共同祖先和分化顺序的系统关系树。	正式冻结 HOG 节点时需要参考，不能用单一家族基因树代替。	FALSE	glossary
+hog	分层正交组	HOG, hierarchical orthogroup	STANDARD_TERM	OrthoFinder 在指定物种树节点上定义的同源基因组。	目标家族占有分类以冻结节点的 HOG 为主要分析单位。	FALSE	glossary
+og	正交组	OG, Orthogroup	STANDARD_TERM	在给定物种集合中归入同一祖先基因来源的一组基因。	自动回退得到的 OG 不能冒充已经冻结节点的 HOG。	FALSE	glossary
+pan-locus	跨材料共线位点	pan-locus	STANDARD_TERM	在多个材料中由共线关系支持的同源基因位点。	当前 PanFamFlow 不自动推断该层级，不能由 HOG 直接替代。	FALSE	glossary
+occupancy	样本占有率	occupancy	STANDARD_TERM	某个正交组在冻结样本集中被检出的样本数或比例。	用于划分核心型、近核心型、壳层型和稀有型。	FALSE	glossary
+pan-classes	核心型 / 近核心型 / 壳层型 / 稀有型	Core / Soft-core / Shell / Cloud	STANDARD_TERM	按样本占有率把目标家族正交组分成四类。	分类只对当前样本集、阈值和 HOG 节点有效，不能脱离这些条件复用。	FALSE	chapter-6
+annotation-absence	注释层面未检出	annotation absence	STANDARD_TERM	在当前注释或正交组表中没有找到记录。	只能标记为未检出，不能直接写成基因已经丢失。	FALSE	glossary
+validated-gene-loss	经验证的基因丢失	validated gene loss	STANDARD_TERM	在可评估的基因组区域内，经序列回查和上下文证据支持的真实缺失。	PanFamFlow 当前不会仅凭占有矩阵自动给出这种结论。	FALSE	glossary
+genome-rescue	基因组回查	genome rescue	STANDARD_TERM	返回基因组序列检查是否存在漏注释、片段或可恢复基因模型。	重点未检出项需要外部完成回查，才能提高丢失结论强度。	FALSE	glossary
+rarefaction	稀疏抽样曲线	rarefaction	STANDARD_TERM	逐步增加样本数，观察可检出总集合和共同集合如何变化。	PanFamFlow 对目标家族正交组计算，并固定随机种子。	FALSE	analysis-6-5
+duplication-mode	复制来源类型	duplication mode	STANDARD_TERM	根据基因位置、相似关系和外群等信息划分的复制来源。	流程可记录 WGD、串联、邻近、转座、分散和单拷贝等类型。	FALSE	chapter-8
+duplication-pair	复制基因对	duplication pair	STANDARD_TERM	由复制分类或共线性证据连接、用于成对比较的一对候选基因。	可作为 Ka/Ks 的配对来源，但不等于全基因组共线块。	FALSE	chapter-8
+synteny-block	共线块	synteny block	STANDARD_TERM	由多个保持顺序的锚点支持的基因组区段。	当前物种共线性条目需要外部全基因组分析，不能用单个复制对替代。	FALSE	analysis-8-6
+ka	非同义替换率	Ka	STANDARD_TERM	估计会改变蛋白质氨基酸序列的非同义替换速率。	与 Ks 和配对质量一起报告，不能单独解释选择。	FALSE	chapter-9
+ks	同义替换率	Ks	STANDARD_TERM	估计不改变蛋白质氨基酸序列的同义替换速率。	流程保留零值和潜在饱和标记，不能把 Ks 当作无误差年代。	FALSE	chapter-9
+ka-ks	非同义/同义替换率比	Ka/Ks	STANDARD_TERM	比较非同义与同义替换速率，用于描述基因对受到的相对选择约束。	单个成对值大于 1 只能作为候选信号，需要额外模型和质量证据。	FALSE	chapter-9
+codon-alignment	密码子比对	codon alignment	STANDARD_TERM	在蛋白比对指导下对齐编码序列，保持阅读框。	是成对 Ka/Ks 计算的必要中间步骤。	FALSE	chapter-9
+promoter-window	启动子窗口	promoter window	STANDARD_TERM	以转录起始位置和链方向定义的上游或上下游序列范围。	流程记录染色体边界截断和邻近基因重叠，避免把窗口当成确定调控区。	FALSE	chapter-10
+motif-hit	基序命中	motif hit	STANDARD_TERM	序列与一个基序模型达到统计阈值的匹配。	只表示计算命中，不等于转录因子实际结合或产生调控因果。	FALSE	chapter-10
+raw-count	原始整数计数	raw count	STANDARD_TERM	RNA 测序中分配到基因的整数读段或片段数。	差异表达模型需要该类输入，不能用 TPM 代替。	FALSE	chapter-11
+tpm	每百万转录本表达量	TPM	STANDARD_TERM	同一样本内按转录本长度和文库规模归一化的相对表达量。	可用于描述性热图；不同物种之间不能直接比较绝对值。	FALSE	chapter-11
+contrast	条件比较	contrast	STANDARD_TERM	统计模型中预先指定的两个条件或效应之间的比较。	外部差异表达结果必须记录比较标识、设计和方向。	FALSE	analysis-11-3
+fdr	错误发现率	FDR	STANDARD_TERM	在多重检验中控制预期假阳性比例的方法。	统计比较需同时报告校正后的显著性，而不是只看原始 P 值。	FALSE	chapter-5
+effect-size	效应量	effect size	STANDARD_TERM	表示差异有多大的量，而不仅是是否显著。	应与样本量和校正后的 P 值共同解释。	FALSE	chapter-5
+z-score	标准化分数	z-score / Scale	STANDARD_TERM	把每个变量转换为相对均值的标准差单位，用于比较模式而非绝对量。	标准化显示必须同时保留原始计数，并说明按行还是按列计算。	FALSE	analysis-10-5
+global-summary	全条件汇总	Global	STANDARD_TERM	把多个预先定义的条件比较放在同一成员矩阵中查看重叠和方向。	当前差异表达跨条件汇总未实现，不能由表达热图替代。	FALSE	analysis-11-3
+abiotic-stress	非生物胁迫	Abiotic stress	STANDARD_TERM	盐、旱、冷、热等非生物环境造成的处理条件。	PanFamFlow 只接收带设计和统计证据的外部差异结果。	FALSE	analysis-11-4
+biotic-stress	生物胁迫	Biotic stress	STANDARD_TERM	病原、虫害等生物因素造成的处理条件。	PanFamFlow 只接收带设计和统计证据的外部差异结果。	FALSE	analysis-11-5
+panfamflow	PanFamFlow 工作流	PanFamFlow	SOFTWARE_OR_FORMAT	用于目标泛基因家族比较的可配置工作流。	从已组装基因组和匹配注释开始，不构建图泛基因组或全基因组结构变异。	FALSE	overview
+snakemake	流程调度软件	Snakemake	SOFTWARE_OR_FORMAT	根据输入、规则和依赖关系安排分析任务的软件。	负责模块依赖、断点续跑和结果失效判断。	FALSE	start
+orthofinder	正交关系推断软件	OrthoFinder	SOFTWARE_OR_FORMAT	从多个物种蛋白组推断正交组、HOG 和物种树相关结果的软件。	流程读取其公开结果目录，并要求正式分析冻结目标节点。	FALSE	chapter-6
+hmmer	隐马尔可夫模型检索软件	HMMER	SOFTWARE_OR_FORMAT	用家族结构域模型搜索候选蛋白的软件。	在家族鉴定中作为候选成员证据通道之一，并需结合阈值与结构域证据。	FALSE	chapter-4
+blastp	蛋白相似性搜索	BLASTP	SOFTWARE_OR_FORMAT	通过蛋白质序列相似性比对寻找候选同源蛋白的程序。	作为候选获取证据，不能单独证明家族身份。	FALSE	chapter-4
+mafft	多序列比对软件	MAFFT	SOFTWARE_OR_FORMAT	用于蛋白质或核酸序列多序列比对的软件。	用于家族树和成对 Ka/Ks 的前置比对。	FALSE	chapter-4
+clipkit	比对修剪软件	ClipKIT	SOFTWARE_OR_FORMAT	去除多序列比对中信息不足或缺口过多的列。	用于系统树构建前清理多序列比对中信息不足或噪声较大的位点。	FALSE	chapter-4
+iqtree	最大似然建树软件	IQ-TREE	SOFTWARE_OR_FORMAT	进行模型选择和最大似然系统树推断的软件。	用于推断目标家族最大似然基因树，并输出模型与分支支持度文件。	FALSE	chapter-4
+dupgen-finder	复制类型分类软件	DupGen_finder	SOFTWARE_OR_FORMAT	结合基因位置、相似性和外群划分基因复制来源的软件。	真实结果依赖合适外群与完整输入；示例预计算表只验证工程路径。	FALSE	chapter-8
+mcscanx-wgdi	全基因组共线性工具	MCScanX / WGDI	SOFTWARE_OR_FORMAT	利用多个有序锚点识别共线区段的工具。	当前 Circos 共线性条目需要这类外部结果。	FALSE	analysis-8-6
+kaks-calculator	成对替换率计算软件	KaKs_Calculator	SOFTWARE_OR_FORMAT	根据密码子比对估计 Ka、Ks 和 Ka/Ks。	流程为每个受约束基因对保留成功或失败记录。	FALSE	chapter-9
+fimo	基序扫描软件	FIMO	SOFTWARE_OR_FORMAT	在序列中寻找与已知基序模型匹配位置的软件。	用于扫描目标家族启动子，并保留分数和显著性字段。	FALSE	chapter-10
+deseq2	计数型差异表达软件	DESeq2	SOFTWARE_OR_FORMAT	基于原始整数计数和设计矩阵进行差异表达推断的软件。	当前教程只规定外部结果合同，不在 TPM 热图路线中自动运行。	FALSE	chapter-11
+fasta	序列文件格式	FASTA	SOFTWARE_OR_FORMAT	用标题行和序列行保存基因组、蛋白或编码序列的文本格式。	每个物种至少需要基因组 FASTA；其他序列可由注释派生。	FALSE	start
+gff3	基因注释文件格式	GFF3	SOFTWARE_OR_FORMAT	用九列记录基因、转录本和外显子等坐标关系的格式。	必须与基因组 FASTA 来自同一版本。	FALSE	start
+tsv	制表符分隔表格	TSV	SOFTWARE_OR_FORMAT	使用制表符分隔字段、适合程序读取和版本审计的纯文本表格。	多数规范结果同时提供 TSV，便于审计和再分析。	FALSE	output-reader
+xlsx	电子表格工作簿	XLSX	SOFTWARE_OR_FORMAT	便于人工浏览、筛选和批注的电子表格格式。	与 TSV 同时提供，便于人工查看；不能替代机器可审计的 TSV。	FALSE	output-reader
+pdf-png	矢量图与高分辨率位图	PDF / PNG	SOFTWARE_OR_FORMAT	PDF 适合保留矢量元素，PNG 适合网页预览。	正式图件按配置同时输出，当前页面不嵌入远程图片。	FALSE	acceptance
+yaml	配置文件格式	YAML / config.yaml	SOFTWARE_OR_FORMAT	用缩进表示层级结构、供流程读取配置参数的文本格式。	日常主要编辑入口是 config.yaml，必须先通过校验。	FALSE	config-generator
+stable-id	全流程稳定基因标识	stable_id	PANFAMFLOW_FIELD	PanFamFlow 为每个物种基因生成或规范化的唯一主键。	默认形式为物种标识与基因标识组合，用于跨表连接；这是 PanFamFlow 内部字段。	TRUE	glossary
+analysis-scope	分析范围声明	analysis_scope	PANFAMFLOW_FIELD	记录本次运行分析的对象范围，防止把目标家族分析误写成全基因组泛基因组。	规范值要求目标泛基因家族范围；这是 PanFamFlow 内部字段。	TRUE	glossary
+orthology-group-type	正交组结果类型	orthology_group_type	PANFAMFLOW_FIELD	说明当前读取的是 HOG 还是普通 Orthogroup。	用于阻止自动回退结果被误称为固定节点 HOG；这是 PanFamFlow 内部字段。	TRUE	evidence-states
+hog-node-status	正交组节点状态	hog_node_status	PANFAMFLOW_FIELD	记录节点是显式冻结、自动发现还是回退获得。	解读占有分类前必须先查看；这是 PanFamFlow 内部字段。	TRUE	evidence-states
+presence-basis	存在判定依据	presence_basis	PANFAMFLOW_FIELD	说明“存在”是依据注释和正交组成员关系，而不是基因组回查。	用于限制缺失结论强度；这是 PanFamFlow 内部字段。	TRUE	glossary
+absence-validation-status	缺失验证状态	absence_validation_status	PANFAMFLOW_FIELD	说明未检出记录是否经过基因组层面的救援检查。	当前结果通常明确标记为未进行基因组回查；这是 PanFamFlow 内部字段。	TRUE	glossary
+expression-data-status	表达单元数据状态	expression_data_status	PANFAMFLOW_FIELD	记录一个基因或表达单元是否有可用输入。	应与逐单元的缺失和不适用状态一起解释；这是 PanFamFlow 内部字段。	TRUE	glossary
+implemented-state	已实现	IMPLEMENTED	PANFAMFLOW_STATUS	表示该条目存在直接规则、执行脚本和规范输出路径。	这是教程能力矩阵的 PanFamFlow 内部机器值，不代表任意真实数据都已通过生物学验收。	TRUE	evidence-states
+conditional-state	有条件可用	CONDITIONALLY_AVAILABLE	PANFAMFLOW_STATUS	表示已有基础数据，但还缺连接、分母、统计或专用展示。	这是教程能力矩阵的 PanFamFlow 内部机器值，不能写成已经完整实现。	TRUE	evidence-states
+external-import-state	需外部分析结果	EXTERNAL_IMPORT	PANFAMFLOW_STATUS	表示该统计应在外部按完整设计完成后再导入。	这是教程能力矩阵的 PanFamFlow 内部机器值，尤其用于差异表达结果。	TRUE	evidence-states
+not-supported-state	当前未支持	NOT_SUPPORTED	PANFAMFLOW_STATUS	表示当前没有可信的完整执行路径或规范输出。	这是教程能力矩阵的 PanFamFlow 内部机器值，不得隐藏或降级措辞。	TRUE	evidence-states
+auto-orthogroup-fallback	自动回退到普通正交组	AUTO_ORTHOGROUP_FALLBACK	PANFAMFLOW_STATUS	自动模式没有公开 HOG 表时，流程使用普通 Orthogroup 的状态标记。	这是 PanFamFlow 内部状态码；正式多物种结果不得把该回退冒充冻结 HOG。	TRUE	start
+missing-in-input	输入中缺失	MISSING_IN_INPUT	PANFAMFLOW_STATUS	该表达单元按设计应适用，但输入矩阵没有给出值。	这是 PanFamFlow 内部状态码，不能自动填成零。	TRUE	filters
+not-applicable	设计上不适用	NOT_APPLICABLE	PANFAMFLOW_STATUS	样本与该物种或基因单元在设计上不存在可比关系。	这是 PanFamFlow 内部状态码，不能与缺失值混为一类。	TRUE	filters
+target-family-only	仅限目标基因家族	TARGET_GENE_FAMILY_ONLY	PANFAMFLOW_STATUS	声明输出只对配置的目标家族进行分类，不是全基因组 HOG 产品。	这是 PanFamFlow 内部固定值，用于锁定分析范围。	TRUE	glossary
+potential-saturation	可能同义替换饱和	POTENTIAL_SATURATION	PANFAMFLOW_STATUS	表示 Ks 达到配置阈值，成对估计可能失真。	这是 PanFamFlow 内部质量标记，记录风险而不是自动删除结果。	TRUE	chapter-9

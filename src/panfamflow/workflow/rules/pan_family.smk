@@ -1,6 +1,6 @@
 rule pan_family_classification:
     input:
-        result_dir=join_path(RESULTS, "05_orthology", "orthofinder.result_dir.txt"),
+        result_dir=join_path(RESULTS, "05_orthology", "orthofinder_result_dir.txt"),
         members=join_path(RESULTS, "02_family", "family_members.tsv"),
     output:
         classification=ensure(MODULE_TARGETS["pan_family"], non_empty=True),

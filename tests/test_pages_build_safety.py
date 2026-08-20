@@ -1,3 +1,4 @@
+import hashlib
 import importlib.util
 from pathlib import Path
 
@@ -11,6 +12,23 @@ SPEC.loader.exec_module(MODULE)
 build = MODULE.build
 
 
+def write_tutorial_assets(tutorial: Path) -> None:
+    fixtures = {
+        "ANALYSIS_COVERAGE.tsv": "source_id\tstate\n4.1\tIMPLEMENTED\n",
+        "ANALYSIS_COVERAGE.zh-CN.md": "# coverage\n",
+        "TUTORIAL_CONTENT_MATRIX.tsv": "source_id\tstate\n4.1\tIMPLEMENTED\n",
+        "TUTORIAL_GAP_AUDIT.zh-CN.md": "# gap audit\n",
+        "TUTORIAL_REPOSITORY_INTEGRATION_QA.zh-CN.md": "# integration QA\n",
+        "TUTORIAL_TERMINOLOGY.tsv": (
+            "term_id\tchinese_primary\ttechnical_form\tcategory\n"
+            "hog\t分层正交组\tHOG\tSTANDARD_TERM\n"
+        ),
+        "TUTORIAL_TOY_EVIDENCE_SCHEMA.tsv": "evidence_id\tstatus\nC4\tVERIFIED\n",
+    }
+    for name, content in fixtures.items():
+        (tutorial.parent / name).write_text(content, encoding="utf-8")
+
+
 @pytest.mark.parametrize("output_name", [".", "site", "site/nested", "docs"])
 def test_build_rejects_output_that_overlaps_inputs(tmp_path: Path, output_name: str) -> None:
     source = tmp_path / "site"
@@ -19,6 +37,7 @@ def test_build_rejects_output_that_overlaps_inputs(tmp_path: Path, output_name: 
     tutorial = tmp_path / "docs" / "index.html"
     tutorial.parent.mkdir()
     tutorial.write_text("tutorial", encoding="utf-8")
+    write_tutorial_assets(tutorial)
     sentinel = tmp_path / "sentinel.txt"
     sentinel.write_text("keep", encoding="utf-8")
 
@@ -35,10 +54,19 @@ def test_build_accepts_disjoint_output(tmp_path: Path) -> None:
     tutorial = tmp_path / "docs" / "index.html"
     tutorial.parent.mkdir()
     tutorial.write_text("tutorial", encoding="utf-8")
+    write_tutorial_assets(tutorial)
     output = tmp_path / "_site"
 
     build(source, tutorial, output)
 
     assert (output / "index.html").read_text(encoding="utf-8") == "home"
     assert (output / "tutorial" / "index.html").read_text(encoding="utf-8") == "tutorial"
+    for name in MODULE.TUTORIAL_ASSETS:
+        source_asset = tutorial.parent / name
+        published_asset = output / "tutorial" / name
+        assert published_asset.read_bytes() == source_asset.read_bytes()
+        digest = hashlib.sha256(source_asset.read_bytes()).hexdigest()
+        assert f"tutorial/{name}\t{source_asset.stat().st_size}\t{digest}" in (
+            output / "SITE_MANIFEST.tsv"
+        ).read_text(encoding="utf-8")
     assert (output / "SITE_MANIFEST.tsv").is_file()

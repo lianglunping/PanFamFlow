@@ -24,7 +24,7 @@ project:
 | `run` | 模块、资源、engine、profile 和 Snakemake 参数 |
 | `inputs` | 物种、RNA-seq 样本、表达矩阵与样本元数据 |
 | `qc` | SHA256 与 BUSCO |
-| `canonical_transcript` | canonical transcript 规则与稳定 ID 分隔符 |
+| `canonical_transcript` | canonical transcript 规则、后端与稳定 ID 分隔符 |
 | `family` | HMM/BLAST/预计算证据与外部注释导入 |
 | `phylogeny` | MAFFT/ClipKIT/IQ-TREE 参数 |
 | `orthofinder` | HOG node 和线程 |
@@ -87,6 +87,21 @@ inputs:
 - `outgroup` 必须引用已配置物种，且不能指向自身。
 - DupGen_finder target 必须有 outgroup。
 - BUSCO 启用时每个物种必须配置 lineage。
+
+### 5.1 Canonical transcript 后端
+
+```yaml
+canonical_transcript:
+  method: longest_cds
+  backend: agat
+  sequence_source: gffread
+  stable_id_separator: "__"
+```
+
+- `agat`（默认）：使用 `agat_sp_keep_longest_isoform.pl`，适合真实项目中来源复杂的 GFF3/GTF。实测 AGAT 1.7.0 在 macOS 会因读取 Linux `/proc` 失败而退出，因此该组合应在 Linux 容器或 Linux 计算节点运行。
+- `portable_gff3`：跨平台的严格 GFF3 后端，仅接受明确的 `gene → transcript → CDS/exon`、`ID/Parent` 层级。它按 CDS 总长度选择转录本，同长时按 transcript ID 字典序选择；多父节点、重复 ID、未知父节点、CDS 重叠和内嵌 FASTA 会直接报错。
+
+`portable_gff3` 不承担 AGAT 的注释清洗与纠错职责。真实注释若不能通过其严格校验，应修正输入或改用 Linux/AGAT，不能通过放宽校验强行继续。toy 示例为保证 macOS/Linux 都能复现，显式使用该后端。
 
 ## 6. 家族证据
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pandas as pd
 import yaml
 from pydantic import ValidationError
 
@@ -15,6 +16,72 @@ def test_toy_config_loads() -> None:
     config = load_config(TOY_CONFIG)
     assert config.project.name == "toy_gene_family"
     assert [species.id for species in config.inputs.species] == ["SpA", "SpB"]
+    assert config.canonical_transcript.backend == "portable_gff3"
+
+
+def test_toy_family_meets_configured_phylogeny_minimum() -> None:
+    config = load_config(TOY_CONFIG)
+    members = pd.read_csv(TOY_CONFIG.parent / "references" / "family_members.tsv", sep="\t")
+    assert members["stable_id"].nunique() >= config.phylogeny.min_sequences
+
+
+def test_every_toy_canonical_protein_is_not_nucleotide_like() -> None:
+    from Bio.Seq import Seq
+
+    from panfamflow.workflow.scripts.workflow_utils import iter_gff, read_fasta
+
+    nucleotide_codes = set("ACGTUNRYKMSWBDHV")
+    for species in ("SpA", "SpB"):
+        data_dir = TOY_CONFIG.parent / "data" / species
+        genome = read_fasta(data_dir / "genome.fa")
+        cds_by_parent: dict[str, list[tuple[int, int, str]]] = {}
+        for feature in iter_gff(data_dir / "annotation.gff3"):
+            if str(feature["feature"]).lower() != "cds":
+                continue
+            parent = str(feature["attributes"]["Parent"])
+            cds_by_parent.setdefault(parent, []).append(
+                (int(feature["start"]), int(feature["end"]), str(feature["seqid"]))
+            )
+        for segments in cds_by_parent.values():
+            coding = "".join(
+                genome[seqid][start - 1 : end] for start, end, seqid in sorted(segments)
+            )
+            protein = str(Seq(coding).translate()).rstrip("*")
+            assert protein
+            assert len(set(protein)) >= 10
+            assert set(protein).difference(nucleotide_codes)
+
+
+def test_toy_contains_cross_species_homolog_pairs() -> None:
+    from Bio.Seq import Seq
+
+    from panfamflow.workflow.scripts.workflow_utils import iter_gff, read_fasta
+
+    proteins: dict[str, str] = {}
+    for species in ("SpA", "SpB"):
+        data_dir = TOY_CONFIG.parent / "data" / species
+        genome = read_fasta(data_dir / "genome.fa")
+        cds_by_parent: dict[str, list[tuple[int, int, str]]] = {}
+        for feature in iter_gff(data_dir / "annotation.gff3"):
+            if str(feature["feature"]).lower() != "cds":
+                continue
+            parent = str(feature["attributes"]["Parent"])
+            cds_by_parent.setdefault(parent, []).append(
+                (int(feature["start"]), int(feature["end"]), str(feature["seqid"]))
+            )
+        for transcript_id, segments in cds_by_parent.items():
+            coding = "".join(
+                genome[seqid][start - 1 : end] for start, end, seqid in sorted(segments)
+            )
+            proteins[f"{species}:{transcript_id}"] = str(Seq(coding).translate()).rstrip("*")
+
+    for transcript_a, transcript_b in (("GeneA1.1", "GeneB1.1"), ("GeneA2.1", "GeneB2.1")):
+        protein_a = proteins[f"SpA:{transcript_a}"]
+        protein_b = proteins[f"SpB:{transcript_b}"]
+        assert len(protein_a) >= 50
+        assert len(protein_a) == len(protein_b)
+        identity = sum(a == b for a, b in zip(protein_a, protein_b, strict=True)) / len(protein_a)
+        assert identity >= 0.95
 
 
 def test_module_dependency_expansion() -> None:
