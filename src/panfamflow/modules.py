@@ -97,14 +97,14 @@ MODULES: dict[str, ModuleSpec] = {
         "duplication",
         "08_duplication/duplication_mode.tsv",
         "Classify duplication modes for target-family genes or import audited results.",
-        ("normalize", "family"),
+        ("gene_structure", "pan_family"),
         ("DIAMOND", "DupGen_finder-unique"),
     ),
     "kaks": ModuleSpec(
         "kaks",
         "09_kaks/kaks_pairs.tsv",
         "Estimate pairwise Ka, Ks and Ka/Ks for constrained target-family pairs.",
-        ("family",),
+        ("family", "pan_family", "duplication"),
         ("MAFFT", "PAL2NAL", "KaKs_Calculator"),
     ),
     "promoter": ModuleSpec(

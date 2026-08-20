@@ -35,7 +35,7 @@ def test_chinese_beginner_tutorial_is_self_contained() -> None:
     assert "交互式 config.yaml 片段生成器" in text
     assert "uv run panfamflow resume -c config.yaml" in text
     assert "树上 clade ≠ 自动成为 HOG" in text
-    assert "51 项不是同一种“可用”" in text
+    assert "58 项不是同一种“可用”" in text
     assert "ANALYSIS_COVERAGE.tsv" in text
     assert "TUTORIAL_CONTENT_MATRIX.tsv" in text
 
@@ -56,7 +56,7 @@ def test_chinese_beginner_tutorial_is_self_contained() -> None:
         "chapter-11",
     ):
         assert required_id in parser.ids
-    assert sum(item.startswith("analysis-") for item in parser.ids) == 51
+    assert sum(item.startswith("analysis-") for item in parser.ids) == 58
 
 
 def test_scientific_coverage_explorer_and_mobile_navigation_controls_exist() -> None:

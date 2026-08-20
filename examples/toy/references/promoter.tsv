@@ -1,5 +1,11 @@
 stable_id	element	major_class
 SpA__GeneA1	ABRE	Abiotic stress
+SpA__GeneA1	ABRE	Abiotic stress
+SpA__GeneA1	TATA-box	Core promoter
 SpA__GeneA2	MBS	Drought response
+SpA__GeneA2	TATA-box	Core promoter
 SpB__GeneB1	TATA-box	Core promoter
+SpB__GeneB1	ABRE	Abiotic stress
 SpB__GeneB2	LTR	Low-temperature response
+SpB__GeneB2	LTR	Low-temperature response
+SpB__GeneB2	ABRE	Abiotic stress

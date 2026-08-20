@@ -17,14 +17,14 @@ TOY_PATH = ROOT / "docs" / "TUTORIAL_TOY_EVIDENCE_SCHEMA.tsv"
 COVERAGE_PATH = ROOT / "docs" / "ANALYSIS_COVERAGE.tsv"
 PENDING = "待本地 toy pipeline 验证后回填"
 EXPECTED_IDS = (
-    [f"4.{i}" for i in range(1, 4)]
+    [f"4.{i}" for i in range(1, 5)]
     + [f"5.{i}" for i in range(1, 7)]
     + [f"6.{i}" for i in range(1, 9)]
     + [f"7.{i}" for i in range(1, 4)]
     + [f"8.{i}" for i in range(1, 7)]
-    + [f"9.{i}" for i in range(1, 7)]
-    + [f"10.{i}" for i in range(1, 15)]
-    + [f"11.{i}" for i in range(1, 6)]
+    + [f"9.{i}" for i in range(1, 10)]
+    + [f"10.{i}" for i in range(1, 16)]
+    + [f"11.{i}" for i in range(1, 8)]
 )
 EXPECTED_COMPONENTS = {
     "learning-objectives",
@@ -148,14 +148,14 @@ def find_by_id(parser: TutorialParser, node_id: str) -> Node:
     return matches[0]
 
 
-def test_matrix_has_exact_51_rows_and_stable_ids():
+def test_matrix_has_exact_58_rows_and_stable_ids():
     rows = read_matrix()
-    assert len(rows) == 51
+    assert len(rows) == 58
     assert [row["source_id"] for row in rows] == EXPECTED_IDS
     assert [row["anchor"] for row in rows] == [
         "analysis-" + x.replace(".", "-") for x in EXPECTED_IDS
     ]
-    assert len({row["anchor"] for row in rows}) == 51
+    assert len({row["anchor"] for row in rows}) == 58
 
 
 def test_status_distribution_and_allowed_states():
@@ -163,10 +163,10 @@ def test_status_distribution_and_allowed_states():
     counts = Counter(row["state"] for row in rows)
     assert counts == Counter(
         {
-            "IMPLEMENTED": 11,
+            "IMPLEMENTED": 21,
             "CONDITIONALLY_AVAILABLE": 29,
             "EXTERNAL_IMPORT": 2,
-            "NOT_SUPPORTED": 9,
+            "NOT_SUPPORTED": 6,
         }
     )
     assert {row["state"] for row in rows} == {
@@ -214,7 +214,7 @@ def test_html_has_exact_anchors_and_matches_matrix_states():
         if n.attrs.get("id", "").startswith("analysis-") and "analysis-card" in n.classes
     ]
     assert ids == [row["anchor"] for row in rows]
-    assert len(ids) == len(set(ids)) == 51
+    assert len(ids) == len(set(ids)) == 58
     for row in rows:
         card = find_by_id(parser, row["anchor"])
         assert "analysis-card" in card.classes
@@ -338,8 +338,8 @@ def test_resolved_runtime_contracts_and_plot_truth_are_visible():
         "params.separator",
         "AUTO_ORTHOGROUP_FALLBACK",
         "orthology_group_type=ORTHOGROUP",
-        "模板饼图不是当前 canonical 图型",
-        "全样本聚合柱状图；逐物种饼图需二次汇总",
+        "pan_family_class_dual_denominator.pdf",
+        "duplication_stratified_distributions.pdf",
     ]:
         assert phrase in text
     assert "orthofinder.result_dir.txt" not in text
@@ -353,8 +353,15 @@ def test_selected_capability_states_match_current_local_audit():
     assert rows["6.4"]["state"] == "IMPLEMENTED"
     assert rows["6.5"]["state"] == "IMPLEMENTED"
     assert rows["8.1"]["state"] == "IMPLEMENTED"
-    assert rows["8.5"]["state"] == "NOT_SUPPORTED"
+    assert rows["5.3"]["state"] == "CONDITIONALLY_AVAILABLE"
+    assert rows["5.6"]["state"] == "CONDITIONALLY_AVAILABLE"
+    assert rows["8.5"]["state"] == "CONDITIONALLY_AVAILABLE"
     assert rows["8.6"]["state"] == "NOT_SUPPORTED"
+    assert rows["10.5"]["state"] == "CONDITIONALLY_AVAILABLE"
+    assert rows["10.7"]["state"] == "CONDITIONALLY_AVAILABLE"
+    assert rows["10.8"]["state"] == "IMPLEMENTED"
+    assert rows["10.9"]["state"] == "IMPLEMENTED"
+    assert rows["10.11"]["state"] == "CONDITIONALLY_AVAILABLE"
     assert rows["10.14"]["state"] == "IMPLEMENTED"
     assert rows["11.3"]["state"] == "NOT_SUPPORTED"
 

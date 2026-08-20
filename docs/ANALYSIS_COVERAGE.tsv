@@ -1,52 +1,59 @@
 source_id	source_title	state	evidence	output	limitation	tutorial_anchor
 4.1	家族成员详细信息	IMPLEMENTED	family 模块合并 HMM、BLASTP、domain validation 与 canonical ID 证据	results/02_family/family_members.tsv	成员可信度仍取决于输入注释、阈值与可选验证表	analysis-4-1
 4.2	系统发育分析树	IMPLEMENTED	phylogeny 模块执行 MAFFT、ClipKIT 与 IQ-TREE	results/03_phylogeny/family.treefile	基因树不是物种树；亚家族命名仍需外部证据	analysis-4-2
-4.3	家族成员分布热图	CONDITIONALLY_AVAILABLE	family_members.tsv 可按物种和亚家族汇总	results/02_family/family_members.tsv	未提供模板同款 canonical heatmap，需冻结亚家族定义后绘制	analysis-4-3
-5.1	不同亚家族之间基因结构比较图	CONDITIONALLY_AVAILABLE	gene_structure 模块提供逐基因结构指标	results/04_gene_structure/gene_structure_metrics.tsv	需有效 subfamily 元数据并另行生成比较图	analysis-5-1
+4.3	家族成员分布热图	IMPLEMENTED	family 模块自动输出 species×subfamily 零值完整的基因数、物种内比例表和双面板热图	results/02_family/family_distribution.tsv；results/02_family/family_distribution.pdf	0 只能表述为当前成员表未检出，annotation absence 不等于 validated gene loss	analysis-4-3
+4.4	核心结构域氨基酸序列 Logo	NOT_SUPPORTED	当前没有核心结构域裁剪、氨基酸对齐和 sequence logo 规则	NONE_CURRENTLY	需要冻结结构域边界、同源位点质量控制和可复现的 Logo 后端	analysis-4-4
+5.1	不同亚家族之间基因结构比较图	CONDITIONALLY_AVAILABLE	gene_structure 自动生成亚家族物种中位数比较图，并在面板标注重复不足、低重复或无变异	results/04_gene_structure/gene_structure_group_comparisons.pdf	需要完整亚家族元数据；当前图为 box+jitter 而非 MD 建议的 violin+box+jitter，且只覆盖配置指标	analysis-5-1
 5.2	基因结构描述性统计（亚家族）	CONDITIONALLY_AVAILABLE	gene_structure_summary.tsv 提供结构汇总基础	results/04_gene_structure/gene_structure_summary.tsv	当前不保证按亚家族输出模板要求的全部描述统计	analysis-5-2
-5.3	亚家族间两两检验结果	NOT_SUPPORTED	当前无成组两两检验与多重校正实现		不能由描述性表格推断显著性	analysis-5-3
-5.4	不同群体之间基因结构比较	CONDITIONALLY_AVAILABLE	逐基因结构指标可与用户群体元数据连接	results/04_gene_structure/gene_structure_metrics.tsv	群体定义不是必需输入，连接和绘图未自动化	analysis-5-4
-5.5	基因结构描述性统计（群体）	CONDITIONALLY_AVAILABLE	逐基因结构指标支持外部按群体汇总	results/04_gene_structure/gene_structure_metrics.tsv	需用户提供冻结的 group metadata 与分母口径	analysis-5-5
-5.6	群体间两两检验结果	NOT_SUPPORTED	当前无群体两两检验、效应量与 FDR 实现		不得把图形差异表述为统计显著	analysis-5-6
+5.3	亚家族间两两检验结果	CONDITIONALLY_AVAILABLE	gene_structure 以物种×亚家族中位数为推断单位，执行 Kruskal-Wallis、条件性 Mann-Whitney U、BH-FDR 与秩二列效应量	results/04_gene_structure/gene_structure_global_tests.tsv；results/04_gene_structure/gene_structure_pairwise_tests.tsv	需要完整亚家族赋值且每组至少 2 个物种单元；不足时明确暂停 P 值推断，不能把基因数当生物学重复	analysis-5-3
+5.4	不同群体之间基因结构比较	CONDITIONALLY_AVAILABLE	gene_structure 自动连接 family group 元数据并生成群体物种中位数比较图和推断警告	results/04_gene_structure/gene_structure_group_comparisons.pdf	需要冻结且非缺失的 group；物种组成与系统发育混杂仍需正式模型处理	analysis-5-4
+5.5	基因结构描述性统计（群体）	CONDITIONALLY_AVAILABLE	gene_structure_summary.tsv 自动包含 group_field=group 的配置指标汇总	results/04_gene_structure/gene_structure_summary.tsv	需冻结 group 元数据；当前默认指标仍少于 MD 的完整结构指标清单	analysis-5-5
+5.6	群体间两两检验结果	CONDITIONALLY_AVAILABLE	gene_structure 以物种×群体中位数为推断单位，输出整体检验、条件性两两检验、BH-FDR、效应量与统计 QC	results/04_gene_structure/gene_structure_global_tests.tsv；results/04_gene_structure/gene_structure_pairwise_tests.tsv	需要冻结 group 元数据且每组至少 2 个物种单元；未控制群体构成和系统发育时不得作驯化或适应因果解释	analysis-5-6
 6.1	OGG 系统发育树	CONDITIONALLY_AVAILABLE	orthology 模块保留 OrthoFinder 结果目录和 HOG 节点	results/05_orthology/orthofinder_result_dir.txt	物种树、HOG 聚类树与目标家族基因树概念不同，未输出模板同款 OGG 图	analysis-6-1
 6.2	OGG 分组详细信息表	IMPLEMENTED	pan_family 模块优先解析指定 OrthoFinder HOG；auto 缺公开 HOG 表时使用并明确标记公开 OG	results/06_pan_family/family_hog_membership.tsv	仅覆盖目标基因家族；必须检查 orthology_group_type，且不是全基因组泛基因家族目录	analysis-6-2
 6.3	OGG 分组质量综合评估	CONDITIONALLY_AVAILABLE	membership、presence 与 unassigned 表提供可审计证据	results/06_pan_family/unassigned_family_members.tsv	未实现人为综合分数；质量判定必须逐指标报告	analysis-6-3
-6.4	泛基因组 OGG 类型分布饼图	IMPLEMENTED	按物种占有率分类并输出四类统计图	results/06_pan_family/pan_family_classification.pdf	分类阈值只适用于目标家族同源群；必须报告 HOG/OG 类型，当前 canonical 图为柱状图而非模板饼图	analysis-6-4
+6.4	泛基因组 OGG 类型分布饼图	IMPLEMENTED	pan_family 同时输出按 HOG 数和基因数计算的四类汇总及双分母圆环图	results/06_pan_family/pan_family_class_summary.tsv；results/06_pan_family/pan_family_class_dual_denominator.pdf	分类阈值只适用于目标家族同源群；HOG 数与基因数是不同分母，不能混称为全基因组 OGG	analysis-6-4
 6.5	泛基因组稀疏曲线	IMPLEMENTED	固定随机种子执行精确组合或受控重采样	results/06_pan_family/pan_family_rarefaction.pdf	样本数量和抽样设计不足时不能宣称开放或封闭泛基因组	analysis-6-5
-6.6	各物种泛基因组类型数量分布	CONDITIONALLY_AVAILABLE	presence 与 classification 表可按物种交叉汇总	results/06_pan_family/family_presence_absence.tsv	未提供模板同款逐物种堆叠图	analysis-6-6
-6.7	各物种泛基因组类型比例分布	CONDITIONALLY_AVAILABLE	presence 与 classification 表包含计算比例所需分子分母	results/06_pan_family/family_presence_absence.tsv	必须显式说明分母和缺失数据处理	analysis-6-7
-6.8	不同类型泛基因在亚家族中分布	CONDITIONALLY_AVAILABLE	HOG membership 可与 family_members 的 subfamily 连接	results/06_pan_family/family_hog_membership.tsv	亚家族与 HOG 不是同一层级，连接前需固定映射规则	analysis-6-8
+6.6	各物种泛基因组类型数量分布	IMPLEMENTED	pan_family 自动生成 species×pan-class 的基因数与 HOG 数零值完整汇总和数量图	results/06_pan_family/pan_family_species_class_summary.tsv；results/06_pan_family/pan_family_species_class_distribution.pdf	基因数会受同一 HOG 多拷贝影响，必须与 HOG 数分开解读	analysis-6-6
+6.7	各物种泛基因组类型比例分布	IMPLEMENTED	同一汇总表显式保存 gene_fraction 与 hog_fraction，并在图中与绝对数量并列	results/06_pan_family/pan_family_species_class_summary.tsv；results/06_pan_family/pan_family_species_class_distribution.pdf	比例只在对应物种和对应计数单位内闭合；不能用比例掩盖低总数	analysis-6-7
+6.8	不同类型泛基因在亚家族中分布	IMPLEMENTED	pan_family 按 stable_id 连接亚家族并输出 subfamily×pan-class 的基因/HOG 双口径汇总和图	results/06_pan_family/pan_family_subfamily_class_summary.tsv；results/06_pan_family/pan_family_subfamily_class_distribution.pdf	亚家族与 HOG 不是同一层级；跨亚家族 HOG 需按明确的去重口径解释	analysis-6-8
 7.1	代表物种染色体分布	IMPLEMENTED	chromosome 模块支持 representatives 或全部物种定位图	results/07_chromosome/chromosome_distribution.pdf	仅反映注释坐标，不等同于共线性	analysis-7-1
 7.2	泛基因组水平下的染色体分布	CONDITIONALLY_AVAILABLE	chromosome 表可与 pan-family class 连接	results/07_chromosome/chromosome_distribution.tsv	当前图未直接编码 HOG 泛基因类型	analysis-7-2
 7.3	染色体分布统计	IMPLEMENTED	输出逐染色体目标家族计数汇总	results/07_chromosome/chromosome_summary.tsv	染色体长度和基因密度差异需另行归一化	analysis-7-3
-8.1	物种复制类型饼图	IMPLEMENTED	duplication 模块输出复制类型计数图与逐基因模式	results/08_duplication/duplication_mode_counts.pdf	结果依赖 DupGen_finder 输入、外群和注释质量；当前 canonical 图为全样本聚合柱状图，逐物种饼图需二次汇总	analysis-8-1
-8.2	物种复制类型综合分布	CONDITIONALLY_AVAILABLE	duplication_mode.tsv 含 species_id 与 duplication_mode	results/08_duplication/duplication_mode.tsv	未提供模板同款跨物种综合图	analysis-8-2
-8.3	亚家族复制类型综合分布	CONDITIONALLY_AVAILABLE	复制结果可按 stable_id 与 subfamily 连接	results/08_duplication/duplication_mode.tsv	需要冻结亚家族赋值和连接完整性 QC	analysis-8-3
-8.4	泛基因组复制类型分布	CONDITIONALLY_AVAILABLE	复制结果可与 pan-family classification 连接	results/08_duplication/duplication_mode.tsv	当前未生成 canonical 联合分布图和统计检验	analysis-8-4
-8.5	不同复制类型基因结构差异	NOT_SUPPORTED	当前没有复制类型间结构检验、效应量和 FDR		不能只凭箱线图或小提琴图宣称机制差异	analysis-8-5
+8.1	物种复制类型饼图	IMPLEMENTED	duplication 模块同时输出全样本计数和 species×mode 数量/比例汇总图	results/08_duplication/duplication_stratified_summary.tsv；results/08_duplication/duplication_stratified_distributions.pdf	结果依赖 DupGen_finder 输入、外群和注释质量；饼图只适合非零类别且必须声明分母	analysis-8-1
+8.2	物种复制类型综合分布	IMPLEMENTED	duplication 自动构造 species×mode 零值完整的 count/fraction 矩阵并绘图	results/08_duplication/duplication_stratified_summary.tsv；results/08_duplication/duplication_stratified_distributions.pdf	跨物种差异仍可能由外群、组装和注释质量造成，当前为描述性汇总	analysis-8-2
+8.3	亚家族复制类型综合分布	IMPLEMENTED	duplication 按 stable_id 连接 subfamily，输出 subfamily×mode 数量/比例和连接后的工作簿证据	results/08_duplication/duplication_stratified_summary.tsv；results/08_duplication/duplication_stratified_distributions.pdf	需要冻结亚家族赋值并检查 Unassigned；未自动执行物种分层的关联检验	analysis-8-3
+8.4	泛基因组复制类型分布	IMPLEMENTED	duplication 连接 pan-family membership/classification，输出 pan-class×mode 数量/比例和图	results/08_duplication/duplication_stratified_summary.tsv；results/08_duplication/duplication_stratified_distributions.pdf	当前按基因计数且是描述性关联，不能证明复制方式导致 pan-class 状态	analysis-8-4
+8.5	不同复制类型基因结构差异	CONDITIONALLY_AVAILABLE	duplication 按 stable_id 一对一连接结构指标，并以物种×复制类型中位数执行整体/两两非参数检验、BH-FDR、效应量和 QC	results/08_duplication/duplication_structure_global_tests.tsv；results/08_duplication/duplication_structure_pairwise_tests.tsv	需要可靠且唯一的复制类型、足够物种重复和明确的类型口径；相关差异不能解释为复制机制直接因果	analysis-8-5
 8.6	物种共线性分析（Circos）	NOT_SUPPORTED	当前未实现 MCScanX/JCVI 共线块或 Circos 轨道		duplication_pairs.tsv 不能替代全基因组共线性证据	analysis-8-6
 9.1	OGG Ka/Ks 分析	IMPLEMENTED	kaks 模块可从带类型标记的 orthology membership 选择同源配对并执行 codon-aware 计算	results/09_kaks/kaks_pairs.tsv	成对 Ka/Ks 是配对层级证据，不是整组 OGG 的单一参数；需同时报告 HOG/OG 类型	analysis-9-1
 9.2	物种 OGG Ka/Ks 分析	CONDITIONALLY_AVAILABLE	kaks_pairs.tsv 保留物种和 HOG 配对信息	results/09_kaks/kaks_pairs.tsv	需明确物种内或物种间配对口径并控制伪重复	analysis-9-2
-9.3	复制类型 Ka/Ks 分析	CONDITIONALLY_AVAILABLE	可由 duplication_pairs 生成 Ka/Ks 配对	results/09_kaks/kaks_pairs.tsv	需按复制类型分层并报告有效配对数和饱和过滤	analysis-9-3
+9.3	复制类型 Ka/Ks 分析	CONDITIONALLY_AVAILABLE	kaks 自动给配对添加 duplication-mode 归属并输出 Ka、Ks、Ka/Ks 的 n、四分位数和范围	results/09_kaks/kaks_pairs.tsv；results/09_kaks/kaks_stratified_summary.tsv；results/09_kaks/kaks_stratified_distributions.pdf	仅在存在可计算 duplication pair 时有值；同一基因可参与多个 pair，当前统计明确为非独立配对的描述性汇总	analysis-9-3
 9.4	WGD 与 SSD 复制类型的选择压力比较	CONDITIONALLY_AVAILABLE	kaks_pairs.tsv 与 duplication_mode 可形成比较数据	results/09_kaks/kaks_pairs.tsv	当前未自动执行组间检验、效应量或多重校正	analysis-9-4
 9.5	基因家族的 Ks 分析	CONDITIONALLY_AVAILABLE	逐配对 Ks 与 saturation QC 已输出	results/09_kaks/kaks_pairs.tsv	Ks 饱和、旁系同源选择和 WGD 峰解释需专门模型	analysis-9-5
-9.6	亚家族 Ks 分布	CONDITIONALLY_AVAILABLE	Ka/Ks 配对可与 subfamily 元数据连接	results/09_kaks/kaks_pairs.tsv	需定义跨亚家族配对归属并避免重复计数	analysis-9-6
+9.6	亚家族 Ks 分布	CONDITIONALLY_AVAILABLE	kaks 自动连接配对两端亚家族，区分同亚家族、Mixed 与 Unassigned，并输出描述性分层图表	results/09_kaks/kaks_pairs.tsv；results/09_kaks/kaks_stratified_summary.tsv；results/09_kaks/kaks_stratified_distributions.pdf	配对非独立且跨亚家族归为 Mixed；当前没有组间显著性检验或系统发育校正	analysis-9-6
+9.7	群体 Ka、Ks、Ka/Ks 比较	CONDITIONALLY_AVAILABLE	kaks 自动连接配对两端 group，区分同群体、Mixed 与 Unassigned，并输出描述性分层图表	results/09_kaks/kaks_pairs.tsv；results/09_kaks/kaks_stratified_summary.tsv；results/09_kaks/kaks_stratified_distributions.pdf	需要可靠 group 元数据和足够有效 pair；当前为非独立配对的描述性统计，不提供群体效应检验	analysis-9-7
+9.8	亚家族×群体 Ka、Ks、Ka/Ks 比较	NOT_SUPPORTED	当前仅分别生成 subfamily 和 group 的配对分层，没有交互层级的推断合同	NONE_CURRENTLY	需要冻结 pair 的二维归属、控制同一基因重复参与和物种/系统发育混杂，并设计多重校正	analysis-9-8
+9.9	泛基因类型 Ka、Ks、Ka/Ks 比较	CONDITIONALLY_AVAILABLE	kaks 自动连接两端 HOG 的 pan-class，区分同类、Mixed 与 Unassigned，并输出描述性分层图表	results/09_kaks/kaks_pairs.tsv；results/09_kaks/kaks_stratified_summary.tsv；results/09_kaks/kaks_stratified_distributions.pdf	仅能比较已成功归类和计算的 pair；当前无独立性校正、正式组间检验或因果解释	analysis-9-9
 10.1	启动子四大类分布饼图	CONDITIONALLY_AVAILABLE	promoter 模块输出 major_class 命中与类别计数图	results/10_promoter/promoter_element_class_counts.pdf	四大类依赖 category_map；当前图型不是固定饼图	analysis-10-1
 10.2	启动子主类别分布	CONDITIONALLY_AVAILABLE	per-gene major_class 计数为主类别汇总基础	results/10_promoter/promoter_elements_per_gene.tsv	必须报告 motif 数据库、阈值和重复命中处理	analysis-10-2
 10.3	启动子元件子类别统计	CONDITIONALLY_AVAILABLE	逐 element 与 subclass 命中保存在明细表	results/10_promoter/promoter_elements.tsv	subclass 依赖外部类别映射的完整性	analysis-10-3
-10.4	亚家族 × 物种启动子元件分布	CONDITIONALLY_AVAILABLE	promoter 明细可与 family subfamily 按 stable_id 连接	results/10_promoter/promoter_element_summary.tsv	当前未输出 canonical 二维矩阵和聚类热图	analysis-10-4
-10.5	亚家族 × 物种启动子元件分布（Scale 标准化）	NOT_SUPPORTED	当前没有冻结的矩阵标准化与缺失值策略		不同标准化方向会改变热图含义	analysis-10-5
-10.6	亚家族启动子元件分布	CONDITIONALLY_AVAILABLE	promoter 明细支持按 subfamily 汇总	results/10_promoter/promoter_element_summary.tsv	需外部连接 subfamily 并明确分母	analysis-10-6
-10.7	亚家族启动子元件分布（Scale 标准化）	NOT_SUPPORTED	当前未实现按亚家族的 scale 变换		不能用原始命中数冒充标准化值	analysis-10-7
-10.8	物种启动子元件分布	CONDITIONALLY_AVAILABLE	promoter 明细含 species_id 与 element	results/10_promoter/promoter_element_summary.tsv	基因数和启动子长度差异会影响原始计数	analysis-10-8
-10.9	物种启动子元件分布（Scale 标准化）	NOT_SUPPORTED	当前未实现物种层级 scale 变换与敏感性分析		跨物种原始 motif 命中数不可直接比较	analysis-10-9
-10.10	群体启动子元件分布	CONDITIONALLY_AVAILABLE	逐基因 motif 表可连接用户 group metadata	results/10_promoter/promoter_elements_per_gene.tsv	群体元数据不是必需输入，当前不自动连接	analysis-10-10
-10.11	群体启动子元件分布（Scale 标准化）	NOT_SUPPORTED	当前没有群体矩阵标准化实现		需先冻结群体、分母和变换方向	analysis-10-11
+10.4	亚家族 × 物种启动子元件分布	CONDITIONALLY_AVAILABLE	promoter 模块按 species_id×subfamily×element 自动生成零值完整网格、基因数和启动子长度分母	results/10_promoter/promoter_element_distributions.tsv	需要完整 subfamily 元数据；极小单元只能作描述，不能据颜色宣称富集	analysis-10-4
+10.5	亚家族 × 物种启动子元件分布（Scale 标准化）	CONDITIONALLY_AVAILABLE	对每个元件跨 species×subfamily 单元执行固定 ddof=0 的每 kb 命中率 z-score，并保留零方差和缺失分母状态	results/10_promoter/promoter_species_subfamily_zscore_heatmap.pdf	需要完整 subfamily 元数据；z-score 只表示相对模式，不是显著富集或绝对丰度	analysis-10-5
+10.6	亚家族启动子元件分布	CONDITIONALLY_AVAILABLE	promoter 模块按 subfamily×element 自动输出原始命中、每基因和每 kb 分母校正值	results/10_promoter/promoter_element_distributions.tsv	需要冻结且非缺失的亚家族赋值；聚合仍受物种组成影响	analysis-10-6
+10.7	亚家族启动子元件分布（Scale 标准化）	CONDITIONALLY_AVAILABLE	对每个元件跨 subfamily 单元执行固定 ddof=0 的每 kb 命中率 z-score，并输出热图与 QC 状态	results/10_promoter/promoter_subfamily_zscore_heatmap.pdf	需要亚家族元数据；标准化聚类不能当作系统发育或功能分类证明	analysis-10-7
+10.8	物种启动子元件分布	IMPLEMENTED	promoter 模块按 species_id×element 自动输出零值完整网格、原始命中、基因数、总启动子长度、每基因和每 kb 命中率	results/10_promoter/promoter_element_distributions.tsv	不同物种的组装、注释和 motif 可检测性仍会影响比较，原始计数不可直接解释为调控复杂度	analysis-10-8
+10.9	物种启动子元件分布（Scale 标准化）	IMPLEMENTED	对每个元件跨物种执行固定 ddof=0 的每 kb 命中率 z-score，显式标记零方差、单单元和缺失分母	results/10_promoter/promoter_species_zscore_heatmap.pdf	z-score 只用于相对模式展示，不能解释为显著富集、物种树或调控保守性证明	analysis-10-9
+10.10	群体启动子元件分布	CONDITIONALLY_AVAILABLE	promoter 模块按 group×element 自动连接 family group 元数据并输出原始与分母校正汇总	results/10_promoter/promoter_element_distributions.tsv	需要冻结 group 元数据；群体组成和物种系统发育仍是混杂因素	analysis-10-10
+10.11	群体启动子元件分布（Scale 标准化）	CONDITIONALLY_AVAILABLE	对每个元件跨 group 单元执行固定 ddof=0 的每 kb 命中率 z-score，并保留 raw/rate/n 与 QC 状态	results/10_promoter/promoter_group_zscore_heatmap.pdf	需要 group 元数据和足够单元；标准化颜色不能当作群体历史、因果或显著富集	analysis-10-11
 10.12	OGG 水平启动子分布	CONDITIONALLY_AVAILABLE	promoter 表可与 HOG membership 按 stable_id 连接	results/10_promoter/promoter_element_summary.tsv	当前未生成 HOG 层级 canonical 输出	analysis-10-12
 10.13	代表物种启动子元件分布	CONDITIONALLY_AVAILABLE	promoter 表含 species_id，可筛选 representatives	results/10_promoter/promoter_element_summary.tsv	代表物种选择及其代表性必须在配置外说明	analysis-10-13
 10.14	启动子元件分布（仅展示数量最多的元件）	IMPLEMENTED	按 top_n_elements 输出最高频元件图	results/10_promoter/promoter_top_elements.pdf	Top-N 是展示过滤，不代表生物学重要性排序	analysis-10-14
+10.15	群体×亚家族启动子元件分布	IMPLEMENTED	promoter 自动生成 group×subfamily×element 零值完整网格、raw/per-gene/per-kb/z-score 工作簿与热图	results/10_promoter/promoter_element_distributions.tsv；results/10_promoter/promoter_group_subfamily_zscore_heatmap.pdf	需要完整 group 与 subfamily 元数据；颜色表示相对命中模式，不是显著富集、TF 结合或因果调控	analysis-10-15
 11.1	泛基因与转录组表达关系	CONDITIONALLY_AVAILABLE	expression_summary 可与 pan-family class 按 stable_id 连接	results/11_expression/expression_summary.tsv	当前未自动生成分组检验；跨物种 TPM 不可直接比较	analysis-11-1
 11.2	整体表达模式热图	IMPLEMENTED	imported matrix 或 FASTQ 路线均输出表达矩阵和热图	results/11_expression/expression_heatmap.pdf	FASTQ/StringTie 自动标记跨物种 NOT_APPLICABLE；导入矩阵保留输入 NA 为 MISSING_IN_INPUT，缺少 sample species metadata 时不推断物种适用性；只能在可比设计内解释模式	analysis-11-2
 11.3	差异表达基因跨条件重叠分析（Global）	NOT_SUPPORTED	当前未实现 DESeq2 contrasts、DEG 判定或 UpSet/Venn		表达热图不能替代差异表达检验	analysis-11-3
 11.4	Abiotic Stress 响应	EXTERNAL_IMPORT	可导入用户已标准化的表达矩阵作为展示输入	results/11_expression/expression_matrix.tsv	胁迫对照、重复、批次与差异检验必须由外部分析提供	analysis-11-4
 11.5	Biotic Stress 响应	EXTERNAL_IMPORT	可导入用户已标准化的表达矩阵作为展示输入	results/11_expression/expression_matrix.tsv	病原处理设计、时间点、重复与差异检验必须由外部分析提供	analysis-11-5
+11.6	泛基因类型分组织表达比较	NOT_SUPPORTED	当前表达模块没有 tissue 元数据合同与 pan-class 联合统计规则	NONE_CURRENTLY	需要冻结组织对应关系、物种内标准化、HOG/pan-class 连接、重复设计和适用性状态	analysis-11-6
+11.7	群体×亚家族表达比较	NOT_SUPPORTED	当前表达模块没有 group×subfamily 交互矩阵或可审计统计模型	NONE_CURRENTLY	需要可比表达单位、样本物种/群体元数据、物种内标准化和重复/批次控制	analysis-11-7

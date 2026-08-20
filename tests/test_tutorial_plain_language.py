@@ -17,14 +17,14 @@ HTML_PATH = ROOT / "docs" / "index.html"
 TERMINOLOGY_PATH = ROOT / "docs" / "TUTORIAL_TERMINOLOGY.tsv"
 
 EXPECTED_IDS = (
-    [f"4.{index}" for index in range(1, 4)]
+    [f"4.{index}" for index in range(1, 5)]
     + [f"5.{index}" for index in range(1, 7)]
     + [f"6.{index}" for index in range(1, 9)]
     + [f"7.{index}" for index in range(1, 4)]
     + [f"8.{index}" for index in range(1, 7)]
-    + [f"9.{index}" for index in range(1, 7)]
-    + [f"10.{index}" for index in range(1, 15)]
-    + [f"11.{index}" for index in range(1, 6)]
+    + [f"9.{index}" for index in range(1, 10)]
+    + [f"10.{index}" for index in range(1, 16)]
+    + [f"11.{index}" for index in range(1, 8)]
 )
 
 STATE_LABELS = {
@@ -36,10 +36,10 @@ STATE_LABELS = {
 
 EXPECTED_STATE_COUNTS = Counter(
     {
-        "IMPLEMENTED": 11,
+        "IMPLEMENTED": 21,
         "CONDITIONALLY_AVAILABLE": 29,
         "EXTERNAL_IMPORT": 2,
-        "NOT_SUPPORTED": 9,
+        "NOT_SUPPORTED": 6,
     }
 )
 
@@ -178,10 +178,10 @@ def read_terms() -> list[dict[str, str]]:
         return list(reader)
 
 
-def test_all_51_cards_have_beginner_takeaways() -> None:
+def test_all_58_cards_have_beginner_takeaways() -> None:
     parser = parse_html()
     cards = nodes_with_class(parser, "analysis-card")
-    assert len(cards) == 51
+    assert len(cards) == 58
     assert [card.attrs["data-source-id"] for card in cards] == EXPECTED_IDS
 
     technical_starts = re.compile(

@@ -251,6 +251,34 @@ class PanFamilySettings(StrictModel):
         return self
 
 
+GeneStructureMetric = Literal[
+    "gene_length",
+    "protein_length",
+    "cds_length",
+    "exon_count",
+    "intron_count",
+    "total_intron_length",
+]
+
+
+def default_gene_structure_metrics() -> list[GeneStructureMetric]:
+    return [
+        "gene_length",
+        "protein_length",
+        "cds_length",
+        "exon_count",
+        "intron_count",
+        "total_intron_length",
+    ]
+
+
+class GeneStructureSettings(StrictModel):
+    metrics: list[GeneStructureMetric] = Field(default_factory=default_gene_structure_metrics)
+    inference_unit: Literal["species_median"] = "species_median"
+    min_group_units: int = Field(default=2, ge=2)
+    alpha: float = Field(default=0.05, gt=0, lt=1)
+
+
 class ChromosomeSettings(StrictModel):
     representative_only: bool = False
     density_window_bp: int = Field(default=1_000_000, ge=1)
@@ -358,6 +386,7 @@ class WorkflowConfig(StrictModel):
     phylogeny: PhylogenySettings = Field(default_factory=PhylogenySettings)
     orthofinder: OrthoFinderSettings = Field(default_factory=OrthoFinderSettings)
     pan_family: PanFamilySettings = Field(default_factory=PanFamilySettings)
+    gene_structure: GeneStructureSettings = Field(default_factory=GeneStructureSettings)
     chromosome: ChromosomeSettings = Field(default_factory=ChromosomeSettings)
     duplication: DuplicationSettings = Field(default_factory=DuplicationSettings)
     kaks: KaksSettings = Field(default_factory=KaksSettings)

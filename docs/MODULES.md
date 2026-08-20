@@ -31,6 +31,8 @@
 - `family_proteins.fa`
 - `family_cds.fa`
 - `family_domains.fa`
+- `family_distribution.tsv/.xlsx`
+- `family_distribution.pdf/.png`
 
 可导入 subfamily、CDD/domain validation 和 subcellular localization 表。大规模项目只加载候选 family 的序列和 mapping 子集，避免把全体 proteome/CDS 同时载入内存。
 
@@ -43,6 +45,10 @@
 ## `gene_structure`
 
 从 canonical GFF3 提取 gene length、exon count、CDS count/length、intron count/length 和 UTR 指标。
+
+对配置的结构指标，模块按 `species_id × subfamily` 和 `species_id × group` 计算物种中位数，以 Kruskal-Wallis 作整体检验；只有整体检验显著时才执行两侧 Mann-Whitney U，并在每个比较范围与指标内做 BH-FDR。输出同时保留基因数、物种单元数、中位数差、秩二列效应量和推断警告。若每组物种单元不足，P 值被明确暂停而不是用基因条目数补足重复。
+
+输出包括逐基因指标、描述汇总、整体/两两统计表、统计 QC、XLSX，以及带物种中位数散点和推断警告的 PDF/PNG 图。
 
 ## `orthology`
 
@@ -61,6 +67,8 @@
 - `family_presence_absence.tsv`
 - `unassigned_family_members.tsv`
 - rarefaction 原始迭代、汇总和图件
+- HOG/基因双分母 pan-class 表图
+- species/subfamily × pan-class 的 gene/HOG 数量与比例表图
 
 分类表为向后兼容保留 `HOG_ID` 列名，同时用 `orthology_group_type`、`orthology_source_file`、`analysis_unit` 区分 HOG 与普通 Orthogroup，并记录 `pan_family_class`、`presence_basis` 和 `absence_validation_status`。矩阵中的 0 表示注释/同源群层面未检出，不自动代表已验证的基因丢失。旧预发布模块名 `pangenome` 仅作为兼容别名。
 
@@ -82,6 +90,10 @@ DupGen_finder 本体通过 `scripts/install_dupgen.sh` 非覆盖安装，并应�
 
 导入包含 stable ID、duplication mode 和可选 partner 的表。若 partner 可解析，会同时生成 `duplication_pairs.tsv`，供 Ka/Ks 使用。
 
+无论使用哪个 backend，模块都会按 `stable_id` 一对一连接 `gene_structure_metrics.tsv`，并对 `species_id × duplication_mode` 中位数执行与 `gene_structure` 相同的整体/两两统计、BH-FDR、效应量和推断 QC。该输出描述“复制类型与结构指标的关联”，不能证明复制机制导致了结构变化。
+
+模块还连接 family 的 `subfamily` 与 pan_family 的分类，输出 species、subfamily、pan-family class 三层 `duplication_mode` 数量/比例长表和 PDF/PNG。该部分为描述性汇总；pan-family 层当前按基因计数，不可误称为 HOG 分母或因果检验。
+
 ## `kaks`
 
 pair source：
@@ -92,7 +104,7 @@ pair source：
 
 方法：protein MAFFT → PAL2NAL codon alignment → KaKs_Calculator。
 
-输出包含失败信息和 QC flags；任何单 pair 失败不会静默删除。
+输出包含失败信息和 QC flags；任何单 pair 失败不会静默删除。每个 pair 还连接两端 subfamily、group、pan-class 和 duplication-mode，并分别归为同名层、`Mixed` 或 `Unassigned`。规范分层表图只汇总 n、四分位数和范围，并明确标记 pair 非独立；当前不提供组间显著性检验或系统发育校正。
 
 ## `promoter`
 
@@ -105,7 +117,9 @@ backend：
 
 所有 ID 必须可映射到提取的 family promoter。
 
-规范输出包括逐命中 `promoter_elements.tsv`、逐元件汇总 `promoter_element_summary.tsv`、逐基因主类别汇总 `promoter_elements_per_gene.tsv`、工作簿、主类别计数图和 Top-N 元件图。跨亚家族、群体、HOG 或 scale 标准化分析不自动完成，逐项状态见 `ANALYSIS_COVERAGE.tsv`。
+规范输出包括逐命中 `promoter_elements.tsv`、逐元件汇总 `promoter_element_summary.tsv`、逐基因主类别汇总 `promoter_elements_per_gene.tsv`、多维分布长表 `promoter_element_distributions.tsv`、分布 QC 表、工作簿、主类别计数图、Top-N 元件图，以及物种×亚家族、亚家族、物种、群体、群体×亚家族五组标准化热图。
+
+多维分布表为每个聚合单元和每种元件补齐真零组合，同时保留 `n_genes`、`total_promoter_bp`、`hits_per_gene` 和 `hits_per_kb`。标准化固定为对每个元件跨聚合单元的 `hits_per_kb` 计算总体 z-score（`ddof=0`），并用 `PASS`、`ZERO_VARIANCE`、`INSUFFICIENT_CELLS` 或 `MISSING_DENOMINATOR` 记录可解释性。亚家族和群体输出依赖相应元数据；HOG 层级仍未自动聚合，逐项状态见 `ANALYSIS_COVERAGE.tsv`。
 
 ## `expression`
 

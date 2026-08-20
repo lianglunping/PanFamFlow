@@ -9,7 +9,7 @@
 
 原始文档不随代码仓库公开；本文件只记录需求摘要、实现决策和解释边界。
 
-两份来源材料的 4.1–11.5 共 51 个条目已经逐项审计。机器可读判定见 [`ANALYSIS_COVERAGE.tsv`](ANALYSIS_COVERAGE.tsv)，中文口径见 [`ANALYSIS_COVERAGE.zh-CN.md`](ANALYSIS_COVERAGE.zh-CN.md)。当前分布为 11 项 `IMPLEMENTED`、29 项 `CONDITIONALLY_AVAILABLE`、2 项 `EXTERNAL_IMPORT`、9 项 `NOT_SUPPORTED`；下表是模块级摘要，不能替代逐项状态。
+两份来源材料的原文字清单及 PDF 逐图核对得到的 58 个主题已经逐项审计；其中 7 项用于补齐原 51 项目录遗漏。机器可读判定见 [`ANALYSIS_COVERAGE.tsv`](ANALYSIS_COVERAGE.tsv)，中文口径见 [`ANALYSIS_COVERAGE.zh-CN.md`](ANALYSIS_COVERAGE.zh-CN.md)。当前分布为 21 项 `IMPLEMENTED`、29 项 `CONDITIONALLY_AVAILABLE`、2 项 `EXTERNAL_IMPORT`、6 项 `NOT_SUPPORTED`；下表是模块级摘要，不能替代逐项状态。
 
 ## 2. 来源要求到实现的映射
 
@@ -28,7 +28,7 @@
 | ParaAT/KaKs_Calculator | MAFFT + PAL2NAL + KaKs_Calculator | 已实现 pairwise 路线；高 Ks 标记潜在饱和 |
 | 2 kb promoter + PlantCARE | strand-aware promoter；FIMO；PlantCARE 表格导入 | 自动 FIMO 已实现；PlantCARE 网页自动化未实现 |
 | fastp/HISAT2/StringTie | FASTQ 路线或矩阵导入 | TPM 已实现；DESeq2 contrasts 待补 |
-| 结果图表与主表 | TSV/XLSX、PDF/PNG、master table、HTML report | 数据层和代表性图已实现；不声称模板 51 项全部完成，逐项状态以 coverage audit 为准 |
+| 结果图表与主表 | TSV/XLSX、PDF/PNG、master table、HTML report | 数据层和代表性图已实现；不声称模板 58 项全部完成，逐项状态以 coverage audit 为准 |
 
 ## 3. 对综合方案文档的工程化落实
 

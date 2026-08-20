@@ -1,6 +1,6 @@
 # PanFamFlow — 泛基因家族分析流程
 
-[English](README.md) | **简体中文** | [中文交互式教程](docs/index.html) | [51 项覆盖审计](docs/ANALYSIS_COVERAGE.zh-CN.md) | [项目网站](https://lianglunping.github.io/PanFamFlow/index.html?rev=pages-entry-fix-20260819) | [在线教程](https://lianglunping.github.io/PanFamFlow/tutorial/)
+[English](README.md) | **简体中文** | [中文交互式教程](docs/index.html) | [58 项覆盖审计](docs/ANALYSIS_COVERAGE.zh-CN.md) | [项目网站](https://lianglunping.github.io/PanFamFlow/index.html?rev=pages-entry-fix-20260819) | [在线教程](https://lianglunping.github.io/PanFamFlow/tutorial/)
 
 [![Version](https://img.shields.io/badge/version-0.1.2--alpha-orange)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/Python-3.11--3.13-blue)](pyproject.toml)
@@ -46,7 +46,9 @@ PanFamFlow 的输入是**已经组装并注释的 genome FASTA + GFF3**。OrthoF
 
 来源方案要求 HMMER/BLASTP、IQ-TREE、Core/Soft-core/Shell/Cloud、MCScanX/DupGen_finder、Ka/Ks、2 kb promoter、PlantCARE/FIMO 和 RNA-seq 等分析。PanFamFlow 在此基础上增加 canonical transcript、稳定 ID、拒绝候选审计、HOG 节点固定、输入 SHA256、恢复机制和整合主表。要求与实现的逐项映射见 [docs/DESIGN_BASIS.md](docs/DESIGN_BASIS.md)。
 
-两份来源材料共列出 51 个分析条目（4.1–11.5）。PanFamFlow **不声称 51 项均已自动实现**：当前审计为 11 项 `IMPLEMENTED`、29 项 `CONDITIONALLY_AVAILABLE`、2 项 `EXTERNAL_IMPORT`、9 项 `NOT_SUPPORTED`。解释范围前请先阅读[中文审计说明](docs/ANALYSIS_COVERAGE.zh-CN.md)和[机器可读明细](docs/ANALYSIS_COVERAGE.tsv)。
+两份来源材料的原始文字清单有 51 个条目；逐图核对 PDF 后又补入 7 个原先漏列的独立分析主题，当前权威目录共 58 项（4.1–11.7，按章节连续编号）。PanFamFlow **不声称 58 项均已自动实现**：当前审计为 21 项 `IMPLEMENTED`、29 项 `CONDITIONALLY_AVAILABLE`、2 项 `EXTERNAL_IMPORT`、6 项 `NOT_SUPPORTED`。解释范围前请先阅读[中文审计说明](docs/ANALYSIS_COVERAGE.zh-CN.md)和[机器可读明细](docs/ANALYSIS_COVERAGE.tsv)。
+
+上述 58 项是“主题能力状态”，不是 PDF 图件完成率。按 PDF Fig01–Fig34 和方法 MD 重新核对后，当前 33 条逐图审计记录中有 11 条 `MATCHED_CORE`、15 条 `PARTIAL`、6 条 `NOT_IMPLEMENTED`、1 条 `EXTERNAL_REQUIRED`；详细差距见[模板等价性审计](docs/TEMPLATE_EQUIVALENCE_AUDIT.zh-CN.md)和[逐图矩阵](docs/TEMPLATE_FIGURE_EQUIVALENCE.tsv)。
 
 ## 核心特性
 
@@ -61,7 +63,7 @@ PanFamFlow 的输入是**已经组装并注释的 genome FASTA + GFF3**。OrthoF
 - **本地与 HPC**：提供 local 和 SLURM profile。
 - **生物学启动门**：在真实分析前对目标家族冻结、5–10 个 assembled-genome panel、输入 SHA256 和人工正负例执行 fail-closed 审计。
 - **真实数据 smoke test**：`examples/rice_3group_pilot/` 记录 GJ/XI/Wild 三组 gzip 输入审计，原始基因组不进入 Git。
-- **小白运行 + 科学分析教学 HTML**：保留 12 步运行手册与配置生成器，并增加八章科学内容，逐项讲解基础知识、分析目的、执行方法、结果阅读、QC、结论边界、失败模式和 51 项能力状态。
+- **小白运行 + 科学分析教学 HTML**：保留 12 步运行手册与配置生成器，并增加八章科学内容，逐项讲解基础知识、分析目的、执行方法、结果阅读、QC、结论边界、失败模式和 58 项能力状态。
 
 ## 总体数据流
 

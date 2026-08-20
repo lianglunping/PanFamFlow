@@ -8,6 +8,7 @@ from collections import defaultdict
 from typing import Any
 
 import pandas as pd
+from gene_structure_statistics import compare_grouped_metrics, plot_grouped_metrics
 from workflow_utils import first_parent, iter_gff, save_table, save_workbook
 
 members = pd.read_csv(snakemake.input.members, sep="\t")
@@ -164,6 +165,45 @@ for group_field in ("subfamily", "group"):
                 }
             )
 summary = pd.DataFrame(summary_rows)
+global_tables: list[pd.DataFrame] = []
+pairwise_tables: list[pd.DataFrame] = []
+statistics_qc_tables: list[pd.DataFrame] = []
+for group_field in ("subfamily", "group"):
+    global_tests, pairwise_tests, statistics_qc = compare_grouped_metrics(
+        metrics,
+        group_field=group_field,
+        metrics=list(snakemake.params.metrics),
+        min_group_units=int(snakemake.params.min_group_units),
+        alpha=float(snakemake.params.alpha),
+    )
+    global_tables.append(global_tests)
+    pairwise_tables.append(pairwise_tests)
+    statistics_qc_tables.append(statistics_qc)
+global_tests = pd.concat(global_tables, ignore_index=True)
+pairwise_tests = pd.concat(pairwise_tables, ignore_index=True)
+statistics_qc = pd.concat(statistics_qc_tables, ignore_index=True)
 save_table(metrics, snakemake.output.metrics)
 save_table(summary, snakemake.output.summary)
-save_workbook({"metrics": metrics, "summary": summary}, snakemake.output.xlsx)
+save_table(global_tests, snakemake.output.global_tests)
+save_table(pairwise_tests, snakemake.output.pairwise_tests)
+save_table(statistics_qc, snakemake.output.statistics_qc)
+save_workbook(
+    {
+        "metrics": metrics,
+        "summary": summary,
+        "global_tests": global_tests,
+        "pairwise_tests": pairwise_tests,
+        "statistics_qc": statistics_qc,
+    },
+    snakemake.output.xlsx,
+)
+plot_grouped_metrics(
+    metrics,
+    group_fields=["subfamily", "group"],
+    metrics=list(snakemake.params.metrics),
+    pdf_path=snakemake.output.comparison_plot_pdf,
+    png_path=snakemake.output.comparison_plot_png,
+    png_dpi=int(snakemake.params.png_dpi),
+    seed=int(snakemake.params.seed),
+    min_group_units=int(snakemake.params.min_group_units),
+)

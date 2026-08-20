@@ -18,3 +18,4 @@ logs/
 .panfamflow/
 .codex/
 benchmarks/
+/temp_tests/

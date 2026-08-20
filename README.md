@@ -1,6 +1,6 @@
 # PanFamFlow — Target Pan-Gene-Family Analysis Workflow
 
-**English** | [简体中文](README.zh-CN.md) | [中文交互式教程](docs/index.html) | [51-item coverage audit](docs/ANALYSIS_COVERAGE.zh-CN.md) | [Project site](https://lianglunping.github.io/PanFamFlow/index.html?rev=pages-entry-fix-20260819) | [Online tutorial](https://lianglunping.github.io/PanFamFlow/tutorial/)
+**English** | [简体中文](README.zh-CN.md) | [中文交互式教程](docs/index.html) | [58-item coverage audit](docs/ANALYSIS_COVERAGE.zh-CN.md) | [Project site](https://lianglunping.github.io/PanFamFlow/index.html?rev=pages-entry-fix-20260819) | [Online tutorial](https://lianglunping.github.io/PanFamFlow/tutorial/)
 
 [![Version](https://img.shields.io/badge/version-0.1.2--alpha-orange)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/Python-3.11--3.13-blue)](pyproject.toml)
@@ -46,7 +46,9 @@ PanFamFlow was developed from two project source documents:
 
 Those materials define a target-family workflow involving HMMER/BLASTP, IQ-TREE, Core/Soft-core/Shell/Cloud classification, MCScanX/DupGen_finder, Ka/Ks, 2 kb promoters, PlantCARE/FIMO, and RNA-seq. PanFamFlow adds canonical-transcript control, stable IDs, rejected-candidate auditing, explicit HOG-node selection, input SHA256 tracking, smart resume, and an integrated master table. See [docs/DESIGN_BASIS.md](docs/DESIGN_BASIS.md) for the requirement-to-implementation mapping.
 
-The two sources contain 51 named analysis items (4.1–11.5). PanFamFlow does **not** claim that all 51 are automated: the audited current distribution is 11 `IMPLEMENTED`, 29 `CONDITIONALLY_AVAILABLE`, 2 `EXTERNAL_IMPORT`, and 9 `NOT_SUPPORTED`. See the [human-readable audit](docs/ANALYSIS_COVERAGE.zh-CN.md) and [machine-readable table](docs/ANALYSIS_COVERAGE.tsv) before interpreting scope.
+The source text originally named 51 items; a figure-by-figure PDF audit added seven independently required topics that the textual inventory had omitted. The authoritative inventory therefore contains 58 items. PanFamFlow does **not** claim that all 58 are automated: the audited current distribution is 21 `IMPLEMENTED`, 29 `CONDITIONALLY_AVAILABLE`, 2 `EXTERNAL_IMPORT`, and 6 `NOT_SUPPORTED`. See the [human-readable audit](docs/ANALYSIS_COVERAGE.zh-CN.md) and [machine-readable table](docs/ANALYSIS_COVERAGE.tsv) before interpreting scope.
+
+Those 58 entries describe topic-level capability, not PDF-figure completion. The stricter Fig01–Fig34 comparison currently classifies 11 audit entries as `MATCHED_CORE`, 15 as `PARTIAL`, 6 as `NOT_IMPLEMENTED`, and 1 as `EXTERNAL_REQUIRED`; see the [template-equivalence audit](docs/TEMPLATE_EQUIVALENCE_AUDIT.zh-CN.md) and [figure matrix](docs/TEMPLATE_FIGURE_EQUIVALENCE.tsv).
 
 ## Main features
 
@@ -61,7 +63,7 @@ The two sources contain 51 named analysis items (4.1–11.5). PanFamFlow does **
 - **Local and HPC execution**: local and SLURM profiles are provided.
 - **Biological start gate**: a fail-closed benchmark audit can freeze the target family, 5–10 assembled genomes, input SHA256 values, and manually reviewed positive/negative controls before a real run starts.
 - **Real-data smoke test**: `examples/rice_3group_pilot/` records a three-group GJ/XI/Wild gzip-input audit without committing raw genomes.
-- **Beginner and scientific tutorial**: a self-contained Chinese HTML guide preserves the 12-step runbook and adds eight scientific chapters covering concepts, rationale, execution, result reading, QC, supported/unsupported conclusions, failure modes, and all 51 audited analysis items.
+- **Beginner and scientific tutorial**: a self-contained Chinese HTML guide preserves the 12-step runbook and adds eight scientific chapters covering concepts, rationale, execution, result reading, QC, supported/unsupported conclusions, failure modes, and all 58 audited analysis items.
 
 ## Workflow overview
 

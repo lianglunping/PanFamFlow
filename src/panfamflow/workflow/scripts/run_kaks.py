@@ -15,6 +15,7 @@ from typing import Any
 
 import matplotlib.pyplot as plt
 import pandas as pd
+from stratified_summary_utils import annotate_kaks_pairs, summarize_kaks_strata
 from workflow_utils import (
     commit_partial,
     partial_path,
@@ -275,8 +276,24 @@ def run_pair(index_record: tuple[int, dict[str, Any]]) -> dict[str, Any]:
 with concurrent.futures.ThreadPoolExecutor(max_workers=int(snakemake.params.workers)) as executor:
     rows = list(executor.map(run_pair, enumerate(pair_records, start=1)))
 results = pd.DataFrame(rows).sort_values("pair_id").reset_index(drop=True)
+family_members = pd.read_csv(snakemake.input.members, sep="\t")
+pan_membership = pd.read_csv(snakemake.input.pan_membership, sep="\t")
+pan_classification = pd.read_csv(snakemake.input.pan_classification, sep="\t")
+duplication_modes = pd.read_csv(snakemake.input.duplication_modes, sep="\t")
+results = annotate_kaks_pairs(
+    results,
+    family_members,
+    pan_membership,
+    pan_classification,
+    duplication_modes,
+)
+stratified_summary = summarize_kaks_strata(results)
 save_table(results, snakemake.output.tsv)
-save_workbook({"kaks_pairs": results}, snakemake.output.xlsx)
+save_table(stratified_summary, snakemake.output.stratified_summary)
+save_workbook(
+    {"kaks_pairs": results, "stratified_summary": stratified_summary},
+    snakemake.output.xlsx,
+)
 
 valid = results.loc[pd.to_numeric(results["Ka_Ks"], errors="coerce").notna()].copy()
 fig, axis = plt.subplots(figsize=(8.0, 4.8))
@@ -293,4 +310,45 @@ else:
 fig.tight_layout()
 fig.savefig(snakemake.output.plot_pdf)
 fig.savefig(snakemake.output.plot_png, dpi=int(snakemake.params.png_dpi))
+plt.close(fig)
+
+stratification_columns = [
+    ("SUBFAMILY", "subfamily_stratum"),
+    ("GROUP", "group_stratum"),
+    ("PAN CLASS", "pan_class_stratum"),
+    ("DUPLICATION MODE", "duplication_mode_stratum"),
+]
+metrics = ["Ka", "Ks", "Ka_Ks"]
+fig, axes = plt.subplots(
+    len(stratification_columns),
+    len(metrics),
+    figsize=(15.0, 3.8 * len(stratification_columns)),
+)
+for row_index, (label, column) in enumerate(stratification_columns):
+    for column_index, metric in enumerate(metrics):
+        axis = axes[row_index, column_index]
+        groups = []
+        group_labels = []
+        for stratum, group in results.groupby(column, sort=True):
+            values = pd.to_numeric(group[metric], errors="coerce").dropna().to_numpy()
+            if len(values):
+                groups.append(values)
+                group_labels.append(str(stratum))
+        if groups:
+            axis.boxplot(groups, tick_labels=group_labels, showfliers=False)
+            axis.tick_params(axis="x", rotation=35)
+        else:
+            axis.text(0.5, 0.5, "No valid estimates", ha="center", va="center")
+            axis.set_axis_off()
+        axis.set_title(f"{label}: {metric}")
+        axis.set_ylabel(metric.replace("_", "/"))
+        axis.spines[["top", "right"]].set_visible(False)
+fig.suptitle("Descriptive Ka/Ks distributions; sequence pairs are not independent replicates")
+fig.tight_layout()
+fig.savefig(snakemake.output.stratified_plot_pdf, facecolor="white")
+fig.savefig(
+    snakemake.output.stratified_plot_png,
+    dpi=int(snakemake.params.png_dpi),
+    facecolor="white",
+)
 plt.close(fig)

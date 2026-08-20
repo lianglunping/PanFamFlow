@@ -6,6 +6,7 @@ dependencies:
   - python=3.12
   - pandas>=2.2,<3
   - numpy>=2,<3
+  - scipy>=1.15,<1.18
   - matplotlib-base>=3.9,<4
   - openpyxl>=3.1,<4
   - biopython>=1.84,<2

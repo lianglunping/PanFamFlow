@@ -10,13 +10,20 @@ rule calculate_kaks:
     input:
         proteins=join_path(RESULTS, "02_family", "family_proteins.fa"),
         cds=join_path(RESULTS, "02_family", "family_cds.fa"),
+        members=MODULE_TARGETS["family"],
+        pan_membership=join_path(RESULTS, "06_pan_family", "family_hog_membership.tsv"),
+        pan_classification=MODULE_TARGETS["pan_family"],
+        duplication_modes=MODULE_TARGETS["duplication"],
         membership=KAKS_MEMBERSHIP,
         duplication_pairs=KAKS_DUPLICATION_PAIRS,
     output:
         tsv=ensure(MODULE_TARGETS["kaks"], non_empty=True),
         xlsx=ensure(join_path(RESULTS, "09_kaks", "kaks_pairs.xlsx"), non_empty=True),
+        stratified_summary=ensure(join_path(RESULTS, "09_kaks", "kaks_stratified_summary.tsv"), non_empty=True),
         plot_pdf=join_path(RESULTS, "09_kaks", "kaks_distribution.pdf"),
         plot_png=join_path(RESULTS, "09_kaks", "kaks_distribution.png"),
+        stratified_plot_pdf=join_path(RESULTS, "09_kaks", "kaks_stratified_distributions.pdf"),
+        stratified_plot_png=join_path(RESULTS, "09_kaks", "kaks_stratified_distributions.png"),
     params:
         pair_source=KAKS_PAIR_SOURCE,
         reference_species=KAKS_REFERENCE_SPECIES,
