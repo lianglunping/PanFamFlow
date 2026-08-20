@@ -1,7 +1,5 @@
 """Small, dependency-light helpers shared by Snakemake scripts."""
 
-from __future__ import annotations
-
 import gzip
 import hashlib
 import json
@@ -152,7 +150,7 @@ def open_text(path: str | Path, mode: str = "rt") -> TextIO:
     return file_path.open(mode, encoding="utf-8")
 
 
-def read_delimited_table(path: str | Path, **kwargs: Any) -> pd.DataFrame:
+def read_delimited_table(path: str | Path, **kwargs: Any) -> "pd.DataFrame":
     """Read CSV/TSV deterministically without delimiter sniffing on one-column files."""
 
     import pandas as pd
@@ -468,7 +466,7 @@ def select_longest_cds_gff3(source: str | Path, target: str | Path) -> dict[str,
     }
 
 
-def save_table(df: pd.DataFrame, tsv: str | Path, xlsx: str | Path | None = None) -> None:
+def save_table(df: "pd.DataFrame", tsv: str | Path, xlsx: str | Path | None = None) -> None:
     import pandas as pd
 
     tsv_path = Path(tsv)
@@ -486,7 +484,7 @@ def save_table(df: pd.DataFrame, tsv: str | Path, xlsx: str | Path | None = None
         commit_partial(xlsx_temporary, xlsx_path)
 
 
-def save_workbook(tables: Mapping[str, pd.DataFrame], path: str | Path) -> None:
+def save_workbook(tables: Mapping[str, "pd.DataFrame"], path: str | Path) -> None:
     import pandas as pd
 
     target = Path(path)
@@ -588,7 +586,7 @@ def split_multi_value(value: Any) -> list[str]:
 
 
 def resolve_column(
-    df: pd.DataFrame, candidates: Sequence[str], required: bool = True
+    df: "pd.DataFrame", candidates: Sequence[str], required: bool = True
 ) -> str | None:
     lookup = {column.strip().lower().replace(" ", "_"): column for column in df.columns}
     for candidate in candidates:

@@ -48,10 +48,10 @@ jobs:
           grep -q '^# PanFamFlow — 泛基因家族分析流程' README.zh-CN.md
           grep -q '\[简体中文\](README.zh-CN.md)' README.md
           grep -q '\[English\](README.md)' README.zh-CN.md
-          grep -q '\[交互式小白教程\](docs/index.html)' README.zh-CN.md
+          grep -q '\[中文交互式教程\](docs/index.html)' README.zh-CN.md
           grep -q '\[中文交互式教程\](docs/index.html)' README.md
-          grep -q '<title>PanFamFlow 中文入门教程' docs/index.html
-          grep -q '目标家族，不做泛基因组组装' docs/index.html
+          grep -q '<title>PanFamFlow 中文交互式教程' docs/index.html
+          grep -q '它不做泛基因组组装' docs/index.html
           grep -q '交互式 config.yaml 片段生成器' docs/index.html
           grep -q 'not a pangenome assembly workflow' README.md
           grep -q '不是泛基因组组装流程' README.zh-CN.md
