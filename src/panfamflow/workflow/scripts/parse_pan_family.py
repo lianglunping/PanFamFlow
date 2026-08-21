@@ -251,6 +251,23 @@ pan_summaries = build_pan_family_summaries(
 class_summary = pan_summaries["class_summary"]
 species_class_summary = pan_summaries["species_class_summary"]
 subfamily_class_summary = pan_summaries["subfamily_class_summary"]
+hog_gene_counts = classification[
+    [
+        "HOG_ID",
+        "pan_family_class",
+        "family_gene_count",
+        "species_occupancy",
+        "species_fraction",
+        "mean_copy_number_present_species",
+        "max_copy_number",
+        "single_copy_species_fraction",
+        "hog_node",
+        "hog_node_status",
+        "orthology_group_type",
+        "absence_validation_status",
+        "interpretation_flag",
+    ]
+].copy()
 
 save_table(classification, snakemake.output.classification)
 save_table(membership, snakemake.output.membership)
@@ -258,6 +275,7 @@ save_table(presence, snakemake.output.presence)
 save_table(rarefaction, snakemake.output.rarefaction)
 save_table(summary, snakemake.output.rarefaction_summary)
 save_table(class_summary, snakemake.output.class_summary)
+save_table(hog_gene_counts, snakemake.output.hog_gene_counts)
 save_table(species_class_summary, snakemake.output.species_class_summary)
 save_table(subfamily_class_summary, snakemake.output.subfamily_class_summary)
 save_workbook(
@@ -269,6 +287,7 @@ save_workbook(
         "rarefaction_iterations": rarefaction,
         "rarefaction_summary": summary,
         "class_summary": class_summary,
+        "hog_gene_counts": hog_gene_counts,
         "species_class_summary": species_class_summary,
         "subfamily_class_summary": subfamily_class_summary,
     },
@@ -325,7 +344,86 @@ fig.savefig(
     dpi=int(snakemake.params.png_dpi),
     facecolor="white",
 )
+fig.savefig(snakemake.output.fig10_pdf, facecolor="white")
+fig.savefig(
+    snakemake.output.fig10_png,
+    dpi=int(snakemake.params.png_dpi),
+    facecolor="white",
+)
 plt.close(fig)
+
+fig, axis = plt.subplots(figsize=(8.2, max(4.8, 0.20 * len(hog_gene_counts) + 2.0)))
+ordered_hogs = hog_gene_counts.sort_values(
+    ["pan_family_class", "family_gene_count", "HOG_ID"],
+    key=lambda series: (
+        series.map({label: index for index, label in enumerate(class_order)})
+        if series.name == "pan_family_class"
+        else series
+    ),
+).reset_index(drop=True)
+axis.scatter(
+    ordered_hogs["family_gene_count"],
+    np.arange(len(ordered_hogs)),
+    c=ordered_hogs["pan_family_class"].map(colors),
+    s=38,
+    alpha=0.9,
+)
+axis.set_yticks(np.arange(len(ordered_hogs)), ordered_hogs["HOG_ID"], fontsize=7)
+axis.set_xlabel("Target-family gene count per orthology group")
+axis.set_ylabel("Orthology group")
+axis.set_title("Gene counts of target-family orthology groups by pan class")
+axis.spines[["top", "right"]].set_visible(False)
+axis.grid(False)
+fig.tight_layout()
+fig.savefig(snakemake.output.fig11_pdf, facecolor="white")
+fig.savefig(snakemake.output.fig11_png, dpi=int(snakemake.params.png_dpi), facecolor="white")
+plt.close(fig)
+
+
+def save_species_pan_class_measure(
+    value_column: str, ylabel: str, pdf_path: str, png_path: str
+) -> None:
+    matrix = numeric_pivot(
+        species_class_summary,
+        index="species_id",
+        columns="pan_family_class",
+        values=value_column,
+        column_order=class_order,
+        fill_value=0.0,
+    )
+    fig, axis = plt.subplots(figsize=(max(8.0, 0.42 * len(matrix) + 4.5), 5.2))
+    matrix.plot(
+        kind="bar",
+        stacked=True,
+        color=[colors[label] for label in class_order],
+        ax=axis,
+    )
+    axis.set_xlabel("Species or accession")
+    axis.set_ylabel(ylabel)
+    if value_column.endswith("fraction"):
+        axis.set_ylim(0, 1)
+    axis.tick_params(axis="x", rotation=45)
+    axis.spines[["top", "right"]].set_visible(False)
+    axis.grid(False)
+    axis.legend(frameon=False, title="Pan class", bbox_to_anchor=(1.02, 1), loc="upper left")
+    fig.tight_layout()
+    fig.savefig(pdf_path, facecolor="white")
+    fig.savefig(png_path, dpi=int(snakemake.params.png_dpi), facecolor="white")
+    plt.close(fig)
+
+
+save_species_pan_class_measure(
+    "gene_count",
+    "Number of target-family genes",
+    snakemake.output.fig12_pdf,
+    snakemake.output.fig12_png,
+)
+save_species_pan_class_measure(
+    "gene_fraction",
+    "Within-species fraction of target-family genes",
+    snakemake.output.fig13_pdf,
+    snakemake.output.fig13_png,
+)
 
 
 def save_class_distribution(

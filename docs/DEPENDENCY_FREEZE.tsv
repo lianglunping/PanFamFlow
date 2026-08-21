@@ -1,0 +1,25 @@
+dependency_id	purpose	requested_version	source	runtime_boundary	environment	verification_command	resolution_status
+snakemake	DAG and resume semantics	9.25.1	PyPI/conda-forge	engine only	environment.yaml	snakemake --version	VERIFIED_AVAILABLE
+python	CLI and rule scripts	3.12.* exact build by lock	conda-forge	per environment	all Python environments	python --version	VERIFIED_AVAILABLE
+r-base	DESeq2 and R renderers	4.6.1	R Project/conda-forge	immutable derived containers	expression_de_container;synteny_render_container	R --version	VERIFIED_AVAILABLE
+deseq2	raw-count differential expression	1.52.0	Bioconductor 3.23	immutable derived container only	expression_de_container	Rscript -e 'cat(as.character(packageVersion("DESeq2")),"\n")'	BUILT_VERIFIED_IMAGE_ID
+subread	featureCounts integer matrix	2.1.1	Subread/Bioconda	FASTQ-to-count only	expression_de.yaml	featureCounts -v	VERIFIED_AVAILABLE
+fastp	RNA-seq read QC	>=0.24,<1 exact build by lock	Bioconda	legacy and DE FASTQ environments	expression.yaml;expression_de.yaml	fastp --version	LOCKED_LINUX64
+hisat2	splice-aware alignment	2.2.1	Bioconda	legacy and DE FASTQ environments	expression.yaml;expression_de.yaml	hisat2 --version	VERIFIED_AVAILABLE
+mafft	protein and codon-preparation alignments	7.526	conda-forge	phylogeny/KaKs/domain Logo	phylogeny.yaml;kaks.yaml;domain_logo.yaml	mafft --version	VERIFIED_AVAILABLE
+clipkit	phylogeny alignment trimming	2.13.2	PyPI/Bioconda	phylogeny only	phylogeny.yaml	clipkit --version	VERIFIED_AVAILABLE
+iqtree	maximum-likelihood family tree	3.1.3	IQ-TREE/Bioconda	phylogeny only	phylogeny.yaml	iqtree3 --version	VERIFIED_AVAILABLE
+hmmer	family/domain search and hmmalign	3.4	Bioconda	family/domain Logo	family.yaml;domain_logo.yaml	hmmsearch -h	VERIFIED_AVAILABLE
+diamond	duplication and synteny similarity	>=2.1,<3 exact build by lock	Bioconda	separate duplication/synteny locks	duplication.yaml;synteny.yaml	diamond version	LOCKED_LINUX64
+orthofinder	HOG and species-tree context	3.1.5	Bioconda	orthology only	orthology.yaml	orthofinder --version	LOCKED_LINUX64
+dupgen_finder	unique duplication modes	54b950216efe7700f84395d03565cf75cd745e14 (v1.0.0)	upstream Git repository	immutable source cache	duplication source receipt	git -C "$DUPGEN_SOURCE" rev-parse HEAD	PINNED_SOURCE_COMMIT
+pal2nal	protein MSA to codon alignment	14.1	Bioconda	KaKs only	kaks.yaml	sha256sum "$(command -v pal2nal.pl)"	LOCKED_LINUX64
+kakscalculator2	pairwise Ka/Ks	2.0.1	Bioconda	KaKs only	kaks.yaml	KaKs_Calculator -h	LOCKED_LINUX64
+meme	FIMO motif scanning	5.5.9	Bioconda	promoter only	promoter.yaml	fimo --version	VERIFIED_AVAILABLE
+jcvi	macrosynteny blocks and linear plots	1.6.6	JCVI/Bioconda	linux-64 Python environment; no R renderer	synteny.yaml	python -c "import importlib.metadata as m; print(m.version('jcvi'))"	VERIFIED_SOLVE_LINUX64
+circlize	Circos rendering	0.4.18	CRAN/conda-forge	separate immutable R renderer container	synteny_render_container	Rscript -e 'cat(as.character(packageVersion("circlize")),"\n")'	BUILT_VERIFIED_IMAGE_ID
+pandas	TSV joins and summaries	>=2.2,<3 exact build by lock	PyPI/conda-forge	Python analysis environments	analysis.yaml	python -c "import pandas; print(pandas.__version__)"	LOCKED_LINUX64
+openpyxl	XLSX parity	>=3.1,<4 exact build by lock	PyPI/conda-forge	Python artifact writers	analysis.yaml	python -c "import openpyxl; print(openpyxl.__version__)"	LOCKED_LINUX64
+matplotlib	publication PDF/PNG	>=3.9,<4 exact build by lock	PyPI/conda-forge	Python renderers	analysis.yaml	python -c "import matplotlib; print(matplotlib.__version__)"	LOCKED_LINUX64
+scipy	statistics and effect sizes	>=1.15,<1.18 exact build by lock	PyPI/conda-forge	Python statistics	analysis.yaml	python -c "import scipy; print(scipy.__version__)"	LOCKED_LINUX64
+biopython	FASTA/alignment parsing	>=1.84,<2 exact build by lock	PyPI/conda-forge	family/phylogeny/KaKs	family.yaml;phylogeny.yaml;kaks.yaml	python -c "import Bio; print(Bio.__version__)"	LOCKED_LINUX64

@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+#JSUB -J panfamflow_b0_locks
+#JSUB -q normal
+#JSUB -n 4
+#JSUB -o logs/hpc/b0_locks.%J.out
+#JSUB -e logs/hpc/b0_locks.%J.err
+
+set -euo pipefail
+cd "$JH_SUB_CWD"
+
+module purge || true
+module load anaconda3
+
+micromamba_bin="${HOME}/mmenv/bin/micromamba"
+test -x "$micromamba_bin"
+mkdir -p env-locks/linux-64 logs/hpc work/lock-solves
+
+solve_environment() {
+    local environment="$1"
+    local environment_name="$2"
+    solve_json="work/lock-solves/${environment_name}.linux-64.solve.json"
+    "$micromamba_bin" create \
+        --dry-run \
+        --json \
+        --platform linux-64 \
+        --prefix "$JH_SUB_CWD/work/lock-solves/prefix-${environment_name}" \
+        --file "$environment" > "$solve_json"
+    python scripts/micromamba_json_to_lock.py \
+        "$solve_json" \
+        "env-locks/linux-64/${environment_name}.explicit.txt" \
+        "env-locks/linux-64/${environment_name}.packages.tsv"
+}
+
+solve_environment "environment.yaml" "engine"
+
+for environment in src/panfamflow/workflow/envs/*.yaml; do
+    environment_name="$(basename "$environment" .yaml)"
+    solve_environment "$environment" "$environment_name"
+done
+
+LC_ALL=C sha256sum \
+    env-locks/linux-64/*.explicit.txt \
+    env-locks/linux-64/*.packages.tsv \
+    > env-locks/linux-64/SHA256SUMS

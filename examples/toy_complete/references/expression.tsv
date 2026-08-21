@@ -1,0 +1,25 @@
+stable_id	A_Control_R1	A_Control_R2	A_Salt_R1	A_Salt_R2	B_Mock_R1	B_Mock_R2	B_Infected_R1	B_Infected_R2
+SpA__Gene01	7.250	7.500	36.250	37.500				
+SpA__Gene02	9.250	9.500	46.250	47.500				
+SpA__Gene03	11.250	11.500	2.250	2.300				
+SpA__Gene04	13.250	13.500	13.250	13.500				
+SpA__Gene05	15.250	15.500	15.250	15.500				
+SpA__Gene06	17.250	17.500	17.250	17.500				
+SpB__Gene01					7.250	7.500	29.000	30.000
+SpB__Gene02					9.250	9.500	37.000	38.000
+SpB__Gene03					11.250	11.500	2.812	2.875
+SpB__Gene04					13.250	13.500	13.250	13.500
+SpB__Gene05					15.250	15.500	15.250	15.500
+SpB__Gene06					17.250	17.500	17.250	17.500
+SpC__Gene01								
+SpC__Gene02								
+SpC__Gene03								
+SpC__Gene04								
+SpC__Gene05								
+SpC__Gene06								
+SpD__Gene01								
+SpD__Gene02								
+SpD__Gene03								
+SpD__Gene04								
+SpD__Gene05								
+SpD__Gene06								

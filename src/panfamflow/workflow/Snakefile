@@ -1,5 +1,7 @@
 """PanFamFlow Snakemake entry point."""
 
+import csv
+import re
 from pathlib import Path
 
 
@@ -47,6 +49,141 @@ MODULE_TARGETS = {
     "expression": join_path(RESULTS, "11_expression", "expression_matrix.tsv"),
     "report": join_path(RESULTS, "report", "index.html"),
 }
+COMPARATIVE_PANEL = config.get("comparative_panel", {})
+COMPLETE_PROFILE = config.get("deliverables", {}).get("profile", "legacy") == "pdf_md_complete"
+COMPARATIVE_PHYLOGENY_TARGETS = (
+    [
+        join_path(RESULTS, "03_phylogeny", "Fig03_representative_external_tree.pdf"),
+        join_path(RESULTS, "03_phylogeny", "Fig03_representative_external_tree.png"),
+    ]
+    if COMPARATIVE_PANEL.get("enabled", False) and "phylogeny" in SELECTED_MODULES
+    else []
+)
+COMPLETE_CHROMOSOME_TARGETS = (
+    [
+        join_path(RESULTS, "07_chromosome", "Fig15_chromosome_panclass_subfamily.pdf"),
+        join_path(RESULTS, "07_chromosome", "Fig15_chromosome_panclass_subfamily.png"),
+    ]
+    if COMPLETE_PROFILE and "chromosome" in SELECTED_MODULES
+    else []
+)
+SYNTENY_CONFIG = config.get("synteny", {})
+
+
+def load_synteny_pairs():
+    if not SYNTENY_CONFIG.get("enabled", False):
+        return {}
+    table_path = Path(str(SYNTENY_CONFIG.get("species_pairs_table")))
+    if not table_path.is_file():
+        raise FileNotFoundError(f"Configured synteny species-pair table does not exist: {table_path}")
+    with table_path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle, delimiter="\t"))
+    required = {"pair_id", "species_1", "species_2"}
+    if not rows:
+        raise ValueError("Synteny species-pair table is empty.")
+    missing = sorted(required.difference(rows[0]))
+    if missing:
+        raise ValueError(f"Synteny species-pair table lacks columns: {', '.join(missing)}")
+    records = {}
+    for layout_index, row in enumerate(rows, start=1):
+        pair_id = str(row["pair_id"]).strip()
+        if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_.-]*", pair_id):
+            raise ValueError(f"Invalid synteny pair_id: {pair_id!r}")
+        if pair_id in records:
+            raise ValueError(f"Duplicate synteny pair_id: {pair_id}")
+        species_1 = str(row["species_1"]).strip()
+        species_2 = str(row["species_2"]).strip()
+        unknown = sorted({species_1, species_2}.difference(SPECIES_BY_ID))
+        if unknown:
+            raise ValueError(f"Synteny pair {pair_id} references unknown species: {unknown}")
+        records[pair_id] = {
+            **row,
+            "pair_id": pair_id,
+            "species_1": species_1,
+            "species_2": species_2,
+            "layout_order": int(row.get("layout_order") or layout_index),
+            "include_overview": str(row.get("include_overview", "true")).lower()
+            in {"1", "true", "yes", "y"},
+        }
+    representative = str(SYNTENY_CONFIG.get("representative_species"))
+    if not any(
+        row["species_1"] == representative and row["species_2"] == representative
+        for row in records.values()
+    ):
+        raise ValueError(
+            "Synteny pair table must contain one intragenome row for representative_species."
+        )
+    if not any(row["species_1"] != row["species_2"] for row in records.values()):
+        raise ValueError("Synteny pair table must contain at least one inter-species pair.")
+    return records
+
+
+SYNTENY_PAIR_RECORDS = load_synteny_pairs()
+SYNTENY_PAIR_IDS = list(SYNTENY_PAIR_RECORDS)
+SYNTENY_TARGETS = (
+    [
+        join_path(RESULTS, "08_duplication", "Fig17_representative_intragenome_circos.pdf"),
+        join_path(RESULTS, "08_duplication", "Fig17_representative_intragenome_circos.png"),
+        join_path(RESULTS, "08_duplication", "Fig21_inter_species_pairwise_synteny.pdf"),
+        join_path(RESULTS, "08_duplication", "Fig21_inter_species_pairwise_synteny.png"),
+        join_path(RESULTS, "08_duplication", "Fig22_inter_species_synteny_overview.pdf"),
+        join_path(RESULTS, "08_duplication", "Fig22_inter_species_synteny_overview.png"),
+    ]
+    if SYNTENY_CONFIG.get("enabled", False) and "duplication" in SELECTED_MODULES
+    else []
+)
+DE_CONFIG = config.get("differential_expression", {})
+DE_TARGETS = (
+    [
+        join_path(
+            RESULTS,
+            "11_expression",
+            "Fig34_stress_expression_and_comparison.pdf",
+        ),
+        join_path(
+            RESULTS,
+            "11_expression",
+            "Fig34_stress_expression_and_comparison.png",
+        ),
+    ]
+    if DE_CONFIG.get("enabled", False) and "expression" in SELECTED_MODULES
+    else []
+)
+
+
+def formal_activation_enabled(row):
+    if row["module"] not in SELECTED_MODULES:
+        return False
+    activation = row["activation"]
+    return {
+        "pdf_md_complete": COMPLETE_PROFILE,
+        "comparative_panel.enabled": bool(COMPARATIVE_PANEL.get("enabled", False)),
+        "domain_logo.enabled": bool(config.get("domain_logo", {}).get("enabled", False)),
+        "synteny.enabled": bool(SYNTENY_CONFIG.get("enabled", False)),
+        "differential_expression.enabled": bool(DE_CONFIG.get("enabled", False)),
+    }.get(activation, False)
+
+
+FIGURE_CONTRACT_PATH = Path(workflow.basedir).parents[2] / "docs" / "FIGURE_CONTRACT.tsv"
+with FIGURE_CONTRACT_PATH.open(encoding="utf-8", newline="") as handle:
+    FIGURE_CONTRACT_ROWS = list(csv.DictReader(handle, delimiter="\t"))
+NATIVE_FORMAL_XLSX = {
+    join_path(RESULTS, "08_duplication", "synteny_blocks_intra.xlsx"),
+    join_path(RESULTS, "08_duplication", "synteny_blocks_inter.xlsx"),
+    join_path(RESULTS, "08_duplication", "synteny_pair_summary.xlsx"),
+    join_path(RESULTS, "11_expression", "deseq2_contrast_results.xlsx"),
+}
+FORMAL_TABLE_COMPANION_TARGETS = sorted(
+    {
+        str(Path(row["source_table"]).with_suffix(".xlsx"))
+        for row in FIGURE_CONTRACT_ROWS
+        if formal_activation_enabled(row)
+    }.difference(NATIVE_FORMAL_XLSX)
+)
+FORMAL_TABLE_COMPANION_STEMS = [
+    str(Path(path).with_suffix("").relative_to(RESULTS))
+    for path in FORMAL_TABLE_COMPANION_TARGETS
+]
 unknown_modules = sorted(set(SELECTED_MODULES).difference(MODULE_TARGETS))
 if unknown_modules:
     raise ValueError(f"Unknown PanFamFlow modules: {', '.join(unknown_modules)}")
@@ -68,10 +205,16 @@ def sample_field(wildcards, field):
 wildcard_constraints:
     species="|".join(SPECIES),
     sample="|".join(SAMPLES) if SAMPLES else r"a^",
+    pair_id="|".join(re.escape(item) for item in SYNTENY_PAIR_IDS) if SYNTENY_PAIR_IDS else r"a^",
 
 rule all:
     input:
         [MODULE_TARGETS[module] for module in SELECTED_MODULES]
+        + COMPARATIVE_PHYLOGENY_TARGETS
+        + COMPLETE_CHROMOSOME_TARGETS
+        + SYNTENY_TARGETS
+        + DE_TARGETS
+        + FORMAL_TABLE_COMPANION_TARGETS
 
 
 include: "rules/qc.smk"

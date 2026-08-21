@@ -8,11 +8,16 @@ from collections import defaultdict
 from typing import Any
 
 import pandas as pd
-from gene_structure_statistics import compare_grouped_metrics, plot_grouped_metrics
+from gene_structure_statistics import (
+    build_species_median_source,
+    compare_grouped_metrics,
+    plot_grouped_metrics,
+)
 from workflow_utils import first_parent, iter_gff, save_table, save_workbook
 
 members = pd.read_csv(snakemake.input.members, sep="\t")
 member_ids = set(members["stable_id"].astype(str))
+member_lookup = members.set_index("stable_id", drop=False).to_dict(orient="index")
 rows: list[dict[str, Any]] = []
 
 for gff_path, mapping_path in zip(snakemake.input.gff3s, snakemake.input.maps, strict=True):
@@ -108,8 +113,8 @@ for gff_path, mapping_path in zip(snakemake.input.gff3s, snakemake.input.maps, s
                 "gene_id": record["gene_id"],
                 "transcript_id": record["transcript_id"],
                 "stable_id": stable_id,
-                "subfamily": members.set_index("stable_id").loc[stable_id].get("subfamily", pd.NA),
-                "group": record.get("group", pd.NA),
+                "subfamily": member_lookup[stable_id].get("subfamily", pd.NA),
+                "group": member_lookup[stable_id].get("group", record.get("group", pd.NA)),
                 "chromosome": chromosome,
                 "strand": strand,
                 "gene_length": gene_length,
@@ -182,11 +187,23 @@ for group_field in ("subfamily", "group"):
 global_tests = pd.concat(global_tables, ignore_index=True)
 pairwise_tests = pd.concat(pairwise_tables, ignore_index=True)
 statistics_qc = pd.concat(statistics_qc_tables, ignore_index=True)
+subfamily_source = build_species_median_source(
+    metrics,
+    group_field="subfamily",
+    metrics=list(snakemake.params.metrics),
+)
+group_source = build_species_median_source(
+    metrics,
+    group_field="group",
+    metrics=list(snakemake.params.metrics),
+)
 save_table(metrics, snakemake.output.metrics)
 save_table(summary, snakemake.output.summary)
 save_table(global_tests, snakemake.output.global_tests)
 save_table(pairwise_tests, snakemake.output.pairwise_tests)
 save_table(statistics_qc, snakemake.output.statistics_qc)
+save_table(subfamily_source, snakemake.output.subfamily_source)
+save_table(group_source, snakemake.output.group_source)
 save_workbook(
     {
         "metrics": metrics,
@@ -194,6 +211,8 @@ save_workbook(
         "global_tests": global_tests,
         "pairwise_tests": pairwise_tests,
         "statistics_qc": statistics_qc,
+        "subfamily_units": subfamily_source,
+        "group_units": group_source,
     },
     snakemake.output.xlsx,
 )
@@ -203,6 +222,26 @@ plot_grouped_metrics(
     metrics=list(snakemake.params.metrics),
     pdf_path=snakemake.output.comparison_plot_pdf,
     png_path=snakemake.output.comparison_plot_png,
+    png_dpi=int(snakemake.params.png_dpi),
+    seed=int(snakemake.params.seed),
+    min_group_units=int(snakemake.params.min_group_units),
+)
+plot_grouped_metrics(
+    metrics,
+    group_fields=["subfamily"],
+    metrics=list(snakemake.params.metrics),
+    pdf_path=snakemake.output.fig07_pdf,
+    png_path=snakemake.output.fig07_png,
+    png_dpi=int(snakemake.params.png_dpi),
+    seed=int(snakemake.params.seed),
+    min_group_units=int(snakemake.params.min_group_units),
+)
+plot_grouped_metrics(
+    metrics,
+    group_fields=["group"],
+    metrics=list(snakemake.params.metrics),
+    pdf_path=snakemake.output.fig08_pdf,
+    png_path=snakemake.output.fig08_png,
     png_dpi=int(snakemake.params.png_dpi),
     seed=int(snakemake.params.seed),
     min_group_units=int(snakemake.params.min_group_units),

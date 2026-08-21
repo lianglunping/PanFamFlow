@@ -1,0 +1,31 @@
+field	schema_version	type	default	required_when	scientific_contract
+schema_version	1.0|1.1	enum	1.0	always	Schema 1.0 remains accepted without rewriting user files.
+deliverables.profile	1.1	enum	legacy	optional	pdf_md_complete requests the full artifact contract but cannot fabricate missing evidence.
+comparative_panel.enabled	1.1	boolean	false	optional	External comparative sequences are opt-in.
+comparative_panel.external_species_table	1.1	path	null	comparative_panel.enabled	Each record must retain accession/version/hash provenance.
+comparative_panel.selection_strategy	1.1	enum	explicit	comparative_panel.enabled	Seeded sampling uses project.seed and remains provenance-visible.
+comparative_panel.include_in_pan_denominator	1.1	false-only	false	always	External species never change target-material HOG occupancy denominators.
+domain_logo.enabled	1.1	boolean	false	optional	Logo represents aligned amino-acid conservation only.
+domain_logo.source	1.1	enum	auto	domain_logo.enabled	Auto prefers audited HMM domain hits before precomputed alignment.
+domain_logo.precomputed_alignment	1.1	path	null	source=precomputed_alignment	IDs must reconcile to accepted family members.
+synteny.enabled	1.1	boolean	false	optional	Whole-genome synteny is independent and default-off.
+synteny.backend	1.1	enum	jcvi	synteny.enabled	Backend and exact version enter provenance.
+synteny.species_pairs_table	1.1	path	null	synteny.enabled	Only declared species pairs are analyzed.
+synteny.precomputed_blocks	1.1	path	null	backend=precomputed	Imported blocks require ID, coordinate and species-pair audit.
+synteny.representative_species	1.1	id	null	synteny.enabled	Fig17 uses only the declared representative intragenome pair.
+synteny.min_anchors_per_block	1.1	integer	5	synteny.enabled	Short or unordered blocks fail closed and cannot be rendered.
+synteny.cscore	1.1	float	0.95	backend=jcvi	JCVI score threshold is recorded per pair.
+synteny.tandem_nmax	1.1	integer	10	backend=jcvi	JCVI tandem-distance parameter is provenance-visible.
+differential_expression.enabled	1.1	boolean	false	optional	Formal DE is independent and default-off.
+differential_expression.source	1.1	enum	featurecounts	differential_expression.enabled	Counts originate from featureCounts or an audited integer matrix.
+differential_expression.input_scale	1.1	enum	raw_counts	differential_expression.enabled	TPM/FPKM are rejected for inferential DE.
+differential_expression.counts_table	1.1	path	null	source=precomputed_counts	Values must be non-negative integers.
+differential_expression.design_table	1.1	path	null	differential_expression.enabled	Replicates, factors and batches must be explicit.
+differential_expression.contrasts_table	1.1	path	null	differential_expression.enabled	Every reported contrast is pre-registered.
+differential_expression.min_replicates	1.1	integer	2	differential_expression.enabled	Each compared condition must meet the biological-replicate gate.
+differential_expression.alpha	1.1	float	0.05	differential_expression.enabled	DESeq2 uses BH-adjusted P values at the declared alpha.
+differential_expression.lfc_threshold	1.1	float	1.0	differential_expression.enabled	DE status requires both BH-FDR and absolute log2FC thresholds.
+differential_expression.min_total_count	1.1	integer	10	differential_expression.enabled	Low-information genes remain explicit rather than becoming zero effects.
+differential_expression.feature_type	1.1	string	exon	source=featurecounts	featureCounts annotation feature type enters provenance.
+differential_expression.feature_attribute	1.1	string	Parent	source=featurecounts	featureCounts grouping attribute must map to canonical transcripts.
+differential_expression.container_image	1.1	immutable-image	digest-pinned	differential_expression.enabled	R 4.6.1 and DESeq2 1.52.0 runtime must use @sha256 identity.

@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+#JSUB -J panfamflow_public_rnaseq
+#JSUB -q normal
+#JSUB -n 8
+#JSUB -o logs/hpc/public_rnaseq.%J.out
+#JSUB -e logs/hpc/public_rnaseq.%J.err
+
+set -euo pipefail
+cd "$JH_SUB_CWD"
+
+engine="$JH_SUB_CWD/../work/verified-engine-linux-64-198231"
+test -x "$engine/bin/python"
+
+"$engine/bin/python" scripts/download_public_expression_files.py \
+    examples/public_rice_expression/raw_files.tsv \
+    /public/home/lianglunping/work/PanFamFlow/public-expression-20260821/raw \
+    /public/home/lianglunping/work/PanFamFlow/public-expression-20260821/download_receipt.tsv \
+    --workers 4

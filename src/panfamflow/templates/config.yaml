@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=.panfamflow/config.schema.json
-# PanFamFlow configuration schema 1.0
+# PanFamFlow configuration schema 1.1. Existing schema 1.0 projects remain supported.
 # All paths are relative to project.root unless absolute.
-schema_version: "1.0"
+schema_version: "1.1"
 
 project:
   analysis_scope: target_pan_gene_family
@@ -116,6 +116,10 @@ family:
   # Optional audited imports; each must contain stable_id or species_id + gene_id.
   subfamily_assignments: null
   domain_validation_table: null
+  # Optional pre-aligned amino-acid FASTA for a validated core domain.
+  # Record IDs must be selected family stable_ids. When absent, HMM domain
+  # coordinates are extracted and aligned with MAFFT if available.
+  domain_alignment: null
   subcellular_localization_table: null
   # Set this to a member table to bypass HMM/BLAST discovery.
   precomputed_members: null
@@ -198,6 +202,53 @@ expression:
   fastp_extra_args: []
   hisat2_extra_args: []
   stringtie_extra_args: []
+
+# The complete profile requests the PDF/MD artifact contract. Expensive or
+# evidence-sensitive subpaths below remain independently opt-in.
+deliverables:
+  profile: legacy
+
+comparative_panel:
+  enabled: false
+  external_species_table: null
+  selection_strategy: explicit
+  # External species are context only and may never change target-material occupancy.
+  include_in_pan_denominator: false
+
+domain_logo:
+  enabled: false
+  source: auto
+  precomputed_alignment: null
+  min_domain_coverage: 0.50
+  min_column_occupancy: 0.50
+
+synteny:
+  enabled: false
+  backend: jcvi
+  species_pairs_table: null
+  precomputed_blocks: null
+  representative_species: null
+  # Ordered multi-anchor blocks below this threshold fail closed.
+  min_anchors_per_block: 5
+  cscore: 0.95
+  tandem_nmax: 10
+
+differential_expression:
+  enabled: false
+  source: featurecounts
+  # Formal inference accepts raw integer counts only; TPM/FPKM are descriptive.
+  input_scale: raw_counts
+  counts_table: null
+  design_table: null
+  contrasts_table: null
+  min_replicates: 2
+  alpha: 0.05
+  lfc_threshold: 1.0
+  min_total_count: 10
+  feature_type: exon
+  feature_attribute: Parent
+  # Runtime must be an immutable derived image with R 4.6.1 / DESeq2 1.52.0.
+  container_image: docker://panfamflow/expression-de@sha256:6f85d371ca4db01fcad2ab615bfad9d792a6ea5a0223f62b16acf277e0526a9d
 
 plot:
   pdf: true

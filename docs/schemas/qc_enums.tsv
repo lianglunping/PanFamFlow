@@ -1,0 +1,25 @@
+enum_name	value	meaning	allowed_artifact_presence
+DeliverableStatus	GENERATED	The declared artifact exists, is non-empty and has current provenance.	required
+DeliverableStatus	BLOCKED_INPUT	Required configured biological or metadata input is absent or invalid.	forbidden
+DeliverableStatus	BLOCKED_QC	Inputs exist but a declared quality gate failed.	forbidden
+DeliverableStatus	NOT_REQUESTED	The independent opt-in path was disabled.	forbidden
+DeliverableStatus	EXTERNAL_REQUIRED	The workflow cannot produce the evidence internally and requires an audited external result.	forbidden
+ExpressionMeasurementStatus	MEASURED	Applicable assay returned a positive finite value.	required_table_row
+ExpressionMeasurementStatus	ASSAYED_ZERO	Applicable assay returned an observed zero.	required_table_row
+ExpressionMeasurementStatus	NOT_APPLICABLE	The sample and gene belong to incompatible species or assay scope.	required_table_row
+ExpressionMeasurementStatus	OBSERVED	Imported matrix contains a finite reported value.	required_table_row
+ExpressionMeasurementStatus	MISSING_IN_INPUT	Imported matrix cell is absent or NA.	required_table_row
+InferenceStatus	PASS	All independent-unit and minimum-replication gates passed.	required_table_row
+InferenceStatus	INSUFFICIENT_UNITS	Too few independent biological units; P and FDR remain NA.	required_table_row
+InferenceStatus	UNSTABLE_TO_SENSITIVITY	Leave-one-cluster or leave-one-species-pair analysis changes the conclusion.	required_table_row
+SyntenyAnchorStatus	PASS_ORDERED_BLOCK	Anchor belongs to a same-chromosome-pair ordered block meeting the minimum size.	required_table_row
+SyntenyAnchorStatus	BLOCK_BELOW_MIN_ANCHORS	Block is shorter than the configured minimum and is excluded from rendering.	required_table_row
+SyntenyAnchorStatus	BLOCK_NON_COLLINEAR_ORDER	Anchor order is inconsistent and the block is excluded from rendering.	required_table_row
+SyntenyPairStatus	PASS	At least one audited whole-genome block passed all synteny gates.	required_table_row
+SyntenyPairStatus	BLOCKED_QC	No block passed; similarity hits may not be drawn as synteny.	required_table_row
+DeInputStatus	PASS_INTEGER_RAW_COUNTS	All sample values are non-negative integer counts.	required_table_row
+DeDesignStatus	FULL_RANK	The dataset-specific model matrix has full column rank.	required_table_row
+DegStatus	UP	padj and positive log2FC pass declared thresholds.	required_table_row
+DegStatus	DOWN	padj and negative log2FC pass declared thresholds.	required_table_row
+DegStatus	NOT_DE	The fitted gene does not pass both declared thresholds.	required_table_row
+DegStatus	UNTESTED_LOW_INFORMATION	The gene is retained in the contract but was not estimable after count filtering.	required_table_row

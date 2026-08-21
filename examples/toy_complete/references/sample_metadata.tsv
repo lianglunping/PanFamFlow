@@ -1,0 +1,9 @@
+sample_id	species_id	condition	tissue	stress_type	timepoint	replicate	batch
+A_Control_R1	SpA	Control	Seedling	Abiotic	24h	1	B1
+A_Control_R2	SpA	Control	Seedling	Abiotic	24h	2	B1
+A_Salt_R1	SpA	Salt	Seedling	Abiotic	24h	1	B1
+A_Salt_R2	SpA	Salt	Seedling	Abiotic	24h	2	B1
+B_Mock_R1	SpB	Mock	Seedling	Biotic	24h	1	B1
+B_Mock_R2	SpB	Mock	Seedling	Biotic	24h	2	B1
+B_Infected_R1	SpB	Infected	Seedling	Biotic	24h	1	B1
+B_Infected_R2	SpB	Infected	Seedling	Biotic	24h	2	B1

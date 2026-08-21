@@ -9,9 +9,21 @@ rule gene_structure_metrics:
         global_tests=join_path(RESULTS, "04_gene_structure", "gene_structure_global_tests.tsv"),
         pairwise_tests=join_path(RESULTS, "04_gene_structure", "gene_structure_pairwise_tests.tsv"),
         statistics_qc=join_path(RESULTS, "04_gene_structure", "gene_structure_statistics_qc.tsv"),
+        subfamily_source=join_path(
+            RESULTS, "04_gene_structure", "gene_structure_by_subfamily.tsv"
+        ),
+        group_source=join_path(RESULTS, "04_gene_structure", "gene_structure_by_group.tsv"),
         xlsx=join_path(RESULTS, "04_gene_structure", "gene_structure.xlsx"),
         comparison_plot_pdf=join_path(RESULTS, "04_gene_structure", "gene_structure_group_comparisons.pdf"),
         comparison_plot_png=join_path(RESULTS, "04_gene_structure", "gene_structure_group_comparisons.png"),
+        fig07_pdf=join_path(
+            RESULTS, "04_gene_structure", "Fig07_gene_structure_by_subfamily.pdf"
+        ),
+        fig07_png=join_path(
+            RESULTS, "04_gene_structure", "Fig07_gene_structure_by_subfamily.png"
+        ),
+        fig08_pdf=join_path(RESULTS, "04_gene_structure", "Fig08_gene_structure_by_group.pdf"),
+        fig08_png=join_path(RESULTS, "04_gene_structure", "Fig08_gene_structure_by_group.png"),
     params:
         metrics=config.get("gene_structure", {}).get("metrics", [
             "gene_length",

@@ -1,0 +1,13 @@
+pair_id	block_id	anchor_id	species_1	species_2	stable_id_1	stable_id_2	orientation	score	evidence_type
+SpA_self	SpA_self_block01	SpA_self_anchor01	SpA	SpA	SpA__Gene01	SpA__Gene01	+	999.0	SYNTENY_ANCHOR
+SpA_self	SpA_self_block01	SpA_self_anchor02	SpA	SpA	SpA__Gene02	SpA__Gene02	+	998.0	SYNTENY_ANCHOR
+SpA_self	SpA_self_block01	SpA_self_anchor03	SpA	SpA	SpA__Gene03	SpA__Gene03	+	997.0	SYNTENY_ANCHOR
+SpA_self	SpA_self_block01	SpA_self_anchor04	SpA	SpA	SpA__Gene04	SpA__Gene04	+	996.0	SYNTENY_ANCHOR
+SpA_self	SpA_self_block01	SpA_self_anchor05	SpA	SpA	SpA__Gene05	SpA__Gene05	+	995.0	SYNTENY_ANCHOR
+SpA_self	SpA_self_block01	SpA_self_anchor06	SpA	SpA	SpA__Gene06	SpA__Gene06	+	994.0	SYNTENY_ANCHOR
+SpA_vs_SpB	SpA_vs_SpB_block01	SpA_vs_SpB_anchor01	SpA	SpB	SpA__Gene01	SpB__Gene01	+	999.0	SYNTENY_ANCHOR
+SpA_vs_SpB	SpA_vs_SpB_block01	SpA_vs_SpB_anchor02	SpA	SpB	SpA__Gene02	SpB__Gene02	+	998.0	SYNTENY_ANCHOR
+SpA_vs_SpB	SpA_vs_SpB_block01	SpA_vs_SpB_anchor03	SpA	SpB	SpA__Gene03	SpB__Gene03	+	997.0	SYNTENY_ANCHOR
+SpA_vs_SpB	SpA_vs_SpB_block01	SpA_vs_SpB_anchor04	SpA	SpB	SpA__Gene04	SpB__Gene04	+	996.0	SYNTENY_ANCHOR
+SpA_vs_SpB	SpA_vs_SpB_block01	SpA_vs_SpB_anchor05	SpA	SpB	SpA__Gene05	SpB__Gene05	+	995.0	SYNTENY_ANCHOR
+SpA_vs_SpB	SpA_vs_SpB_block01	SpA_vs_SpB_anchor06	SpA	SpB	SpA__Gene06	SpB__Gene06	+	994.0	SYNTENY_ANCHOR

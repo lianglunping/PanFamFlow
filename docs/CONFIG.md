@@ -19,7 +19,7 @@ project:
 
 | 字段 | 含义 |
 |---|---|
-| `schema_version` | 当前固定为 `1.0` |
+| `schema_version` | 接受 `1.0` 和 `1.1`；旧配置不会被自动改写 |
 | `project` | 项目名、根目录、随机种子和输出路径 |
 | `run` | 模块、资源、engine、profile 和 Snakemake 参数 |
 | `inputs` | 物种、RNA-seq 样本、表达矩阵与样本元数据 |
@@ -35,6 +35,11 @@ project:
 | `kaks` | pair source、reference species、方法和饱和阈值 |
 | `promoter` | promoter 长度、FIMO/PlantCARE backend |
 | `expression` | imported matrix 或 FASTQ/StringTie 路线 |
+| `deliverables` | `legacy` 或 PDF/MD 完整交付 profile |
+| `comparative_panel` | 外部比较物种面板；默认关闭且不得进入 pan-family 分母 |
+| `domain_logo` | 核心结构域氨基酸 Logo；默认关闭 |
+| `synteny` | 全基因组共线性/Circos 子路径；默认关闭 |
+| `differential_expression` | raw-count 正式差异表达子路径；默认关闭 |
 | `plot` | PDF/PNG 与 DPI |
 | `report` | 报告标题和已有结果整合 |
 
@@ -57,6 +62,28 @@ run:
 ```
 
 CLI 会自动解析为 `qc → normalize → family → phylogeny/gene_structure`。
+
+### 4.1 Schema 1.1 的安全默认值
+
+Schema 1.1 只增加可选配置壳，不改变 12 个用户可见分析模块或旧 target 路径。以下高成本或证据敏感路径缺省均为 `false`：
+
+```yaml
+schema_version: "1.1"
+deliverables:
+  profile: legacy
+comparative_panel:
+  enabled: false
+  include_in_pan_denominator: false
+domain_logo:
+  enabled: false
+synteny:
+  enabled: false
+differential_expression:
+  enabled: false
+  input_scale: raw_counts
+```
+
+`deliverables.profile: pdf_md_complete` 表示请求完整的图、表、QC、manifest 和教程合同，但不会自动打开共线性或差异表达，也不会在输入不足时生成空白图。正式差异表达只接受非负整数 raw counts；TPM/FPKM 只能用于描述性表达图。完整字段、默认值和触发条件见 `docs/schemas/config_fields.tsv`。
 
 临时覆盖：
 

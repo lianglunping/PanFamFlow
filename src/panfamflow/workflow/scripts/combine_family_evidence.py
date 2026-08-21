@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
+from sequence_logo_utils import build_sequence_logo
 from stratified_summary_utils import build_family_distribution
 from workflow_utils import (
     iter_fasta_records,
@@ -298,6 +299,27 @@ for stable_id in sorted(candidate_ids):
         row["rejection_reason"] = ";".join(missing) or "did_not_pass_selection_rule"
         rejected_rows.append(row)
 
+domain_alignment_path = str(snakemake.params.domain_alignment or "").strip()
+domain_alignment_is_precomputed = bool(domain_alignment_path)
+domain_alignment_source = "HMM_DOMAIN_COORDINATES_MAFFT"
+if domain_alignment_path:
+    supplied_alignment = OrderedDict(iter_fasta_records(domain_alignment_path))
+    unknown_alignment_ids = sorted(set(supplied_alignment).difference(selected_ids))
+    if unknown_alignment_ids:
+        raise ValueError(
+            "Core-domain alignment contains IDs outside the selected family: "
+            + ", ".join(unknown_alignment_ids[:10])
+        )
+    for stable_id, aligned_sequence in supplied_alignment.items():
+        ungapped = aligned_sequence.upper().replace("-", "").replace(".", "")
+        if not ungapped or ungapped not in proteins[stable_id].upper():
+            raise ValueError(
+                f"Aligned core-domain sequence for {stable_id!r} is not a contiguous "
+                "subsequence of its canonical protein."
+            )
+    domain_sequences = supplied_alignment
+    domain_alignment_source = "PREALIGNED_VALIDATED_DOMAIN_FASTA"
+
 members = pd.DataFrame(rows)
 for annotation, prefix in (
     (str(snakemake.params.domain_validation_table or ""), "domain_validation"),
@@ -333,6 +355,7 @@ distribution = build_family_distribution(members, species_ids=list(snakemake.par
 save_table(members, snakemake.output.members)
 save_table(rejected, snakemake.output.rejected)
 save_table(distribution, snakemake.output.distribution)
+save_table(distribution, snakemake.output.contract_distribution)
 save_workbook(
     {"members": members, "rejected": rejected, "species_subfamily": distribution},
     snakemake.output.xlsx,
@@ -378,6 +401,12 @@ fig.savefig(
     dpi=int(snakemake.params.png_dpi),
     facecolor="white",
 )
+fig.savefig(snakemake.output.figure02_pdf, facecolor="white")
+fig.savefig(
+    snakemake.output.figure02_png,
+    dpi=int(snakemake.params.png_dpi),
+    facecolor="white",
+)
 plt.close(fig)
 write_fasta(
     OrderedDict((stable_id, proteins[stable_id]) for stable_id in sorted(selected_ids)),
@@ -388,3 +417,16 @@ write_fasta(
     snakemake.output.cds,
 )
 write_fasta(domain_sequences, snakemake.output.domains)
+build_sequence_logo(
+    domain_sequences,
+    prealigned=domain_alignment_is_precomputed,
+    source=domain_alignment_source,
+    aligned_fasta=snakemake.output.domain_alignment,
+    table_tsv=snakemake.output.domain_logo_table,
+    segments_tsv=snakemake.output.domain_segments,
+    status_tsv=snakemake.output.domain_logo_status,
+    workbook_xlsx=snakemake.output.domain_logo_xlsx,
+    plot_pdf=snakemake.output.domain_logo_pdf,
+    plot_png=snakemake.output.domain_logo_png,
+    png_dpi=int(snakemake.params.png_dpi),
+)

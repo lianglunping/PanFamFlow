@@ -8,11 +8,13 @@ import shutil
 from datetime import UTC, datetime
 from pathlib import Path
 
+from phylogeny_figure_utils import build_tip_annotations, render_family_tree
 from workflow_utils import (
     copy_atomic,
     executable_version,
     read_fasta,
     run_command,
+    save_table,
     sha256_file,
     write_json,
     write_text_atomic,
@@ -100,7 +102,6 @@ write_json(
     },
     state_path,
 )
-
 iqtree_executable, version = executable_version(["iqtree3", "iqtree2", "iqtree"], ["--version"])
 command = [
     iqtree_executable,
@@ -145,6 +146,14 @@ else:
         f"IQ-TREE executable: {iqtree_executable}\nVersion: {version}\n",
         snakemake.output.report,
     )
+tip_annotations = build_tip_annotations(snakemake.output.tree, snakemake.input.members)
+save_table(tip_annotations, snakemake.output.tip_annotations)
+render_family_tree(
+    snakemake.output.tree,
+    tip_annotations,
+    str(Path(snakemake.output.figure_pdf).with_suffix("")),
+    png_dpi=int(snakemake.params.png_dpi),
+)
 write_json(
     {
         "status": "complete",

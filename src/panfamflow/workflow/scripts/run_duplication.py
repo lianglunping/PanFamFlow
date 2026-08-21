@@ -310,7 +310,18 @@ stratified_summary = build_duplication_summaries(
     pan_membership,
     pan_classification,
 )
+overall_summary = (
+    modes.groupby("duplication_mode", dropna=False, as_index=False)
+    .agg(gene_count=("stable_id", "nunique"))
+    .sort_values(["gene_count", "duplication_mode"], ascending=[False, True])
+)
+overall_summary["gene_denominator"] = int(modes["stable_id"].nunique())
+overall_summary["gene_fraction"] = (
+    overall_summary["gene_count"] / overall_summary["gene_denominator"]
+)
+overall_summary["interpretation_flag"] = "DESCRIPTIVE_ASSOCIATION_NOT_CAUSAL"
 save_table(stratified_summary, snakemake.output.stratified_summary)
+save_table(overall_summary, snakemake.output.overall_summary)
 gene_structure = pd.read_csv(snakemake.input.gene_structure, sep="\t")
 structure_with_modes = gene_structure.merge(
     modes[["stable_id", "duplication_mode"]],
@@ -336,6 +347,7 @@ save_workbook(
         "structure_pairwise": structure_pairwise_tests,
         "structure_stats_qc": structure_statistics_qc,
         "stratified_summary": stratified_summary,
+        "overall_summary": overall_summary,
     },
     snakemake.output.xlsx,
 )
@@ -350,6 +362,8 @@ axis.spines[["top", "right"]].set_visible(False)
 fig.tight_layout()
 fig.savefig(snakemake.output.plot_pdf)
 fig.savefig(snakemake.output.plot_png, dpi=int(snakemake.params.png_dpi))
+fig.savefig(snakemake.output.fig16_pdf)
+fig.savefig(snakemake.output.fig16_png, dpi=int(snakemake.params.png_dpi))
 plt.close(fig)
 
 stratifications = ["SPECIES", "SUBFAMILY", "PAN_CLASS"]
@@ -381,6 +395,62 @@ fig.savefig(
     facecolor="white",
 )
 plt.close(fig)
+
+
+def save_duplication_stratum_figure(
+    stratification: str,
+    title: str,
+    pdf_path: str,
+    png_path: str,
+) -> None:
+    subset = stratified_summary.loc[stratified_summary["stratification"].eq(stratification)].copy()
+    count_matrix = subset.pivot(
+        index="stratum", columns="duplication_mode", values="gene_count"
+    ).fillna(0)
+    fraction_matrix = subset.pivot(
+        index="stratum", columns="duplication_mode", values="within_stratum_fraction"
+    ).reindex(index=count_matrix.index, columns=count_matrix.columns)
+    fig, axes = plt.subplots(1, 2, figsize=(12.0, 5.0), facecolor="white")
+    count_matrix.plot(kind="bar", stacked=True, ax=axes[0], legend=False)
+    fraction_matrix.plot(kind="bar", stacked=True, ax=axes[1])
+    axes[0].set_ylabel("Target-family gene count")
+    axes[1].set_ylabel("Within-stratum gene fraction")
+    axes[1].set_ylim(0, 1)
+    for axis in axes:
+        axis.set_xlabel(stratification.replace("_", " ").title())
+        axis.tick_params(axis="x", rotation=35)
+        axis.spines[["top", "right"]].set_visible(False)
+        axis.grid(False)
+    legend = axes[1].get_legend()
+    if legend is not None:
+        legend.set_frame_on(False)
+        legend.set_title("Duplication mode")
+    fig.suptitle(title)
+    fig.text(0.01, 0.01, "Descriptive association; no causal direction is inferred.", fontsize=8)
+    fig.tight_layout(rect=(0, 0.03, 1, 0.96))
+    fig.savefig(pdf_path, facecolor="white")
+    fig.savefig(png_path, dpi=int(snakemake.params.png_dpi), facecolor="white")
+    plt.close(fig)
+
+
+save_duplication_stratum_figure(
+    "SPECIES",
+    "Duplication modes by species or accession",
+    snakemake.output.fig18_pdf,
+    snakemake.output.fig18_png,
+)
+save_duplication_stratum_figure(
+    "SUBFAMILY",
+    "Duplication modes by subfamily",
+    snakemake.output.fig19_pdf,
+    snakemake.output.fig19_png,
+)
+save_duplication_stratum_figure(
+    "PAN_CLASS",
+    "Duplication modes by target-family pan class",
+    snakemake.output.fig20_pdf,
+    snakemake.output.fig20_png,
+)
 plot_grouped_metrics(
     structure_with_modes,
     group_fields=["duplication_mode"],

@@ -12,6 +12,7 @@ from panfamflow.runner import (
 )
 
 TOY_CONFIG = Path(__file__).parents[1] / "examples" / "toy" / "config.yaml"
+TOY_COMPLETE_CONFIG = Path(__file__).parents[1] / "examples" / "toy_complete" / "config.yaml"
 
 
 def test_build_snakemake_command_is_list_based() -> None:
@@ -41,6 +42,19 @@ def test_smart_resume_flags_are_enabled_by_default() -> None:
         ]
         assert "--printshellcmds" in command
         assert "--show-failed-logs" in command
+
+
+def test_formal_de_enables_conda_and_apptainer_deployment() -> None:
+    config = load_config(TOY_COMPLETE_CONFIG)
+    command, stack = build_snakemake_command(
+        config,
+        TOY_COMPLETE_CONFIG,
+        ("expression",),
+        dry_run=True,
+    )
+    with stack:
+        index = command.index("--software-deployment-method")
+        assert command[index + 1 : index + 3] == ["conda", "apptainer"]
 
 
 def test_resume_mode_off_can_be_overridden_explicitly() -> None:
