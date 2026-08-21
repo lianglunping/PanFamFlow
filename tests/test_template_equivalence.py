@@ -20,10 +20,8 @@ def test_template_figure_audit_covers_fig01_through_fig34_without_overclaiming()
     assert rows[0]["template_figure"] == "Fig01"
     assert rows[-1]["template_figure"] == "Fig34"
     assert Counter(row["equivalence_status"] for row in rows) == {
-        "MATCHED_CORE": 11,
-        "PARTIAL": 15,
-        "NOT_IMPLEMENTED": 6,
-        "EXTERNAL_REQUIRED": 1,
+        "MATCHED_CORE": 28,
+        "CONDITIONAL_MATCH": 5,
     }
     assert all(row["related_coverage"] != "UNMAPPED" for row in rows)
     assert all(row["current_evidence"] for row in rows)

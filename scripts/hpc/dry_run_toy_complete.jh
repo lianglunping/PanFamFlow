@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+#JSUB -J panfamflow_toy_dag
+#JSUB -q normal
+#JSUB -n 2
+#JSUB -o logs/hpc/toy_dag.%J.out
+#JSUB -e logs/hpc/toy_dag.%J.err
+
+set -euo pipefail
+cd "$JH_SUB_CWD"
+
+module purge || true
+module load anaconda3
+module load singularity
+
+engine="$JH_SUB_CWD/../work/verified-engine-linux-64-198231"
+test -x "$engine/bin/snakemake"
+test -x "$engine/bin/python"
+export PATH="$engine/bin:$PATH"
+export PYTHONPATH="$JH_SUB_CWD/src${PYTHONPATH:+:$PYTHONPATH}"
+
+python scripts/hpc/dry_run_toy_complete.py

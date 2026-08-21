@@ -158,6 +158,10 @@ def canonical_module_name(name: str) -> str:
 
 def _dynamic_dependencies(name: str, config: WorkflowConfig) -> tuple[str, ...]:
     dependencies = list(MODULES[name].direct_dependencies)
+    if name == "chromosome" and config.deliverables.profile == "pdf_md_complete":
+        dependencies.append("pan_family")
+    if name == "promoter" and config.deliverables.profile == "pdf_md_complete":
+        dependencies.append("pan_family")
     if name == "kaks":
         source = config.kaks.pair_source
         if source in {"orthology", "both"}:

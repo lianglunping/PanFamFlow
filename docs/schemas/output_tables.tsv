@@ -1,0 +1,39 @@
+table_id	primary_key	required_columns	format_contract	scientific_boundary
+family_members	stable_id	stable_id;species_id;gene_id;subfamily	TSV+XLSX	Accepted target-family members only.
+family_tree_tip_annotations	stable_id	stable_id;species_id;subfamily	TSV+XLSX	Gene-tree annotation is not species-tree evidence.
+family_copy_number_by_species_subfamily	species_id+subfamily	species_id;subfamily;gene_count	TSV+XLSX	Zero is current non-detection, not validated loss.
+family_domain_segments	stable_id	stable_id;aligned_segment;domain_qc	TSV+XLSX	Aligned sequence conservation is not validated structure.
+gene_structure_metrics	stable_id	stable_id;gene_length;cds_length;protein_length;exon_count;intron_count	TSV+XLSX	Negative introns are forbidden.
+gene_structure_global_tests	stratification+metric	stratification;metric;n_units;median;p_value;inference_status	TSV+XLSX	Independent units are species-level summaries.
+gene_structure_pairwise_tests	stratification+metric+group_1+group_2	metric;n_1;n_2;median_1;median_2;effect_size;p_value;padj	TSV+XLSX	Pairwise tests require a passing global gate.
+family_hog_membership	stable_id	stable_id;HOG_ID;orthology_group_type;hog_node_status	TSV+XLSX	Target-family HOG membership is not a whole-genome pangenome.
+pan_family_classification	HOG_ID	HOG_ID;pan_family_class;occupancy_fraction;presence_basis;absence_validation_status	TSV+XLSX	Annotation absence is not validated gene loss.
+pan_family_class_summary	pan_family_class	pan_family_class;hog_count;gene_count;hog_fraction;gene_fraction	TSV+XLSX	HOG and gene denominators remain separate.
+pan_family_species_class_summary	species_id+pan_family_class	species_id;pan_family_class;gene_count;hog_count;gene_fraction;hog_fraction	TSV+XLSX	Fractions require absolute denominators.
+chromosome_distribution_annotated	stable_id	stable_id;species_id;chromosome;midpoint;subfamily;pan_family_class;coordinate_qc	TSV+XLSX	Species chromosomes use separate physical axes.
+duplication_mode	stable_id	stable_id;duplication_mode;partner_stable_ids;backend	TSV+XLSX	Each gene has one explicit assignment state.
+duplication_stratified_summary	stratification+stratum+duplication_mode	stratification;stratum;duplication_mode;gene_count;stratum_total;gene_fraction;analysis_unit	TSV+XLSX	Descriptive association is not causality.
+synteny_anchors	anchor_id	pair_id;block_id;anchor_id;stable_id_1;stable_id_2;anchor_qc;evidence_type	TSV+XLSX	Similarity hits cannot enter as synteny anchors.
+synteny_blocks	pair_id+block_id	pair_id;block_id;chromosome_1;chromosome_2;anchor_count;orientation;block_qc	TSV+XLSX	Only ordered multi-anchor whole-genome blocks render.
+synteny_pair_summary	pair_id	pair_id;anchor_count_pass;block_count_pass;anchored_gene_fraction_1;anchored_gene_fraction_2;pair_status	TSV+XLSX	Each species pair is audited independently.
+family_duplication_links	anchor_id	anchor_id;stable_id_1;stable_id_2;highlight_class;anchor_qc	TSV+XLSX	Family highlights are a subset of passing genome-wide anchors.
+kaks_pairs	pair_id	pair_id;stable_id_1;stable_id_2;Ka;Ks;Ka_Ks;qc_status	TSV+XLSX	Pairwise Ka/Ks does not prove positive selection.
+kaks_cluster_inference_tests	stratification+metric+comparison	stratification;metric;n_clusters;median;effect_size;p_value;padj;sensitivity_status	TSV+XLSX	Inference uses dependency-aware cluster units.
+promoter_coordinates	stable_id	stable_id;chromosome;tss;strand;requested_start;actual_start;promoter_length;promoter_qc	TSV+XLSX	Clipping and overlap remain visible.
+promoter_elements	stable_id+element+hit	stable_id;element;major_class;subclass;sequence_start;sequence_stop;p_value;q_value	TSV+XLSX	Motif hit is not TF binding.
+promoter_element_distributions	aggregation_level+cell_id+element	aggregation_level;cell_id;element;motif_hit_count;n_genes;promoter_bp;hits_per_gene;hits_per_kb;zscore_hits_per_kb	TSV+XLSX	Scaled values retain raw denominators.
+promoter_by_hog	HOG_ID+element	HOG_ID;pan_family_class;element;motif_hit_count;genes_with_hit;n_genes;total_promoter_bp;hits_per_gene;hits_per_kb	TSV+XLSX	HOG-level motif-hit composition is descriptive and is not enrichment or TF-binding evidence.
+expression_matrix	stable_id	stable_id;species_id;expression_data_status;sample_columns	TSV+XLSX	TPM is descriptive and not a DESeq2 input.
+expression_long	stable_id+sample_id	stable_id;sample_id;value;expression_unit;measurement_status	TSV+XLSX	NOT_APPLICABLE and MISSING_IN_INPUT are distinct.
+expression_stratified_summary	stratification+stratum	stratification;stratum;n;median;q1;q3;transform	TSV+XLSX	Cross-species absolute TPM comparison is blocked.
+raw_counts	stable_id	stable_id;integer_sample_columns	TSV+XLSX	Formal DE requires non-negative integers.
+expression_dataset_audit	dataset_id	dataset_id;species_id;accession;reference_version;evidence_grade;sample_count;dataset_status	TSV+XLSX	Each dataset is fitted independently.
+de_contrast_audit	contrast_id	contrast_id;dataset_id;numerator;denominator;numerator_replicates;denominator_replicates;design_rank_status;contrast_status	TSV+XLSX	Only registered estimable contrasts are reported.
+deseq2_contrast_results	contrast_id+stable_id	contrast_id;stable_id;baseMean;log2FoldChange;lfcSE;stat;pvalue;padj;deg_status	TSV+XLSX	BH-FDR and effect size remain separate.
+expression_vst	dataset_id+stable_id+sample_id	dataset_id;stable_id;sample_id;vst_value	TSV+XLSX	VST is a sample-pattern object, not log2FC.
+deg_membership	contrast_id+stable_id	contrast_id;stable_id;deg_status;log2FoldChange;padj	TSV+XLSX	Overlap membership follows declared thresholds.
+stress_evidence_integration	contrast_id+stable_id	stable_id;stress_category;dataset_id;contrast_id;effect_direction;log2FoldChange;padj;evidence_grade;integration_status	TSV+XLSX	Raw counts are never pooled across studies.
+figure_manifest	figure_id	figure_id;module;status;pdf_path;png_path;source_table;pdf_sha256;png_sha256;tutorial_anchor;scientific_boundary	TSV+XLSX	Only generated pairs may be presented as figures.
+table_manifest	table_id	table_id;tsv_path;xlsx_path;rows;columns;tsv_sha256;xlsx_sha256;parity_status	TSV+XLSX	TSV is authoritative; XLSX parity is audited.
+requirement_traceability	requirement_id	requirement_id;requirement_type;implementation;test;tutorial_anchor;artifact;runtime_status	TSV+XLSX	Runtime status must not overstate missing gates.
+result_manifest	relative_path	relative_path;size_bytes;sha256;suffix	TSV+XLSX	Hashes cover generated result files except the manifest pair itself.

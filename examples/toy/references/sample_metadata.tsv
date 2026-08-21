@@ -1,0 +1,13 @@
+sample_id	species_id	condition	tissue	stress_type	timepoint	replicate	batch
+SpA_CK_1	SpA	Control	Root	Control	T1	1	B1
+SpA_CK_2	SpA	Control	Root	Control	T1	2	B1
+SpA_CK_3	SpA	Control	Root	Control	T1	3	B1
+SpA_Salt_1	SpA	Salt	Root	Abiotic	T1	1	B1
+SpA_Salt_2	SpA	Salt	Root	Abiotic	T1	2	B1
+SpA_Salt_3	SpA	Salt	Root	Abiotic	T1	3	B1
+SpB_Mock_1	SpB	Mock	Leaf	Control	T1	1	B1
+SpB_Mock_2	SpB	Mock	Leaf	Control	T1	2	B1
+SpB_Mock_3	SpB	Mock	Leaf	Control	T1	3	B1
+SpB_Blast_1	SpB	Magnaporthe_oryzae	Leaf	Biotic	T1	1	B1
+SpB_Blast_2	SpB	Magnaporthe_oryzae	Leaf	Biotic	T1	2	B1
+SpB_Blast_3	SpB	Magnaporthe_oryzae	Leaf	Biotic	T1	3	B1

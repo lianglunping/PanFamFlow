@@ -36,10 +36,8 @@ STATE_LABELS = {
 
 EXPECTED_STATE_COUNTS = Counter(
     {
-        "IMPLEMENTED": 21,
-        "CONDITIONALLY_AVAILABLE": 29,
-        "EXTERNAL_IMPORT": 2,
-        "NOT_SUPPORTED": 6,
+        "IMPLEMENTED": 52,
+        "CONDITIONALLY_AVAILABLE": 6,
     }
 )
 

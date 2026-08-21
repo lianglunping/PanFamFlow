@@ -1,0 +1,25 @@
+stable_id	duplication_mode	partner_stable_id
+SpA__Gene01	WGD	SpA__Gene02
+SpA__Gene02	Tandem	SpA__Gene01
+SpA__Gene03	Proximal	SpA__Gene04
+SpA__Gene04	Transposed	SpA__Gene03
+SpA__Gene05	Dispersed	SpA__Gene06
+SpA__Gene06	Singleton	
+SpB__Gene01	WGD	SpB__Gene02
+SpB__Gene02	Tandem	SpB__Gene01
+SpB__Gene03	Proximal	SpB__Gene04
+SpB__Gene04	Transposed	SpB__Gene03
+SpB__Gene05	Dispersed	SpB__Gene06
+SpB__Gene06	Singleton	
+SpC__Gene01	WGD	SpC__Gene02
+SpC__Gene02	Tandem	SpC__Gene01
+SpC__Gene03	Proximal	SpC__Gene04
+SpC__Gene04	Transposed	SpC__Gene03
+SpC__Gene05	Dispersed	SpC__Gene06
+SpC__Gene06	Singleton	
+SpD__Gene01	WGD	SpD__Gene02
+SpD__Gene02	Tandem	SpD__Gene01
+SpD__Gene03	Proximal	SpD__Gene04
+SpD__Gene04	Transposed	SpD__Gene03
+SpD__Gene05	Dispersed	SpD__Gene06
+SpD__Gene06	Singleton	

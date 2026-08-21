@@ -15,6 +15,7 @@ from typing import Any
 
 import matplotlib.pyplot as plt
 import pandas as pd
+from kaks_statistics import build_cluster_source, cluster_inference_tests
 from stratified_summary_utils import annotate_kaks_pairs, summarize_kaks_strata
 from workflow_utils import (
     commit_partial,
@@ -288,10 +289,48 @@ results = annotate_kaks_pairs(
     duplication_modes,
 )
 stratified_summary = summarize_kaks_strata(results)
+cluster_sources = {
+    "SUBFAMILY": build_cluster_source(
+        results, scope="SUBFAMILY", stratum_columns=["subfamily_stratum"]
+    ),
+    "GROUP": build_cluster_source(results, scope="GROUP", stratum_columns=["group_stratum"]),
+    "SUBFAMILY_GROUP": build_cluster_source(
+        results,
+        scope="SUBFAMILY_GROUP",
+        stratum_columns=["subfamily_stratum", "group_stratum"],
+    ),
+    "PAN_CLASS": build_cluster_source(
+        results, scope="PAN_CLASS", stratum_columns=["pan_class_stratum"]
+    ),
+}
+inference_tests = pd.concat(
+    [
+        cluster_inference_tests(
+            source,
+            min_units=int(snakemake.params.inference_min_cluster_units),
+            alpha=float(snakemake.params.inference_alpha),
+        )
+        for source in cluster_sources.values()
+    ],
+    ignore_index=True,
+)
 save_table(results, snakemake.output.tsv)
 save_table(stratified_summary, snakemake.output.stratified_summary)
+save_table(cluster_sources["SUBFAMILY"], snakemake.output.subfamily_source)
+save_table(cluster_sources["GROUP"], snakemake.output.group_source)
+save_table(cluster_sources["SUBFAMILY_GROUP"], snakemake.output.subfamily_group_source)
+save_table(cluster_sources["PAN_CLASS"], snakemake.output.pan_class_source)
+save_table(inference_tests, snakemake.output.inference_tests)
 save_workbook(
-    {"kaks_pairs": results, "stratified_summary": stratified_summary},
+    {
+        "kaks_pairs": results,
+        "stratified_summary": stratified_summary,
+        "subfamily_clusters": cluster_sources["SUBFAMILY"],
+        "group_clusters": cluster_sources["GROUP"],
+        "subfamily_group_clusters": cluster_sources["SUBFAMILY_GROUP"],
+        "pan_class_clusters": cluster_sources["PAN_CLASS"],
+        "cluster_inference": inference_tests,
+    },
     snakemake.output.xlsx,
 )
 
@@ -311,6 +350,68 @@ fig.tight_layout()
 fig.savefig(snakemake.output.plot_pdf)
 fig.savefig(snakemake.output.plot_png, dpi=int(snakemake.params.png_dpi))
 plt.close(fig)
+
+
+def save_cluster_kaks_figure(
+    source: pd.DataFrame,
+    title: str,
+    pdf_path: str,
+    png_path: str,
+) -> None:
+    eligible = source.loc[source["inference_eligible"].astype(bool)].copy()
+    grouped = list(eligible.groupby("stratum_label", sort=True))
+    fig, axis = plt.subplots(figsize=(max(7.2, 0.7 * len(grouped) + 4.0), 5.0))
+    if not grouped:
+        axis.text(0.5, 0.5, "No eligible independent pair clusters", ha="center", va="center")
+        axis.set_axis_off()
+    else:
+        axis.boxplot(
+            [group["cluster_median_ka_ks"].to_numpy(dtype=float) for _, group in grouped],
+            tick_labels=[str(label) for label, _ in grouped],
+            showfliers=False,
+        )
+        axis.set_xlabel("Stratum")
+        axis.set_ylabel("Cluster-median Ka/Ks")
+        axis.tick_params(axis="x", rotation=35)
+        axis.spines[["top", "right"]].set_visible(False)
+        axis.grid(False)
+    axis.set_title(title)
+    fig.text(
+        0.01,
+        0.01,
+        "Analysis unit: PAIR_CLUSTER_MEDIAN; pairwise Ka/Ks is not proof of positive selection.",
+        fontsize=8,
+    )
+    fig.tight_layout(rect=(0, 0.03, 1, 1))
+    fig.savefig(pdf_path, facecolor="white")
+    fig.savefig(png_path, dpi=int(snakemake.params.png_dpi), facecolor="white")
+    plt.close(fig)
+
+
+save_cluster_kaks_figure(
+    cluster_sources["SUBFAMILY"],
+    "Ka/Ks cluster medians by subfamily",
+    snakemake.output.fig04_pdf,
+    snakemake.output.fig04_png,
+)
+save_cluster_kaks_figure(
+    cluster_sources["GROUP"],
+    "Ka/Ks cluster medians by group",
+    snakemake.output.fig05_pdf,
+    snakemake.output.fig05_png,
+)
+save_cluster_kaks_figure(
+    cluster_sources["SUBFAMILY_GROUP"],
+    "Ka/Ks cluster medians by subfamily and group",
+    snakemake.output.fig06_pdf,
+    snakemake.output.fig06_png,
+)
+save_cluster_kaks_figure(
+    cluster_sources["PAN_CLASS"],
+    "Ka/Ks cluster medians by target-family pan class",
+    snakemake.output.fig14_pdf,
+    snakemake.output.fig14_png,
+)
 
 stratification_columns = [
     ("SUBFAMILY", "subfamily_stratum"),

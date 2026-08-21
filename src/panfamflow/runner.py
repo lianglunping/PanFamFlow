@@ -112,8 +112,13 @@ def build_snakemake_command(
         resolved_profile = resolve_project_path(selected_profile, root)
         assert resolved_profile is not None
         command.extend(["--profile", str(resolved_profile)])
+    deployment_methods: list[str] = []
     if config.run.use_conda:
-        command.extend(["--software-deployment-method", "conda"])
+        deployment_methods.append("conda")
+    if config.differential_expression.enabled:
+        deployment_methods.append("apptainer")
+    if deployment_methods:
+        command.extend(["--software-deployment-method", *deployment_methods])
     if config.run.printshellcmds:
         command.append("--printshellcmds")
     if config.run.show_failed_logs:

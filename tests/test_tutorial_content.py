@@ -163,17 +163,13 @@ def test_status_distribution_and_allowed_states():
     counts = Counter(row["state"] for row in rows)
     assert counts == Counter(
         {
-            "IMPLEMENTED": 21,
-            "CONDITIONALLY_AVAILABLE": 29,
-            "EXTERNAL_IMPORT": 2,
-            "NOT_SUPPORTED": 6,
+            "IMPLEMENTED": 52,
+            "CONDITIONALLY_AVAILABLE": 6,
         }
     )
     assert {row["state"] for row in rows} == {
         "IMPLEMENTED",
         "CONDITIONALLY_AVAILABLE",
-        "EXTERNAL_IMPORT",
-        "NOT_SUPPORTED",
     }
 
 
@@ -353,25 +349,26 @@ def test_selected_capability_states_match_current_local_audit():
     assert rows["6.4"]["state"] == "IMPLEMENTED"
     assert rows["6.5"]["state"] == "IMPLEMENTED"
     assert rows["8.1"]["state"] == "IMPLEMENTED"
-    assert rows["5.3"]["state"] == "CONDITIONALLY_AVAILABLE"
-    assert rows["5.6"]["state"] == "CONDITIONALLY_AVAILABLE"
-    assert rows["8.5"]["state"] == "CONDITIONALLY_AVAILABLE"
-    assert rows["8.6"]["state"] == "NOT_SUPPORTED"
-    assert rows["10.5"]["state"] == "CONDITIONALLY_AVAILABLE"
-    assert rows["10.7"]["state"] == "CONDITIONALLY_AVAILABLE"
+    assert rows["5.3"]["state"] == "IMPLEMENTED"
+    assert rows["5.6"]["state"] == "IMPLEMENTED"
+    assert rows["8.5"]["state"] == "IMPLEMENTED"
+    assert rows["8.6"]["state"] == "CONDITIONALLY_AVAILABLE"
+    assert rows["10.5"]["state"] == "IMPLEMENTED"
+    assert rows["10.7"]["state"] == "IMPLEMENTED"
     assert rows["10.8"]["state"] == "IMPLEMENTED"
     assert rows["10.9"]["state"] == "IMPLEMENTED"
-    assert rows["10.11"]["state"] == "CONDITIONALLY_AVAILABLE"
+    assert rows["10.11"]["state"] == "IMPLEMENTED"
     assert rows["10.14"]["state"] == "IMPLEMENTED"
-    assert rows["11.3"]["state"] == "NOT_SUPPORTED"
+    assert rows["11.3"]["state"] == "CONDITIONALLY_AVAILABLE"
+    assert rows["11.6"]["state"] == "IMPLEMENTED"
+    assert rows["11.7"]["state"] == "IMPLEMENTED"
 
 
-def test_external_expression_items_require_real_de_evidence():
+def test_conditional_expression_items_require_real_de_evidence():
     rows = {row["source_id"]: row for row in read_matrix()}
-    assert rows["11.3"]["state"] == "NOT_SUPPORTED"
-    for source_id in ("11.4", "11.5"):
+    for source_id in ("11.3", "11.4", "11.5"):
         row = rows[source_id]
-        assert row["state"] == "EXTERNAL_IMPORT"
+        assert row["state"] == "CONDITIONALLY_AVAILABLE"
         blob = " ".join(row.values()).lower()
         for token in ("raw", "design", "log2foldchange", "padj"):
             assert token in blob, (source_id, token)

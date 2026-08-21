@@ -1,0 +1,6 @@
+source_type	stable_id	species_id	sequence_path	sequence_id	accession	version	source_url	expected_sha256	outgroup
+INTERNAL	SpA__Gene01	SpA							
+INTERNAL	SpB__Gene01	SpB							
+INTERNAL	SpC__Gene01	SpC							
+INTERNAL	SpD__Gene01	SpD							
+EXTERNAL	Ext__Gene01	Ext	external_outgroup.fa	ExtGene01	TOYEXT0001	1	https://example.org/panfamflow/toy/TOYEXT0001.1	b4941407d13e5aec7ef6ff266db41bd8eb2b43e0a30564bed133ab69ab598ec8	true

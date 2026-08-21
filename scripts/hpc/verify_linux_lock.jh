@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+#JSUB -J panfamflow_b0_verify
+#JSUB -q normal
+#JSUB -n 2
+#JSUB -o logs/hpc/b0_verify.%J.out
+#JSUB -e logs/hpc/b0_verify.%J.err
+
+set -euo pipefail
+cd "$JH_SUB_CWD"
+
+module purge || true
+module load anaconda3
+
+micromamba_bin="${HOME}/mmenv/bin/micromamba"
+environment_prefix="$JH_SUB_CWD/work/verified-engine-linux-64-${JH_JOBID}"
+test -x "$micromamba_bin"
+sha256sum -c env-locks/linux-64/SHA256SUMS
+test ! -e "$environment_prefix"
+"$micromamba_bin" create --yes --offline --prefix "$environment_prefix" \
+    --file env-locks/linux-64/engine.explicit.txt
+"$environment_prefix/bin/snakemake" --version
+"$environment_prefix/bin/python" --version
+PYTHONPATH="$JH_SUB_CWD/src" "$environment_prefix/bin/python" -m panfamflow --help >/dev/null
+sha256sum env-locks/linux-64/engine.explicit.txt > logs/hpc/verified_engine_lock.sha256

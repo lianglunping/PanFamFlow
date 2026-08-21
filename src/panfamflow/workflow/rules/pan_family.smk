@@ -28,6 +28,10 @@ rule pan_family_classification:
             join_path(RESULTS, "06_pan_family", "pan_family_class_summary.tsv"),
             non_empty=True,
         ),
+        hog_gene_counts=ensure(
+            join_path(RESULTS, "06_pan_family", "pan_family_hog_gene_counts.tsv"),
+            non_empty=True,
+        ),
         species_class_summary=ensure(
             join_path(RESULTS, "06_pan_family", "pan_family_species_class_summary.tsv"),
             non_empty=True,
@@ -69,6 +73,22 @@ rule pan_family_classification:
         ),
         rarefaction_plot_png=join_path(
             RESULTS, "06_pan_family", "pan_family_rarefaction.png"
+        ),
+        fig10_pdf=join_path(
+            RESULTS, "06_pan_family", "Fig10_pan_class_dual_denominator.pdf"
+        ),
+        fig10_png=join_path(
+            RESULTS, "06_pan_family", "Fig10_pan_class_dual_denominator.png"
+        ),
+        fig11_pdf=join_path(RESULTS, "06_pan_family", "Fig11_hog_class_gene_count.pdf"),
+        fig11_png=join_path(RESULTS, "06_pan_family", "Fig11_hog_class_gene_count.png"),
+        fig12_pdf=join_path(RESULTS, "06_pan_family", "Fig12_species_pan_class_counts.pdf"),
+        fig12_png=join_path(RESULTS, "06_pan_family", "Fig12_species_pan_class_counts.png"),
+        fig13_pdf=join_path(
+            RESULTS, "06_pan_family", "Fig13_species_pan_class_fractions.pdf"
+        ),
+        fig13_png=join_path(
+            RESULTS, "06_pan_family", "Fig13_species_pan_class_fractions.png"
         ),
     params:
         hog_node=config.get("orthofinder", {}).get("hog_node", "auto"),

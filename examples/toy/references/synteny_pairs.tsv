@@ -1,0 +1,3 @@
+pair_id	species_1	species_2	layout_order	include_overview
+SpA_self	SpA	SpA	1	false
+SpA_vs_SpB	SpA	SpB	2	true

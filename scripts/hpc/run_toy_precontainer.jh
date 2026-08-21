@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+#JSUB -J panfamflow_toy_precontainer
+#JSUB -q normal
+#JSUB -n 8
+#JSUB -o logs/hpc/toy_precontainer.%J.out
+#JSUB -e logs/hpc/toy_precontainer.%J.err
+
+set -euo pipefail
+cd "$JH_SUB_CWD"
+
+module purge || true
+module load anaconda3
+module load singularity
+
+engine="$JH_SUB_CWD/../work/verified-engine-linux-64-198231"
+test -x "$engine/bin/snakemake"
+test -x "$engine/bin/python"
+export PATH="$engine/bin:$PATH"
+export PYTHONPATH="$JH_SUB_CWD/src${PYTHONPATH:+:$PYTHONPATH}"
+
+python scripts/hpc/run_toy_complete.py --phase precontainer

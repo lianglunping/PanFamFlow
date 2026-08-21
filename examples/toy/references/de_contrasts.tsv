@@ -1,0 +1,2 @@
+contrast_id	dataset_id	numerator	denominator	stress_category	is_primary
+DS_TOY_stress_vs_control	DS_TOY	stress	control	abiotic	true

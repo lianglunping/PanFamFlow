@@ -42,10 +42,8 @@ def test_coverage_table_has_exact_58_source_items_and_audited_states() -> None:
     }
     assert {row["state"] for row in rows} <= ALLOWED_STATES
     assert Counter(row["state"] for row in rows) == {
-        "IMPLEMENTED": 21,
-        "CONDITIONALLY_AVAILABLE": 29,
-        "EXTERNAL_IMPORT": 2,
-        "NOT_SUPPORTED": 6,
+        "IMPLEMENTED": 52,
+        "CONDITIONALLY_AVAILABLE": 6,
     }
     assert all(row["source_title"].strip() for row in rows)
     assert all(row["evidence"].strip() for row in rows)

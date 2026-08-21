@@ -51,6 +51,18 @@ QC_COLUMNS = [
 
 MISSING_LABELS = {"", "NA", "N/A", "NONE", "NULL", "NAN", "<NA>"}
 
+HOG_DISTRIBUTION_COLUMNS = [
+    "HOG_ID",
+    "pan_family_class",
+    "element",
+    "motif_hit_count",
+    "genes_with_hit",
+    "n_genes",
+    "total_promoter_bp",
+    "hits_per_gene",
+    "hits_per_kb",
+]
+
 
 def _require_columns(frame: pd.DataFrame, columns: Sequence[str], label: str) -> None:
     missing = [column for column in columns if column not in frame.columns]
@@ -70,6 +82,35 @@ def _cell_id(frame: pd.DataFrame, dimensions: Sequence[str]) -> pd.Series:
     )
 
 
+def attach_pan_family_class(
+    membership: pd.DataFrame,
+    classification: pd.DataFrame,
+) -> pd.DataFrame:
+    """Attach the authoritative HOG-level pan class to each gene membership row."""
+
+    _require_columns(membership, ("stable_id", "HOG_ID"), "target-family HOG membership")
+    _require_columns(classification, ("HOG_ID", "pan_family_class"), "pan classification")
+    if classification["HOG_ID"].astype(str).duplicated().any():
+        raise ValueError("Pan classification contains duplicate HOG_ID values.")
+    clean_membership = membership.drop(columns=["pan_family_class"], errors="ignore").copy()
+    clean_classification = classification[["HOG_ID", "pan_family_class"]].copy()
+    enriched = clean_membership.merge(
+        clean_classification,
+        on="HOG_ID",
+        how="left",
+        validate="many_to_one",
+    )
+    assigned = _normalize_labels(enriched["HOG_ID"]).notna()
+    missing = assigned & _normalize_labels(enriched["pan_family_class"]).isna()
+    if missing.any():
+        examples = sorted(enriched.loc[missing, "HOG_ID"].astype(str).unique())[:10]
+        raise ValueError(
+            "HOG membership does not reconcile with pan classification; "
+            f"unclassified HOG_ID examples: {examples}"
+        )
+    return enriched
+
+
 def _zscore_with_status(values: pd.Series) -> tuple[pd.Series, pd.Series]:
     numeric = pd.to_numeric(values, errors="coerce").astype(float)
     zscores = pd.Series(pd.NA, index=values.index, dtype="Float64")
@@ -87,6 +128,103 @@ def _zscore_with_status(values: pd.Series) -> tuple[pd.Series, pd.Series]:
     zscores.loc[finite] = (finite_values - float(finite_values.mean())) / standard_deviation
     statuses.loc[finite] = "PASS"
     return zscores, statuses
+
+
+def build_promoter_hog_distributions(
+    elements: pd.DataFrame,
+    coordinates: pd.DataFrame,
+    membership: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Aggregate motif hits by audited target-family HOG with explicit denominators."""
+
+    _require_columns(elements, ("stable_id", "element"), "promoter elements")
+    _require_columns(coordinates, ("stable_id", "promoter_length"), "promoter coordinates")
+    _require_columns(
+        membership,
+        ("stable_id", "HOG_ID", "pan_family_class"),
+        "target-family HOG membership",
+    )
+    if coordinates["stable_id"].astype(str).duplicated().any():
+        raise ValueError("Promoter coordinates contain duplicate stable_id values.")
+    if membership["stable_id"].astype(str).duplicated().any():
+        raise ValueError("Target-family HOG membership contains duplicate stable_id values.")
+
+    genes = coordinates[["stable_id", "promoter_length"]].copy()
+    genes["stable_id"] = genes["stable_id"].astype(str)
+    genes["promoter_length"] = pd.to_numeric(genes["promoter_length"], errors="coerce")
+    if genes["promoter_length"].isna().any() or (genes["promoter_length"] < 0).any():
+        raise ValueError("Promoter coordinates contain invalid promoter_length values.")
+    annotations = membership[["stable_id", "HOG_ID", "pan_family_class"]].copy()
+    annotations["stable_id"] = annotations["stable_id"].astype(str)
+    genes = genes.merge(annotations, on="stable_id", how="left", validate="one_to_one")
+    genes["HOG_ID"] = _normalize_labels(genes["HOG_ID"]).fillna("Unassigned")
+    genes["pan_family_class"] = _normalize_labels(genes["pan_family_class"]).fillna("Unassigned")
+
+    element_names = sorted(elements["element"].dropna().astype(str).unique())
+    groups = (
+        genes.groupby(["HOG_ID", "pan_family_class"], dropna=False, as_index=False)
+        .agg(n_genes=("stable_id", "nunique"), total_promoter_bp=("promoter_length", "sum"))
+        .sort_values(["HOG_ID", "pan_family_class"], kind="stable")
+    )
+    if not element_names:
+        summary = pd.DataFrame(columns=HOG_DISTRIBUTION_COLUMNS)
+    else:
+        counts = (
+            elements[["stable_id", "element"]]
+            .assign(stable_id=lambda frame: frame["stable_id"].astype(str))
+            .merge(
+                genes[["stable_id", "HOG_ID", "pan_family_class"]],
+                on="stable_id",
+                how="inner",
+                validate="many_to_one",
+            )
+            .groupby(["HOG_ID", "pan_family_class", "element"], as_index=False)
+            .agg(
+                motif_hit_count=("stable_id", "size"),
+                genes_with_hit=("stable_id", "nunique"),
+            )
+        )
+        summary = (
+            groups.assign(_cross=1)
+            .merge(pd.DataFrame({"element": element_names, "_cross": 1}), on="_cross")
+            .drop(columns="_cross")
+            .merge(
+                counts,
+                on=["HOG_ID", "pan_family_class", "element"],
+                how="left",
+                validate="one_to_one",
+            )
+        )
+        summary[["motif_hit_count", "genes_with_hit"]] = (
+            summary[["motif_hit_count", "genes_with_hit"]].fillna(0).astype(int)
+        )
+        summary["hits_per_gene"] = summary["motif_hit_count"] / summary["n_genes"]
+        summary["hits_per_kb"] = summary["motif_hit_count"].div(
+            summary["total_promoter_bp"].replace(0, pd.NA) / 1000.0
+        )
+        summary = summary[HOG_DISTRIBUTION_COLUMNS].sort_values(
+            ["HOG_ID", "element"], kind="stable"
+        )
+
+    unassigned_genes = int(genes["HOG_ID"].eq("Unassigned").sum())
+    qc_status = "PASS_WITH_UNASSIGNED_HOG" if unassigned_genes else "PASS"
+    qc = pd.DataFrame(
+        [
+            {
+                "total_promoter_genes": int(genes["stable_id"].nunique()),
+                "assigned_hog_genes": int(genes["stable_id"].nunique()) - unassigned_genes,
+                "unassigned_genes": unassigned_genes,
+                "n_hogs_including_unassigned": int(genes["HOG_ID"].nunique()),
+                "n_elements": len(element_names),
+                "qc_status": qc_status,
+                "scientific_boundary": (
+                    "HOG-level motif-hit composition is descriptive and is not enrichment, "
+                    "TF binding or causal regulation evidence."
+                ),
+            }
+        ]
+    )
+    return summary.reset_index(drop=True), qc
 
 
 def _gene_metadata(coordinates: pd.DataFrame, members: pd.DataFrame) -> pd.DataFrame:

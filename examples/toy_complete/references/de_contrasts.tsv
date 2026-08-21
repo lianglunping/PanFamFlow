@@ -1,0 +1,3 @@
+contrast_id	dataset_id	numerator	denominator	stress_category	is_primary
+Salt_vs_Control	DS_ABIOTIC	Salt	Control	Abiotic	true
+Infected_vs_Mock	DS_BIOTIC	Infected	Mock	Biotic	true

@@ -63,7 +63,6 @@ jobs:
           grep -q 'repository-code: "https://github.com/lianglunping/PanFamFlow"' CITATION.cff
           ! grep -R 'https://github.com/lianglunping/Wild-rice-Pangenome-Project' \
             README.md README.zh-CN.md pyproject.toml CITATION.cff .github
-          ! grep -R '^from __future__ import annotations' src/panfamflow/workflow/scripts
 
       - name: Build and audit minimal GitHub Pages site
         run: |

@@ -146,3 +146,26 @@ def test_panel_inference_note_exposes_withheld_and_zero_variance_states() -> Non
     assert "Inference withheld" in withheld
     assert "<2 species units" in withheld
     assert "No between-unit variation" in zero_variance
+
+
+def test_canonical_structure_source_uses_one_species_median_per_group_metric() -> None:
+    module = load_module()
+    table = pd.DataFrame(
+        {
+            "stable_id": ["A1", "A2", "B1", "B2", "B3"],
+            "species_id": ["Sp1", "Sp1", "Sp2", "Sp2", "Sp2"],
+            "structure_qc": ["PASS"] * 5,
+            "subfamily": ["A", "A", "A", "B", "B"],
+            "gene_length": [100, 300, 500, 700, 900],
+        }
+    )
+
+    source = module.build_species_median_source(
+        table, group_field="subfamily", metrics=["gene_length"]
+    )
+
+    assert source.shape[0] == 3
+    sp1_a = source.loc[source["species_id"].eq("Sp1") & source["group_value"].eq("A")].iloc[0]
+    assert sp1_a["unit_value"] == 200
+    assert sp1_a["n_genes"] == 2
+    assert source["inference_unit"].eq("SPECIES_MEDIAN").all()

@@ -3,9 +3,16 @@ from pathlib import Path as _ScriptPath
 
 sys.path.insert(0, str(_ScriptPath(snakemake.scriptdir)))
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from expression_summary_utils import (
+    attach_pan_classes,
+    build_descriptive_summaries,
+    save_descriptive_expression_outputs,
+    save_expression_heatmap,
+    scale_expression_matrix,
+    validate_sample_metadata,
+)
 from workflow_utils import resolve_column, save_table, save_workbook
 
 members = pd.read_csv(snakemake.input.members, sep="\t")
@@ -109,49 +116,68 @@ summary = long.groupby(["stable_id", "species_id", "gene_id"], as_index=False).a
 )
 summary["expression_detected_samples"] = summary["expression_detected_samples"].astype("Int64")
 long_output = long.drop(columns=["measured_sample", "assayed_zero_sample"])
+metadata_path = getattr(snakemake.params, "sample_metadata", None)
+if metadata_path:
+    sample_metadata = validate_sample_metadata(sample_ids, metadata_path)
+    configured_species = dict(zip(sample_ids, sample_species_ids, strict=True))
+    mismatched = sample_metadata.loc[
+        sample_metadata.apply(
+            lambda row: (
+                str(row["sample_species_id"]) != str(configured_species[str(row["sample_id"])])
+            ),
+            axis=1,
+        )
+    ]
+    if not mismatched.empty:
+        raise ValueError("Sample metadata species IDs disagree with configured FASTQ samples.")
+else:
+    sample_metadata = pd.DataFrame(
+        {
+            "sample_id": sample_ids,
+            "sample_species_id": sample_species_ids,
+            "condition": pd.NA,
+            "tissue": pd.NA,
+            "stress_type": "Other",
+            "timepoint": pd.NA,
+            "replicate": pd.NA,
+            "batch": pd.NA,
+            "metadata_status": "AUTO_FROM_SAMPLE_CONFIG",
+        }
+    )
+long_output = long_output.drop(columns=["sample_species_id"]).merge(
+    sample_metadata,
+    on="sample_id",
+    how="left",
+    validate="many_to_one",
+)
+long_output = attach_pan_classes(
+    long_output,
+    getattr(snakemake.params, "pan_membership", None),
+    getattr(snakemake.params, "pan_classification", None),
+)
+gene_condition, stratified_summary = build_descriptive_summaries(long_output)
 save_table(wide, snakemake.output.matrix)
 save_table(long_output, snakemake.output.long)
 save_table(summary, snakemake.output.summary)
 save_workbook({"matrix": wide, "long": long_output, "summary": summary}, snakemake.output.xlsx)
-
-values = wide[sample_ids].to_numpy(dtype=float)
-transformed = np.log2(values + 1.0)
-if str(snakemake.params.heatmap_transform) == "log2_tpm1_zscore":
-    valid = np.isfinite(transformed)
-    counts = valid.sum(axis=1, keepdims=True)
-    means = np.divide(
-        np.nansum(transformed, axis=1, keepdims=True),
-        counts,
-        out=np.zeros((transformed.shape[0], 1), dtype=float),
-        where=counts > 0,
-    )
-    centered = transformed - means
-    variance = np.divide(
-        np.nansum(centered**2, axis=1, keepdims=True),
-        counts,
-        out=np.zeros((transformed.shape[0], 1), dtype=float),
-        where=counts > 0,
-    )
-    sd = np.sqrt(variance)
-    sd[(sd == 0) | ~np.isfinite(sd)] = 1.0
-    transformed = centered / sd
-    transformed[~valid] = np.nan
-fig_height = max(4.8, min(18.0, 0.18 * max(1, wide.shape[0])))
-fig, axis = plt.subplots(figsize=(max(7.0, 0.35 * len(sample_ids)), fig_height))
-cmap = plt.get_cmap("viridis").with_extremes(bad="#d9d9d9")
-image = axis.imshow(
-    np.ma.masked_invalid(transformed),
-    aspect="auto",
-    interpolation="nearest",
-    cmap=cmap,
+save_descriptive_expression_outputs(
+    long_output,
+    gene_condition,
+    stratified_summary,
+    sample_metadata,
+    snakemake.output,
+    int(snakemake.params.png_dpi),
 )
-axis.set_xticks(range(len(sample_ids)), sample_ids, rotation=45, ha="right")
-if wide.shape[0] <= 80:
-    axis.set_yticks(range(wide.shape[0]), wide["stable_id"].astype(str), fontsize=6)
-else:
-    axis.set_yticks([])
-fig.colorbar(image, ax=axis, label=str(snakemake.params.heatmap_transform))
-fig.tight_layout()
-fig.savefig(snakemake.output.plot_pdf)
-fig.savefig(snakemake.output.plot_png, dpi=int(snakemake.params.png_dpi))
-plt.close(fig)
+scaled = scale_expression_matrix(
+    wide,
+    sample_ids,
+    str(snakemake.params.heatmap_transform),
+)
+save_expression_heatmap(
+    scaled,
+    sample_ids,
+    table_tsv=snakemake.output.scaled,
+    plot_pdf=snakemake.output.plot_pdf,
+    plot_png=snakemake.output.plot_png,
+    png_dpi=int(snakemake.params.png_dpi),
+)
