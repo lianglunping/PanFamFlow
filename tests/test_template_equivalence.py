@@ -33,7 +33,10 @@ def test_public_tutorial_distinguishes_capability_from_template_equivalence() ->
     tutorial = (ROOT / "docs" / "index.html").read_text(encoding="utf-8")
     chinese_readme = (ROOT / "README.zh-CN.md").read_text(encoding="utf-8")
 
-    assert "不与 PDF 模板或 MD 完整交付清单等价" in audit
+    assert "工程交付层面" in audit
+    assert "真实研究结论层面" in audit
+    assert "14/14" in audit
+    assert "仍不是对任意目标家族的生物学等价性证明" in audit
     assert "能力主题覆盖不等于 PDF/MD 模板等价" in tutorial
     assert "上述 58 项是“主题能力状态”，不是 PDF 图件完成率" in chinese_readme
     assert "TEMPLATE_FIGURE_EQUIVALENCE.tsv" in tutorial

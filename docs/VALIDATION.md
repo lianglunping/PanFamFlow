@@ -177,6 +177,8 @@ This validates input feasibility for a three-genome engineering smoke test, not 
 
 PR #10 将 PDF/MD 差距闭合批次合并到 `main` 提交 `0179069f24f9fc212f4d9fe147ed2fada7acf2be`。权威 58 项能力矩阵当前为 53 `IMPLEMENTED`、5 `CONDITIONALLY_AVAILABLE`；条件项是核心结构域 Logo、全基因组共线性/Circos 和三类正式差异表达整合，均要求额外合规输入与运行门禁。
 
-当前工程验收证据包括：`268 passed`；clean toy 61/61 步骤；Fig01–Fig34 的 PDF 与 600 dpi PNG；346 条结果 manifest；相同配置 no-op；三类隔离局部恢复；原生 DupGen_finder 与 JCVI 计算回执；24 个公共 RNA-seq 生物学样本、2 个数据集和 6 个 DESeq2 comparison 的既有固定证据；PR CI、main CI、Pages 部署和两个公开 URL 均通过。
+PR #10 合并时的工程验收证据包括：`268 passed`；clean toy 61/61 步骤；Fig01–Fig34 的 PDF 与 600 dpi PNG；346 条结果 manifest；相同配置 no-op；三类隔离局部恢复；原生 DupGen_finder 与 JCVI 计算回执；24 个公共 RNA-seq 生物学样本、2 个数据集和 6 个 DESeq2 comparison 的既有固定证据；PR CI、main CI、Pages 部署和两个公开 URL 均通过。
+
+PR #11 的 2026-08-26 发布一致性复核进一步达到 `277 passed`，并把教程日期、执行批次、逐图等价性审计和当前 PR QA 与同一 14/14 工程验收事实对齐；它不修改科学输入、参数或固定容器摘要。
 
 该快照证明代码、运行合同、图表、教程与发布面闭合，不改变以下科学边界：toy、工程 benchmark 和公共数据复算均不自动证明任一新目标家族的功能、选择、适应性、调控因果或育种价值。

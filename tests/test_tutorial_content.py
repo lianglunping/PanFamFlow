@@ -311,7 +311,7 @@ def test_toy_evidence_is_backfilled_without_pending_claims():
         "NOT_PROVIDED",
     }
     assert any(row["status"] == "VERIFIED" for row in rows)
-    assert any(row["status"] == "NOT_PROVIDED" for row in rows)
+    assert not any(row["status"] == "NOT_PROVIDED" for row in rows)
 
 
 def test_no_obvious_unfinished_body_markers():
