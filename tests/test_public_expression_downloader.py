@@ -39,3 +39,18 @@ def test_verify_file_checks_size_and_ena_md5(tmp_path: Path) -> None:
         MODULE.verify_file(path, expected_bytes=14, expected_md5=expected_md5)
     with pytest.raises(ValueError, match="MD5 mismatch"):
         MODULE.verify_file(path, expected_bytes=15, expected_md5="0" * 32)
+
+
+def test_verify_only_mode_refuses_to_download_a_missing_file(tmp_path: Path) -> None:
+    row = {
+        "dataset_id": "GSE1",
+        "sample_id": "GSM2",
+        "run_id": "SRR3",
+        "file_role": "paired_1",
+        "url": "https://example.invalid/SRR3_1.fastq.gz",
+        "bytes": "15",
+        "md5": "0" * 32,
+    }
+
+    with pytest.raises(FileNotFoundError, match="Verify-only input is missing"):
+        MODULE.download_one(row, tmp_path, allow_download=False)

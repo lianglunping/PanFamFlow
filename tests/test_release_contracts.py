@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from panfamflow.config import WorkflowConfig
+from panfamflow.config import DifferentialExpressionSettings, WorkflowConfig
 from panfamflow.workflow.scripts.artifact_contract import DeliverableStatus
 
 ROOT = Path(__file__).parents[1]
@@ -157,6 +157,259 @@ def test_expression_container_publication_uses_scoped_registry_permissions() -> 
     assert "platforms: linux/amd64" in workflow
     assert "provenance: false" in workflow
     assert "password: ${{ secrets.GITHUB_TOKEN }}" in workflow
+
+
+def test_hpc_sif_promotion_requires_offline_digest_and_two_dataset_smoke() -> None:
+    job = (ROOT / "scripts" / "hpc" / "build_verified_expression_sif.jh").read_text(
+        encoding="utf-8"
+    )
+    smoke = (ROOT / "scripts" / "hpc" / "expression_sif_smoke.Snakefile").read_text(
+        encoding="utf-8"
+    )
+    digest = "57252522c5af7ebfe6fcec649896065316771c8679cc36c2a3094b9e755eeb29"
+    assert "#JSUB -q normal" in job
+    assert "module load singularity" in job
+    assert '"oci-archive://$archive"' in job
+    assert "sha256sum --check --strict" in job
+    assert "R_version=4.6.1" in job
+    assert "DESeq2_version=1.52.0" in job
+    assert "as.character(getRversion())" in job
+    assert "verified-container-build-resume7-attempt2" in job
+    assert "DS_ABIOTIC" in job and "DS_BIOTIC" in job
+    assert "attempt2.resume7.verified.oci.tar" in job
+    assert "canonical_cache.resume7" in job
+    assert f"@sha256:{digest}" in smoke
+    assert "run_deseq2.R" in smoke
+
+
+def test_hpc_oci_reassembly_is_ordered_and_fail_closed() -> None:
+    job = (ROOT / "scripts" / "hpc" / "reassemble_verified_oci.jh").read_text(encoding="utf-8")
+    assert "#JSUB -q normal" in job
+    assert "expected_chunks=27" in job
+    assert "expected_bytes=1792461824" in job
+    assert "9b0d65a671d0c29f20cda14d9642449a0debc342a4d40856db8c23fb964448fc" in job
+    assert "sha256sum --check --strict" in job
+    assert 'test ! -e "$archive"' in job
+    assert 'cat "$chunk_file" >>"$archive_partial"' in job
+    assert 'mv "$archive_partial" "$archive"' in job
+
+
+def test_hpc_rule_environment_preparation_is_offline_and_scheduler_bound() -> None:
+    job = (ROOT / "scripts" / "hpc" / "prepare_locked_rule_envs.jh").read_text(encoding="utf-8")
+    installer = (ROOT / "scripts" / "hpc" / "install_locked_rule_envs.py").read_text(
+        encoding="utf-8"
+    )
+    assert "#JSUB -q normal" in job
+    assert "expected_packages=729" in job
+    assert "sha256sum --check --strict" in job
+    assert "install_locked_rule_envs.py" in job
+    assert '"--offline"' in installer
+
+
+def test_public_reference_job_is_scheduler_bound_and_immutable() -> None:
+    job = (ROOT / "scripts" / "hpc" / "prepare_public_expression_reference.jh").read_text(
+        encoding="utf-8"
+    )
+    assert "#JSUB -q normal" in job
+    assert "hisat2-build" in job
+    assert "prepare_public_expression_inputs.py saf" in job
+    assert "abe7b2ecd9eb545f106886063c79a7b39a764e4394a36688da4621c3a00158b2" in job
+    assert "6082ad6d23fe860001fab6e8954929be8172d1f6d0f5f6eb54e8982841bb4502" in job
+    assert "curl" not in job and "wget" not in job
+
+
+def test_public_expression_environment_is_explicit_locked_and_offline() -> None:
+    job = (ROOT / "scripts" / "hpc" / "prepare_public_expression_env.jh").read_text(
+        encoding="utf-8"
+    )
+    assert "#JSUB -q normal" in job
+    assert "expression_de.explicit.txt" in job
+    assert "--offline" in job
+    assert "fastp" in job and "hisat2" in job and "featureCounts" in job
+    assert "awk 'NF {print; exit}'" in job
+    assert "curl" not in job and "wget" not in job
+
+
+def test_public_de_subworkflow_uses_audited_counts_and_fixed_digest() -> None:
+    snakefile = (ROOT / "scripts" / "hpc" / "public_expression_de.Snakefile").read_text(
+        encoding="utf-8"
+    )
+    digest = "57252522c5af7ebfe6fcec649896065316771c8679cc36c2a3094b9e755eeb29"
+    assert "audit_expression_datasets.py" in snakefile
+    assert "conda:" not in snakefile
+    assert "run_deseq2.R" in snakefile
+    assert "min_replicates=3" in snakefile
+    assert f"@sha256:{digest}" in snakefile
+    assert "deseq2_fit_qc.tsv" in snakefile
+    assert "deseq2_session_info.txt" in snakefile
+
+
+def test_public_factorial_smoke_runs_on_scheduler_with_fixed_seed() -> None:
+    job = (ROOT / "scripts" / "hpc" / "run_public_factorial_smoke.jh").read_text(encoding="utf-8")
+    assert "#JSUB -q normal" in job
+    assert "module load singularity" in job
+    assert 'expression_env="$JH_SUB_CWD/work/public-expression-resume7/expression-de-env"' in job
+    assert 'PYTHONPATH="$expression_env/lib/python3.12/site-packages' in job
+    assert "--software-deployment-method apptainer" in job
+    assert "--seed 20260823" in job
+    assert "public_expression_de.Snakefile" in job
+    assert "design_rank" in job and "design_columns" in job
+    assert r"contrast_count\t6" in job
+
+
+def test_complete_toy_job_preserves_locked_conda_hashes_and_uses_verified_sif() -> None:
+    job = (ROOT / "scripts" / "hpc" / "run_toy_complete.jh").read_text(encoding="utf-8")
+    activation = (ROOT / "scripts" / "hpc" / "conda_compat" / "bin" / "activate").read_text(
+        encoding="utf-8"
+    )
+    assert "--conda-prefix" not in job
+    assert '--conda-base-path "$JH_SUB_CWD/scripts/hpc/conda_compat"' in job
+    assert '--apptainer-prefix "$JH_SUB_CWD/.snakemake/singularity"' in job
+    assert 'ln -s "$JH_SUB_CWD/.snakemake/conda" "$toy_cache_root/conda"' not in job
+    assert "dry_run_toy_complete.py --list-conda-envs" in job
+    assert "install_locked_rule_envs.py" in job
+    assert '"$mamba_root"' in job
+    assert 'find "$toy_cache_root/conda"' in job
+    assert 'run_token="${JH_JOB_ID:-${LSB_JOBID:-${JOB_ID:-$$}}}"' in job
+    assert "toy-complete-environments.${JH_JOB_ID}" not in job
+    assert 'toy_project_root="$JH_SUB_CWD/examples/toy_complete"' in job
+    assert '  "$toy_project_root" \\' in job
+    assert 'export PATH="${target_prefix}/bin:${PATH}"' in activation
+    assert '"${target_prefix}/etc/conda/activate.d/"*.sh' in activation
+    assert 'export PATH="$JH_SUB_CWD/scripts/hpc/conda_compat/bin:$engine/bin:$PATH"' in job
+    launcher = (ROOT / "scripts" / "hpc" / "conda_compat" / "bin" / "snakemake").read_text(
+        encoding="utf-8"
+    )
+    assert "Conda.instances.clear()" in launcher
+    assert "Conda(prefix_path=compatibility_base)" in launcher
+
+
+def test_no_work_toy_job_requires_unchanged_manifest_and_explicit_no_work_receipt() -> None:
+    job = (ROOT / "scripts" / "hpc" / "rerun_toy_complete_no_work.jh").read_text(encoding="utf-8")
+    assert "#JSUB -q normal" in job
+    assert '--conda-base-path "$JH_SUB_CWD/scripts/hpc/conda_compat"' in job
+    assert '--apptainer-prefix "$JH_SUB_CWD/.snakemake/singularity"' in job
+    assert "Nothing to be done" in job
+    assert "before_manifest_sha256" in job and "after_manifest_sha256" in job
+    assert r"NO_WORK_RERUN\tPASS" in job
+
+
+def test_isolated_recovery_job_checks_three_registered_dependency_closures() -> None:
+    job = (ROOT / "scripts" / "hpc" / "verify_toy_isolated_recovery.jh").read_text(encoding="utf-8")
+    assert "#JSUB -q normal" in job
+    for case_id, target in (
+        ("promoter_summary", "promoter_element_distributions.tsv"),
+        ("promoter_single_png", "Fig26_promoter_by_group_subfamily.png"),
+        ("expression_vst", "expression_vst.tsv"),
+    ):
+        assert case_id in job
+        assert target in job
+    assert "parse_promoter_elements,formal_table_xlsx_companion,integrated_report" in job
+    assert "integrate_differential_expression,integrated_report" in job
+    assert "run_deseq2" in job
+    assert "scan_promoters_fimo" in job
+    assert "observed_rules" in job
+    assert "ISOLATED_RECOVERY" in job
+
+
+def test_isolated_recovery_job_always_restores_failed_target_with_checksum() -> None:
+    job = (ROOT / "scripts" / "hpc" / "verify_toy_isolated_recovery.jh").read_text(encoding="utf-8")
+
+    assert "trap restore_failed_target EXIT" in job
+    assert 'backup_sha256=$(sha256sum "$current_backup"' in job
+    assert 'restored_sha256=$(sha256sum "$current_target"' in job
+    assert 'test "$restored_sha256" = "$backup_sha256"' in job
+    assert "trap - EXIT" in job
+
+
+def test_isolated_recovery_requests_each_missing_child_as_an_explicit_target() -> None:
+    job = (ROOT / "scripts" / "hpc" / "verify_toy_isolated_recovery.jh").read_text(encoding="utf-8")
+    runner = (ROOT / "scripts" / "hpc" / "run_toy_complete.py").read_text(encoding="utf-8")
+
+    assert '--target "$target_relative"' in job
+    assert 'parser.add_argument("--target", action="append", default=[])' in runner
+    assert "command.extend(arguments.target)" in runner
+
+
+def test_public_requantification_jobs_are_scheduler_bound_and_fail_closed() -> None:
+    alignment = (ROOT / "scripts" / "hpc" / "run_public_expression_alignment.jh").read_text(
+        encoding="utf-8"
+    )
+    de_job = (ROOT / "scripts" / "hpc" / "run_public_expression_de.jh").read_text(encoding="utf-8")
+    assert "#JSUB -q normal" in alignment and "#JSUB -q normal" in de_job
+    assert "module load singularity" in de_job
+    assert "fastq_verified_receipt.tsv" in alignment
+    assert "reference_index_receipt.tsv" in alignment
+    assert "run_public_expression_alignment.py" in alignment
+    assert "featureCounts" in de_job
+    assert "prepare_public_expression_inputs.py counts" in de_job
+    assert "public_expression_de.Snakefile" in de_job
+    assert 'PYTHONPATH="$expression_env/lib/python3.12/site-packages' in de_job
+    assert "--software-deployment-method apptainer" in de_job
+    assert "GSE101734" in de_job and "GSE81906" in de_job
+    assert "awk 'NF {print; exit}'" in de_job
+
+
+def test_public_de_validation_repairs_only_provenance_and_preserves_old_receipt() -> None:
+    verifier = (ROOT / "scripts" / "hpc" / "verify_public_expression_de_outputs.jh").read_text(
+        encoding="utf-8"
+    )
+
+    assert "#JSUB -q normal" in verifier
+    assert "Program:featureCounts" in verifier
+    assert 'test "$featurecounts_version" = "v2.1.1"' in verifier
+    assert "pre-repair.$original_session_sha.tsv" in verifier
+    assert 'cp -p "$session" "$original_backup"' in verifier
+    assert "corrected_session.partial" in verifier
+    assert "source_job_id\\t198370" in verifier
+    assert 'bin/featureCounts"' not in verifier
+    assert "samtools" not in verifier
+    assert "snakemake" not in verifier
+    assert "Rscript" not in verifier
+
+
+def test_native_jcvi_acceptance_job_is_isolated_scheduler_bound_and_audited() -> None:
+    job = (ROOT / "scripts" / "hpc" / "run_toy_native_jcvi.jh").read_text(encoding="utf-8")
+
+    assert "#JSUB -q normal" in job
+    assert "module load anaconda3" in job
+    assert "toy-native-jcvi" in job
+    assert 'config["synteny"]["backend"] = "jcvi"' in job
+    assert 'config["synteny"]["precomputed_blocks"] = None' in job
+    assert "SpA_vs_SpB/provenance.json" in job
+    assert "JCVI_version=1.6.6" in job
+    assert "DIAMOND_version=2.2.5" in job
+    assert 'test "$pair_status" = "PASS"' in job
+    assert "from panfamflow.config import load_config" in job
+    assert "python -m panfamflow validate" not in job
+    assert r"NATIVE_JCVI\tPASS" in job
+
+
+def test_ci_deprecated_repository_check_cannot_match_its_own_literal() -> None:
+    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    check = re.search(
+        r"! grep -R (?P<options>[^\n]*?)"
+        r"'https://github\.com/lianglunping/Wild-rice-Pangenome-Project'"
+        r"\s*\\\n\s*(?P<paths>[^\n]+)",
+        workflow,
+    )
+    assert check is not None
+    assert "--exclude=ci.yml" in check.group("options").split()
+    assert ".github" in check.group("paths").split()
+
+
+def test_default_expression_runtime_uses_public_immutable_ghcr_digest() -> None:
+    expected = (
+        "docker://ghcr.io/lianglunping/panfamflow-expression-de@"
+        "sha256:57252522c5af7ebfe6fcec649896065316771c8679cc36c2a3094b9e755eeb29"
+    )
+    assert DifferentialExpressionSettings().container_image == expected
+    template = (ROOT / "src" / "panfamflow" / "templates" / "config.yaml").read_text(
+        encoding="utf-8"
+    )
+    toy = (ROOT / "examples" / "toy_complete" / "config.yaml").read_text(encoding="utf-8")
+    assert expected in template
+    assert expected in toy
 
 
 def test_linux_explicit_locks_cover_every_environment_with_sha256_urls() -> None:
@@ -341,3 +594,66 @@ def test_formal_table_companions_are_explicit_dag_targets() -> None:
     assert "FORMAL_TABLE_COMPANION_STEMS" in snakefile
     assert "rule formal_table_xlsx_companion:" in report_rule
     assert "tsv_to_xlsx.py" in report_rule
+
+
+def test_traceability_validation_uses_frozen_table_contract_and_reuses_outputs() -> None:
+    job = (ROOT / "scripts" / "hpc" / "verify_toy_traceability_provenance.jh").read_text(
+        encoding="utf-8"
+    )
+
+    assert 'figure_contract_path = Path("docs/FIGURE_CONTRACT.tsv")' in job
+    assert 'figure_contract["source_table"].nunique()' in job
+    assert "len(table_manifest) != expected_table_pairs" in job
+    assert "len(table_manifest) < 34" not in job
+    assert "preexisting_artifact_count" in job
+    assert 'test ! -e "$toy_project_root/$target"' not in job
+
+
+def test_provenance_immutability_job_binds_inputs_contracts_seed_and_digest() -> None:
+    job = (ROOT / "scripts" / "hpc" / "verify_toy_provenance_immutability.jh").read_text(
+        encoding="utf-8"
+    )
+
+    assert "len(input_audit) != 11" in job
+    assert 'provenance["input_manifest_sha256"]' in job
+    assert 'provenance["figure_contract_sha256"]' in job
+    assert 'provenance["traceability_contract_sha256"]' in job
+    assert 'provenance["seed"] != 20260821' in job
+    assert 'provenance["selected_modules"] != expected_modules' in job
+    assert "ENGINEERING_COMPLETION_IS_NOT_BIOLOGICAL_VALIDATION" in job
+    assert "sha256:57252522c5af7ebfe6fcec649896065316771c8679cc36c2a3094b9e755eeb29" in job
+
+
+def test_public_hpc_scripts_do_not_expose_personal_filesystem_paths() -> None:
+    scripts = sorted((ROOT / "scripts" / "hpc").glob("*.jh"))
+    assert scripts
+    for script in scripts:
+        source = script.read_text(encoding="utf-8")
+        assert "/public/home/" not in source, script
+        assert "/Users/" not in source, script
+
+
+def test_formal_contract_paths_rebase_to_configured_results_root() -> None:
+    snakefile = (ROOT / "src" / "panfamflow" / "workflow" / "Snakefile").read_text(encoding="utf-8")
+
+    assert "def configured_result_path(path):" in snakefile
+    assert "configured_result_path(row['stem'])" in snakefile
+    assert snakefile.count('configured_result_path(row["source_table"])') == 2
+
+
+def test_report_dag_tracks_formal_figures_sources_and_recovery_audit_children() -> None:
+    snakefile = (ROOT / "src" / "panfamflow" / "workflow" / "Snakefile").read_text(encoding="utf-8")
+    report_rule = (ROOT / "src" / "panfamflow" / "workflow" / "rules" / "report.smk").read_text(
+        encoding="utf-8"
+    )
+    assert "FORMAL_FIGURE_TARGETS" in snakefile
+    assert "FORMAL_SOURCE_TABLE_TARGETS" in snakefile
+    assert "RECOVERY_AUDIT_TARGETS" in snakefile
+    assert "promoter_element_distributions.tsv" in snakefile
+    assert "expression_vst.tsv" in snakefile
+    for target_group in (
+        "FORMAL_FIGURE_TARGETS",
+        "FORMAL_SOURCE_TABLE_TARGETS",
+        "RECOVERY_AUDIT_TARGETS",
+    ):
+        assert target_group in report_rule

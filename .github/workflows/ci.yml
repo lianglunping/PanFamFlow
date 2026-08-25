@@ -61,7 +61,7 @@ jobs:
           grep -q 'Repository = "https://github.com/lianglunping/PanFamFlow"' pyproject.toml
           grep -q 'Issues = "https://github.com/lianglunping/PanFamFlow/issues"' pyproject.toml
           grep -q 'repository-code: "https://github.com/lianglunping/PanFamFlow"' CITATION.cff
-          ! grep -R 'https://github.com/lianglunping/Wild-rice-Pangenome-Project' \
+          ! grep -R --exclude=ci.yml 'https://github.com/lianglunping/Wild-rice-Pangenome-Project' \
             README.md README.zh-CN.md pyproject.toml CITATION.cff .github
 
       - name: Build and audit minimal GitHub Pages site

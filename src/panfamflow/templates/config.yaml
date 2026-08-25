@@ -248,7 +248,7 @@ differential_expression:
   feature_type: exon
   feature_attribute: Parent
   # Runtime must be an immutable derived image with R 4.6.1 / DESeq2 1.52.0.
-  container_image: docker://panfamflow/expression-de@sha256:6f85d371ca4db01fcad2ab615bfad9d792a6ea5a0223f62b16acf277e0526a9d
+  container_image: docker://ghcr.io/lianglunping/panfamflow-expression-de@sha256:57252522c5af7ebfe6fcec649896065316771c8679cc36c2a3094b9e755eeb29
 
 plot:
   pdf: true

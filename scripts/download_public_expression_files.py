@@ -48,7 +48,9 @@ def verify_file(path: Path, *, expected_bytes: int, expected_md5: str) -> None:
         raise ValueError(f"MD5 mismatch for {path}: {observed_md5} != {expected_md5}.")
 
 
-def download_one(row: dict[str, str], output_root: Path) -> DownloadResult:
+def download_one(
+    row: dict[str, str], output_root: Path, *, allow_download: bool = True
+) -> DownloadResult:
     final_path = target_path(output_root, row)
     expected_bytes = int(row["bytes"])
     expected_md5 = row["md5"]
@@ -56,6 +58,8 @@ def download_one(row: dict[str, str], output_root: Path) -> DownloadResult:
         verify_file(final_path, expected_bytes=expected_bytes, expected_md5=expected_md5)
         status = "VERIFIED_EXISTING"
     else:
+        if not allow_download:
+            raise FileNotFoundError(f"Verify-only input is missing: {final_path}.")
         final_path.parent.mkdir(parents=True, exist_ok=True)
         partial_path = final_path.with_suffix(final_path.suffix + ".part")
         subprocess.run(
@@ -131,6 +135,11 @@ def main() -> None:
     parser.add_argument("output_root", type=Path)
     parser.add_argument("receipt", type=Path)
     parser.add_argument("--workers", type=int, default=4, choices=range(1, 5))
+    parser.add_argument(
+        "--verify-only",
+        action="store_true",
+        help="Fail if any file is absent; never fall back to an external download.",
+    )
     arguments = parser.parse_args()
     with arguments.manifest.open(encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle, delimiter="\t"))
@@ -139,7 +148,13 @@ def main() -> None:
     results: list[DownloadResult] = []
     with ThreadPoolExecutor(max_workers=arguments.workers) as executor:
         futures = {
-            executor.submit(download_one, row, arguments.output_root.resolve()): row for row in rows
+            executor.submit(
+                download_one,
+                row,
+                arguments.output_root.resolve(),
+                allow_download=not arguments.verify_only,
+            ): row
+            for row in rows
         }
         for future in as_completed(futures):
             result = future.result()

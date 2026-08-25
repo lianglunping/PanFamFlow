@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+#JSUB -J panfamflow_envs_resume7
+#JSUB -q normal
+#JSUB -n 4
+#JSUB -o logs/hpc/rule_envs_resume7.%J.out
+#JSUB -e logs/hpc/rule_envs_resume7.%J.err
+
+set -euo pipefail
+cd "$JH_SUB_CWD"
+
+module purge || true
+module load anaconda3
+module load singularity
+
+engine="$JH_SUB_CWD/work/verified-engine-linux-64-198231"
+micromamba_bin="${HOME}/mmenv/bin/micromamba"
+mamba_root="$JH_SUB_CWD/work/verified-mamba-root-resume7"
+package_root="$mamba_root/pkgs"
+package_manifest="$package_root/package_archive_manifest.tsv"
+listing="$JH_SUB_CWD/work/rule-environments-resume7.tsv"
+receipt="$JH_SUB_CWD/work/rule-environments-resume7.receipt.tsv"
+expected_packages=729
+
+test -x "$engine/bin/python"
+test -x "$engine/bin/snakemake"
+test -x "$micromamba_bin"
+test -s "$package_manifest"
+mkdir -p "$mamba_root" logs/hpc
+
+read -r header <"$package_manifest"
+test "$header" = $'filename\tsha256\turl'
+test "$(awk 'END {print NR - 1}' "$package_manifest")" -eq "$expected_packages"
+
+checked_packages=0
+while IFS=$'\t' read -r filename package_sha256 url; do
+  test -n "$url"
+  package_file="$package_root/$filename"
+  test -s "$package_file"
+  printf '%s  %s\n' "$package_sha256" "$package_file" | sha256sum --check --strict
+  checked_packages=$((checked_packages + 1))
+done < <(tail -n +2 "$package_manifest")
+test "$checked_packages" -eq "$expected_packages"
+
+(cd env-locks/linux-64 && sha256sum -c SHA256SUMS)
+export PATH="$engine/bin:$PATH"
+export PYTHONPATH="$JH_SUB_CWD/src${PYTHONPATH:+:$PYTHONPATH}"
+python scripts/hpc/dry_run_toy_complete.py --list-conda-envs >"$listing"
+python scripts/hpc/install_locked_rule_envs.py \
+  "$listing" \
+  "$JH_SUB_CWD" \
+  "$JH_SUB_CWD/env-locks/linux-64" \
+  "$micromamba_bin" \
+  "$mamba_root" >"$receipt"
+
+expected_environments=$(awk -F '\t' \
+  '$1 ~ /\.ya?ml$/ {seen[$1] = 1} END {print length(seen)}' "$listing")
+completed_environments=$(find "$JH_SUB_CWD/.snakemake/conda" \
+  -mindepth 3 -maxdepth 3 -path '*/conda-meta/history' -type f | wc -l)
+test "$expected_environments" -gt 0
+test "$completed_environments" -ge "$expected_environments"
+printf 'ENVIRONMENTS_READY\texpected=%s\tcompleted=%s\tpackages=%s\n' \
+  "$expected_environments" "$completed_environments" "$checked_packages"

@@ -1,6 +1,83 @@
-REPORT_DEPENDENCIES = [
-    MODULE_TARGETS[module] for module in SELECTED_MODULES if module != "report"
-] + COMPARATIVE_PHYLOGENY_TARGETS + COMPLETE_CHROMOSOME_TARGETS + SYNTENY_TARGETS + DE_TARGETS + FORMAL_TABLE_COMPANION_TARGETS
+rule audit_id_chain:
+    input:
+        maps=NORMALIZED_MAPS,
+        family=rules.combine_family_evidence.output.members,
+        membership=rules.pan_family_classification.output.membership,
+    output:
+        tsv=ensure(join_path(RESULTS, "00_qc", "id_mapping_audit.tsv"), non_empty=True),
+        xlsx=ensure(join_path(RESULTS, "00_qc", "id_mapping_audit.xlsx"), non_empty=True),
+    params:
+        separator=SEPARATOR,
+    conda:
+        "../envs/report.yaml"
+    script:
+        "../scripts/audit_id_chain.py"
+
+
+rule canonical_transcript_provenance:
+    input:
+        maps=NORMALIZED_MAPS,
+    output:
+        tsv=ensure(
+            join_path(RESULTS, "01_normalized", "canonical_transcript_provenance.tsv"),
+            non_empty=True,
+        ),
+        xlsx=ensure(
+            join_path(RESULTS, "01_normalized", "canonical_transcript_provenance.xlsx"),
+            non_empty=True,
+        ),
+    params:
+        backend=CANONICAL_BACKEND,
+        method=config.get("canonical_transcript", {}).get("method", "longest_cds"),
+        separator=SEPARATOR,
+    conda:
+        "../envs/report.yaml"
+    script:
+        "../scripts/build_canonical_transcript_provenance.py"
+
+
+rule hog_node_provenance:
+    input:
+        classification=rules.pan_family_classification.output.classification,
+        result_dir=rules.orthofinder.output.result_dir,
+    output:
+        tsv=ensure(join_path(RESULTS, "06_pan_family", "hog_node_provenance.tsv"), non_empty=True),
+        xlsx=ensure(
+            join_path(RESULTS, "06_pan_family", "hog_node_provenance.xlsx"),
+            non_empty=True,
+        ),
+    conda:
+        "../envs/report.yaml"
+    script:
+        "../scripts/build_hog_node_provenance.py"
+
+
+TRACEABILITY_PROVENANCE_TARGETS = (
+    [
+        rules.audit_id_chain.output.tsv,
+        rules.audit_id_chain.output.xlsx,
+        rules.canonical_transcript_provenance.output.tsv,
+        rules.canonical_transcript_provenance.output.xlsx,
+        rules.hog_node_provenance.output.tsv,
+        rules.hog_node_provenance.output.xlsx,
+    ]
+    if COMPLETE_PROFILE and {"normalize", "family", "orthology", "pan_family"}.issubset(SELECTED_MODULES)
+    else []
+)
+
+
+REPORT_DEPENDENCIES = (
+    [MODULE_TARGETS[module] for module in SELECTED_MODULES if module != "report"]
+    + COMPARATIVE_PHYLOGENY_TARGETS
+    + COMPLETE_CHROMOSOME_TARGETS
+    + SYNTENY_TARGETS
+    + DE_TARGETS
+    + FORMAL_FIGURE_TARGETS
+    + FORMAL_SOURCE_TABLE_TARGETS
+    + FORMAL_TABLE_COMPANION_TARGETS
+    + RECOVERY_AUDIT_TARGETS
+    + TRACEABILITY_PROVENANCE_TARGETS
+)
 
 
 if FORMAL_TABLE_COMPANION_STEMS:

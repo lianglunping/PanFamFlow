@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+#JSUB -J panfamflow_fastq_verify
+#JSUB -q normal
+#JSUB -n 4
+#JSUB -o logs/hpc/public_fastq_verify.%J.out
+#JSUB -e logs/hpc/public_fastq_verify.%J.err
+
+set -euo pipefail
+cd "$JH_SUB_CWD"
+
+engine="$JH_SUB_CWD/work/verified-engine-linux-64-198231"
+public_root="$JH_SUB_CWD/work/public-expression-resume7"
+raw_root="$public_root/raw"
+receipt="$public_root/fastq_verified_receipt.tsv"
+summary="$public_root/fastq_verification_summary.tsv"
+manifest="examples/public_rice_expression/raw_files.tsv"
+expected_manifest_sha="28653091dad77407908286882d57247e2963bb21d5e14b370f29d963bf3627d4"
+expected_files=96
+expected_bytes=88296890982
+
+test -x "$engine/bin/python"
+test -d "$raw_root"
+printf '%s  %s\n' "$expected_manifest_sha" "$manifest" | sha256sum --check --strict
+test "$(find "$raw_root" -type f -name '*.part' | wc -l)" -eq 0
+mkdir -p "$public_root" logs/hpc
+
+"$engine/bin/python" scripts/download_public_expression_files.py \
+  "$manifest" \
+  "$raw_root" \
+  "$receipt" \
+  --workers 4 \
+  --verify-only
+
+test "$(awk 'END {print NR - 1}' "$receipt")" -eq "$expected_files"
+observed_bytes="$(awk -F '\t' 'NR > 1 {bytes += $6} END {printf "%.0f", bytes}' "$receipt")"
+test "$observed_bytes" -eq "$expected_bytes"
+awk -F '\t' 'NR > 1 && $8 != "VERIFIED_EXISTING" {exit 1}' "$receipt"
+receipt_sha="$(sha256sum "$receipt" | awk '{print $1}')"
+{
+  printf 'field\tvalue\n'
+  printf 'status\tPASS\n'
+  printf 'file_count\t%s\n' "$expected_files"
+  printf 'total_bytes\t%s\n' "$observed_bytes"
+  printf 'manifest_sha256\t%s\n' "$expected_manifest_sha"
+  printf 'receipt_sha256\t%s\n' "$receipt_sha"
+  printf 'verification_method\tBYTES_AND_MD5_ON_KUNPENG_COMPUTE_NODE\n'
+} >"$summary"
+printf 'FASTQ_CACHE_VERIFIED\tfiles=%s\tbytes=%s\treceipt_sha256=%s\n' \
+  "$expected_files" "$observed_bytes" "$receipt_sha"

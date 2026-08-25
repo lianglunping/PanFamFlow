@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+#JSUB -J panfamflow_toy_conda_launcher
+#JSUB -q normal
+#JSUB -n 1
+#JSUB -o logs/hpc/toy_conda_launcher.%J.out
+#JSUB -e logs/hpc/toy_conda_launcher.%J.err
+
+set -euo pipefail
+cd "$JH_SUB_CWD"
+
+module purge || true
+module load anaconda3
+
+engine="$JH_SUB_CWD/work/verified-engine-linux-64-198231"
+compatibility_base="$JH_SUB_CWD/scripts/hpc/conda_compat"
+toy_project_root="$JH_SUB_CWD/examples/toy_complete"
+listing=$(ls -1t work/toy-complete-environments.*.tsv | grep -v '\.receipt\.tsv$' | head -1)
+qc_location=$(awk -F '\t' '$1 ~ /\/envs\/qc.yaml$/ {print $3}' "$listing")
+qc_prefix="$toy_project_root/$qc_location"
+test -s "$qc_prefix/conda-meta/history"
+
+export PANFAMFLOW_CONDA_BASE_PATH="$compatibility_base"
+export PANFAMFLOW_CONDA_COMPAT_PROBE_TARGET="$qc_prefix"
+export PATH="$compatibility_base/bin:$engine/bin:$PATH"
+probe_command=$(snakemake)
+grep -Fq "source $compatibility_base/bin/activate '$qc_prefix'" <<<"$probe_command"
+python_path=$(bash -c "$probe_command")
+test "$(readlink -f "$python_path")" = "$(readlink -f "$qc_prefix/bin/python")"
+printf 'TOY_CONDA_LAUNCHER\tPASS\tpython=%s\n' "$python_path"

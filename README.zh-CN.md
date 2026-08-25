@@ -335,7 +335,7 @@ results/
 5. pairwise `Ka/Ks > 1` 只能作为候选信号，不能替代 codeml/HyPhy 模型。
 6. 跨物种物理坐标不直接拼接；按物种分面或共线性投影展示。
 7. 跨物种 TPM 不直接用于绝对高低结论；优先比较物种内标准化模式和响应方向。
-8. v0.1.2-alpha 尚未自动执行 DESeq2 contrasts、codeml、缺失基因 genome rescue 和所有模板组合图。
+8. 可选 raw-count 路径已能在输入门禁通过后自动执行已登记的 DESeq2 contrasts 和 BH-FDR；v0.1.2-alpha 仍不自动执行 codeml/HyPhy、缺失基因 genome rescue，也不覆盖任意版式的组合图。
 
 详细审计见 [docs/AUDIT.md](docs/AUDIT.md)，扩展计划见 [docs/ROADMAP.md](docs/ROADMAP.md)。
 

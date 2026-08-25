@@ -324,6 +324,52 @@ def test_toy_and_fixture_are_not_primary_teaching_labels() -> None:
     assert "专门构造的极小测试数据" in parser.root.all_text()
 
 
+def test_conditional_de_tutorial_describes_reachable_toy_complete_path() -> None:
+    """The tutorial must not contradict the executable raw-count DE path."""
+    parser = parse_html()
+    de_cards_text = " ".join(
+        find_by_id(parser, f"analysis-11-{index}").all_text() for index in (3, 4, 5)
+    )
+
+    for stale_claim in (
+        "当前没有可到达的完整规则和规范输出",
+        "当前教程只能说明合规 DEG overlap 所需的输入和 QC，不能报告分析结果",
+        "本地 toy 未生成该分析",
+        "toy 示例未提供满足 raw counts、重复、design/contrast、效应量与 FDR 要求的外部结果",
+    ):
+        assert stale_claim not in de_cards_text
+
+    for source_id in ("11-3", "11-4", "11-5"):
+        evidence = re.sub(r"\s+", " ", find_by_id(parser, f"toy-{source_id}").all_text())
+        assert "toy_complete" in evidence
+        assert "原始整数计数" in evidence
+        assert "DESeq2" in evidence
+
+    chapter_text = re.sub(r"\s+", " ", find_by_id(parser, "chapter-11").all_text())
+    for output in (
+        "deseq2_fit_qc.tsv",
+        "deseq2_contrast_results.tsv",
+        "deg_membership.tsv",
+        "Fig34_stress_expression_and_comparison.pdf",
+    ):
+        assert output in chapter_text
+    assert "gene-wise dispersion" in chapter_text
+    run_panel = find_by_id(parser, "panel-analysis-11-3-run").all_text()
+    assert run_panel.count("results/11_expression/deseq2_fit_qc.tsv") == 1
+
+
+def test_conditional_synteny_tutorial_separates_precomputed_and_native_evidence() -> None:
+    parser = parse_html()
+    card_text = re.sub(r"\s+", " ", find_by_id(parser, "analysis-8-6").all_text())
+    evidence = re.sub(r"\s+", " ", find_by_id(parser, "toy-8-6").all_text())
+
+    assert "本地 toy 未生成该分析" not in card_text
+    for phrase in ("toy_complete", "预计算", "有序多锚点块", "原生 JCVI"):
+        assert phrase in evidence
+    for figure in ("Fig17", "Fig21", "Fig22"):
+        assert figure in evidence
+
+
 def test_four_plain_language_scientific_redlines_are_visible() -> None:
     text = re.sub(r"\s+", " ", parse_html().root.all_text())
     for phrase in (

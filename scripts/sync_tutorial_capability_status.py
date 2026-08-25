@@ -61,7 +61,7 @@ COVERAGE_OVERRIDES = {
     },
     "11.3": {
         "evidence": "differential_expression 可选子路径审计 raw integer counts、design 和 contrasts，在固定 DESeq2 容器中逐数据集建模并输出 DEG membership 与跨条件整合",
-        "output": "results/11_expression/deseq2_contrast_results.tsv；results/11_expression/deg_membership.tsv；results/11_expression/Fig34_stress_expression_and_comparison.pdf",
+        "output": "results/11_expression/deseq2_fit_qc.tsv；results/11_expression/deseq2_contrast_results.tsv；results/11_expression/deg_membership.tsv；results/11_expression/Fig34_stress_expression_and_comparison.pdf",
         "limitation": "仅在 differential_expression.enabled=true 且 raw counts、重复、design/contrast 通过审计时运行；TPM/FPKM 被禁止用于正式 DE",
     },
     "11.4": {
@@ -119,7 +119,9 @@ MATRIX_OVERRIDES = {
     },
     "11.3": {
         "pipeline_entry": "模块 expression；设置 differential_expression.enabled=true，提供 raw integer counts、sample metadata、design 和 contrast 注册表。",
-        "canonical_outputs": "results/11_expression/deseq2_contrast_results.tsv；results/11_expression/deg_membership.tsv；results/11_expression/stress_evidence_integration.tsv；results/11_expression/Fig34_stress_expression_and_comparison.pdf",
+        "required_inputs": "逐数据集原始整数计数、sample metadata、design formula 和 contrast 注册表；流程生成 log2FoldChange、P 值、padj（BH-FDR）、方向和方法字段。若导入外部 DE 表，必须另行证明其满足同等输入和质量合同。",
+        "canonical_outputs": "results/11_expression/deseq2_fit_qc.tsv；results/11_expression/deseq2_contrast_results.tsv；results/11_expression/deg_membership.tsv；results/11_expression/stress_evidence_integration.tsv；results/11_expression/Fig34_stress_expression_and_comparison.pdf",
+        "supported_claims": "各数据集门禁通过后，可报告预先注册比较的效应量、BH-FDR、差异方向和跨比较成员关系；工程示例不等于真实水稻数据的生物学结论。",
         "runtime_gate": "每个 dataset 独立建模；输入必须是 raw integer counts；design matrix、重复和 contrast 均通过审计。",
         "extension_requirements": "真实数据需冻结 accession、GSM-SRR 映射、参考版本、计数文件哈希和 DESeq2 session。",
     },
@@ -127,12 +129,14 @@ MATRIX_OVERRIDES = {
         "pipeline_entry": "模块 expression 的 differential_expression 可选子路径；abiotic dataset 按各自 design 独立建模。",
         "canonical_outputs": "results/11_expression/deseq2_contrast_results.tsv；results/11_expression/stress_evidence_integration.tsv；results/11_expression/Fig34_stress_expression_and_comparison.pdf",
         "runtime_gate": "仅接受具有 biological replicate、control/treatment、design_id 和 contrast_id 的 raw-count 数据集。",
+        "supported_claims": "门禁通过后，可支持特定非生物胁迫比较的效应量、BH-FDR、方向和跨研究 HOG 证据整合。",
         "extension_requirements": "登记公共 accession、run mapping、组织/时间、参考版本、URL、MD5/SHA256 和文件大小后才能升级为 ready。",
     },
     "11.5": {
         "pipeline_entry": "模块 expression 的 differential_expression 可选子路径；biotic dataset 按各自 design 独立建模。",
         "canonical_outputs": "results/11_expression/deseq2_contrast_results.tsv；results/11_expression/stress_evidence_integration.tsv；results/11_expression/Fig34_stress_expression_and_comparison.pdf",
         "runtime_gate": "仅接受具有 biological replicate、control/treatment、design_id 和 contrast_id 的 raw-count 数据集。",
+        "supported_claims": "门禁通过后，可支持特定生物胁迫比较的效应量、BH-FDR、方向和跨研究 HOG 证据整合。",
         "extension_requirements": "登记病原、感染时间、组织、公共 accession、run mapping、参考版本和文件身份后才能升级为 ready。",
     },
     "11.6": {
@@ -161,6 +165,7 @@ CARD_REPLACEMENTS = {
         "当前仅能说明需要何种外部证据。": "可以描述通过审计的全基因组共线块及其中目标家族锚点的位置关系。",
         "不能声称已经完成共线性/Circos，不能从定位图或 duplication pair 推断共线块。": "不能把单个相似命中、染色体定位或 duplication pair 写成共线块，也不能把工程示例当成真实物种结论。",
         "无。": "synteny.enabled=true；每个物种对必须具备可追溯的坐标、蛋白和 block/anchor 证据。",
+        "本地 toy 未生成该分析，与当前能力矩阵的 CONDITIONALLY_AVAILABLE 一致；不得用邻近基础表冒充。边界：仅在 synteny.enabled=true 且全基因组坐标、蛋白与成块证据通过审计时运行；相似命中或 duplication pair 不能替代共线块": "examples/toy_complete 使用预计算但经过严格审计的有序多锚点块，验证 Fig17、Fig21 和 Fig22 的产物合同；原生 JCVI 后端仍需在冻结 JCVI/DIAMOND 环境中单独保存命令、版本和 anchor provenance。",
     },
     "9.8": {
         "当前仅分别生成 subfamily 和 group 的配对分层，没有交互层级的推断合同": "流程生成 subfamily×group 二维配对层，并以注册 cluster 的中位数作为独立单位执行受限推断",
@@ -170,16 +175,21 @@ CARD_REPLACEMENTS = {
     "11.3": {
         "当前没有 DESeq2/edgeR、contrast、DEG 判定、外部 DE schema validator 或 UpSet/Venn rule。": "可选 formal-DE 路径审计 raw counts、design 和 contrasts，在固定 DESeq2 容器中逐数据集建模并整合 DEG membership。",
         "当前流程没有原始计数模型和跨比较成员矩阵，尚不支持。": "流程用 raw integer counts 和注册 contrast 产生效应量、BH-FDR 与跨条件成员矩阵；TPM 热图不能替代这一路径。",
+        "当前没有可到达的完整规则和规范输出。页面只说明所缺的执行路径，不能把相邻模块的表或图改名后当作本项结果。": "启用可选差异表达路径后，流程先检查整数计数、样本对应、重复、设计矩阵秩和比较方向，再在固定 DESeq2 容器中逐数据集独立建模；失败数据集关闭失败，不能用 TPM 或空表顶替。",
+        "当前教程只能说明合规 DEG overlap 所需的输入和 QC，不能报告分析结果。": "各数据集门禁通过后，可报告预先注册比较中的效应量、BH-FDR、差异方向和跨比较成员关系。",
+        "本地 toy 未生成该分析，与当前能力矩阵的 CONDITIONALLY_AVAILABLE 一致；不得用邻近基础表冒充。边界：仅在 differential_expression.enabled=true 且 raw counts、重复、design/contrast 通过审计时运行；TPM/FPKM 被禁止用于正式 DE": "examples/toy_complete 已登记 DS_ABIOTIC 和 DS_BIOTIC 两个专门构造的数据集；它们以原始整数计数、独立重复和注册 design/contrast 进入固定 DESeq2 路径，并生成拟合质量、效应量、BH-FDR、成员矩阵、整合表和 Fig34。",
     },
     "11.4": {
         "外部按 dataset/species 独立建模；PanFamFlow 仅可导入结果后按 HOG/方向整合。": "PanFamFlow 按 abiotic dataset/species 独立运行 raw-count DESeq2，再按 HOG、contrast 和效应方向整合。",
         "这一条需要先在外部按实验设计完成统计，再把包含效应量、显著性和质量信息的结果导入。PanFamFlow 不会把 TPM 热图冒充差异分析。": "该可选路径先审计重复、design 与 raw counts，再在固定 DESeq2 环境中计算效应量和 BH-FDR；流程仍不会把 TPM 热图冒充差异分析。",
         "仅外部结果导入。": "differential_expression.enabled=true，且 raw counts、重复、design 与 contrast 审计通过。",
+        "toy 示例未提供满足 raw counts、重复、design/contrast、效应量与 FDR 要求的外部结果；因此本条目保持 CONDITIONALLY_AVAILABLE。": "examples/toy_complete 的 DS_ABIOTIC 使用专门构造的原始整数计数、独立重复和注册 design/contrast 验证固定 DESeq2 工程路径；真实研究仍需另行冻结公共数据来源和文件身份。",
     },
     "11.5": {
         "外部按 dataset/species 建模，导入后整合；当前无规则。": "PanFamFlow 按 biotic dataset/species 独立运行 raw-count DESeq2，再按 HOG、contrast 和效应方向整合。",
         "这一条需要先在外部按实验设计完成统计，再把包含效应量、显著性和质量信息的结果导入。PanFamFlow 不会把 TPM 热图冒充差异分析。": "该可选路径先审计重复、design 与 raw counts，再在固定 DESeq2 环境中计算效应量和 BH-FDR；流程仍不会把 TPM 热图冒充差异分析。",
         "仅外部结果导入。": "differential_expression.enabled=true，且 raw counts、重复、design 与 contrast 审计通过。",
+        "toy 示例未提供满足 raw counts、重复、design/contrast、效应量与 FDR 要求的外部结果；因此本条目保持 CONDITIONALLY_AVAILABLE。": "examples/toy_complete 的 DS_BIOTIC 使用专门构造的原始整数计数、独立重复和注册 design/contrast 验证固定 DESeq2 工程路径；真实研究仍需另行冻结病原、感染时间和文件身份。",
     },
     "11.6": {
         "当前表达模块没有 tissue 元数据合同与 pan-class 联合统计规则": "表达模块读取 tissue 元数据并连接 HOG/pan-class，输出物种内可比的组织分层源表、Fig31 与适用性状态",
@@ -337,7 +347,10 @@ def main() -> None:
             fragment = replace_text(fragment, old_row.get(field, ""), new_row.get(field, ""))
         old_audit = old_coverage_by_id[source_id]
         new_audit = coverage_by_id[source_id]
-        for field in ("source_title", "evidence", "output", "limitation"):
+        # The matrix canonical_outputs field is derived from the coverage output and may
+        # then be expanded by MATRIX_OVERRIDES. Replacing the shorter coverage output a
+        # second time can therefore duplicate an output prefix on repeated synchronization.
+        for field in ("source_title", "evidence", "limitation"):
             fragment = replace_text(fragment, old_audit.get(field, ""), new_audit.get(field, ""))
         for old_text, new_text in CARD_REPLACEMENTS.get(source_id, {}).items():
             fragment = replace_text(fragment, old_text, new_text)

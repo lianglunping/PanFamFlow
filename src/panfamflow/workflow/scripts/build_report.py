@@ -12,7 +12,13 @@ from typing import Any
 
 import pandas as pd
 from validate_deliverable_contract import evaluate_figure_contract
-from workflow_utils import save_table, sha256_file, write_json, write_text_atomic
+from workflow_utils import (
+    project_relative_path,
+    save_table,
+    sha256_file,
+    write_json,
+    write_text_atomic,
+)
 
 results_dir = Path(snakemake.params.results_dir)
 project_root = Path(str(snakemake.params.project_root)).resolve()
@@ -264,7 +270,7 @@ provenance = {
     "selected_modules": run_info["selected_modules"],
     "enabled_features": run_info["enabled_features"],
     "configuration": snakemake.config,
-    "input_manifest_path": str(input_manifest.relative_to(project_root))
+    "input_manifest_path": str(project_relative_path(input_manifest, project_root))
     if input_manifest.is_file()
     else None,
     "input_manifest_sha256": sha256_file(input_manifest) if input_manifest.is_file() else None,

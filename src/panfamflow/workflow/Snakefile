@@ -167,6 +167,39 @@ def formal_activation_enabled(row):
 FIGURE_CONTRACT_PATH = Path(workflow.basedir).parents[2] / "docs" / "FIGURE_CONTRACT.tsv"
 with FIGURE_CONTRACT_PATH.open(encoding="utf-8", newline="") as handle:
     FIGURE_CONTRACT_ROWS = list(csv.DictReader(handle, delimiter="\t"))
+
+
+def configured_result_path(path):
+    candidate = Path(str(path))
+    if not candidate.is_absolute() and candidate.parts[:1] == ("results",):
+        candidate = Path(*candidate.parts[1:])
+    return join_path(RESULTS, candidate)
+
+
+FORMAL_FIGURE_TARGETS = sorted(
+    {
+        f"{configured_result_path(row['stem'])}.{suffix}"
+        for row in FIGURE_CONTRACT_ROWS
+        if formal_activation_enabled(row)
+        for suffix in ("pdf", "png")
+    }
+)
+FORMAL_SOURCE_TABLE_TARGETS = sorted(
+    {
+        configured_result_path(row["source_table"])
+        for row in FIGURE_CONTRACT_ROWS
+        if formal_activation_enabled(row)
+    }
+)
+RECOVERY_AUDIT_TARGETS = []
+if COMPLETE_PROFILE and "promoter" in SELECTED_MODULES:
+    RECOVERY_AUDIT_TARGETS.append(
+        join_path(RESULTS, "10_promoter", "promoter_element_distributions.tsv")
+    )
+if DE_CONFIG.get("enabled", False) and "expression" in SELECTED_MODULES:
+    RECOVERY_AUDIT_TARGETS.append(
+        join_path(RESULTS, "11_expression", "expression_vst.tsv")
+    )
 NATIVE_FORMAL_XLSX = {
     join_path(RESULTS, "08_duplication", "synteny_blocks_intra.xlsx"),
     join_path(RESULTS, "08_duplication", "synteny_blocks_inter.xlsx"),
@@ -175,7 +208,7 @@ NATIVE_FORMAL_XLSX = {
 }
 FORMAL_TABLE_COMPANION_TARGETS = sorted(
     {
-        str(Path(row["source_table"]).with_suffix(".xlsx"))
+        str(Path(configured_result_path(row["source_table"])).with_suffix(".xlsx"))
         for row in FIGURE_CONTRACT_ROWS
         if formal_activation_enabled(row)
     }.difference(NATIVE_FORMAL_XLSX)
@@ -214,7 +247,10 @@ rule all:
         + COMPLETE_CHROMOSOME_TARGETS
         + SYNTENY_TARGETS
         + DE_TARGETS
+        + FORMAL_FIGURE_TARGETS
+        + FORMAL_SOURCE_TABLE_TARGETS
         + FORMAL_TABLE_COMPANION_TARGETS
+        + RECOVERY_AUDIT_TARGETS
 
 
 include: "rules/qc.smk"

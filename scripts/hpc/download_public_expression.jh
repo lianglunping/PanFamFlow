@@ -8,11 +8,12 @@
 set -euo pipefail
 cd "$JH_SUB_CWD"
 
-engine="$JH_SUB_CWD/../work/verified-engine-linux-64-198231"
+engine="$JH_SUB_CWD/work/verified-engine-linux-64-198231"
+public_expression_root="${PANFAMFLOW_PUBLIC_EXPRESSION_ROOT:-$JH_SUB_CWD/work/public-expression-20260821}"
 test -x "$engine/bin/python"
 
 "$engine/bin/python" scripts/download_public_expression_files.py \
     examples/public_rice_expression/raw_files.tsv \
-    /public/home/lianglunping/work/PanFamFlow/public-expression-20260821/raw \
-    /public/home/lianglunping/work/PanFamFlow/public-expression-20260821/download_receipt.tsv \
+    "$public_expression_root/raw" \
+    "$public_expression_root/download_receipt.tsv" \
     --workers 4

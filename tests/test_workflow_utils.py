@@ -4,7 +4,23 @@ from pathlib import Path
 
 import pytest
 
-from panfamflow.workflow.scripts.workflow_utils import fasta_lengths, iter_fasta_records
+from panfamflow.workflow.scripts.workflow_utils import (
+    fasta_lengths,
+    iter_fasta_records,
+    project_relative_path,
+)
+
+
+def test_project_relative_path_normalizes_relative_input_against_project_root(
+    tmp_path: Path,
+) -> None:
+    manifest = tmp_path / "results" / "00_qc" / "input_manifest.json"
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text("{}\n", encoding="utf-8")
+
+    assert project_relative_path(Path("results/00_qc/input_manifest.json"), tmp_path) == Path(
+        "results/00_qc/input_manifest.json"
+    )
 
 
 def test_fasta_lengths_streaming_summary(tmp_path: Path) -> None:

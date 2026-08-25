@@ -82,6 +82,9 @@ def build_snakemake_command(
     summary: bool = False,
     dag: bool = False,
     force_resume: bool = False,
+    conda_prefix: Path | None = None,
+    conda_base_path: Path | None = None,
+    apptainer_prefix: Path | None = None,
 ) -> tuple[list[str], ExitStack]:
     """Return a subprocess argument list and an ExitStack owning package resources."""
 
@@ -119,6 +122,12 @@ def build_snakemake_command(
         deployment_methods.append("apptainer")
     if deployment_methods:
         command.extend(["--software-deployment-method", *deployment_methods])
+    if "conda" in deployment_methods and conda_prefix is not None:
+        command.extend(["--conda-prefix", str(conda_prefix.expanduser().resolve())])
+    if "conda" in deployment_methods and conda_base_path is not None:
+        command.extend(["--conda-base-path", str(conda_base_path.expanduser().resolve())])
+    if "apptainer" in deployment_methods and apptainer_prefix is not None:
+        command.extend(["--apptainer-prefix", str(apptainer_prefix.expanduser().resolve())])
     if config.run.printshellcmds:
         command.append("--printshellcmds")
     if config.run.show_failed_logs:

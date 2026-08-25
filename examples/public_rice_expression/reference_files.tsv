@@ -1,0 +1,3 @@
+file_role	assembly	ensembl_plants_release	filename	url	bytes	sha256	source_bsd_sum	source_blocks	source_checksum_status	verified_at
+genome_fasta	IRGSP-1.0	63	Oryza_sativa.IRGSP-1.0.dna.toplevel.fa.gz	https://ftp.ensemblgenomes.ebi.ac.uk/pub/plants/release-63/fasta/oryza_sativa/dna/Oryza_sativa.IRGSP-1.0.dna.toplevel.fa.gz	114731629	abe7b2ecd9eb545f106886063c79a7b39a764e4394a36688da4621c3a00158b2	10670	112043	PASS	2026-08-21T15:02:58+08:00
+annotation_gff3	IRGSP-1.0	63	Oryza_sativa.IRGSP-1.0.63.gff3.gz	https://ftp.ensemblgenomes.ebi.ac.uk/pub/plants/release-63/gff3/oryza_sativa/Oryza_sativa.IRGSP-1.0.63.gff3.gz	7290206	6082ad6d23fe860001fab6e8954929be8172d1f6d0f5f6eb54e8982841bb4502	54130	7120	PASS	2026-08-21T15:02:58+08:00

@@ -34,6 +34,10 @@ PRECONTAINER_MODULES = (
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--phase", choices=("precontainer", "complete"), default="complete")
+    parser.add_argument("--conda-prefix", type=Path)
+    parser.add_argument("--conda-base-path", type=Path)
+    parser.add_argument("--apptainer-prefix", type=Path)
+    parser.add_argument("--target", action="append", default=[])
     arguments = parser.parse_args()
     config_path = Path("examples/toy_complete/config.yaml").resolve()
     config = load_config(config_path)
@@ -51,7 +55,11 @@ def main() -> int:
         config_path,
         modules,
         cores=8,
+        conda_prefix=arguments.conda_prefix,
+        conda_base_path=arguments.conda_base_path,
+        apptainer_prefix=arguments.apptainer_prefix,
     )
+    command.extend(arguments.target)
     provenance = write_run_provenance(
         config,
         config_path,

@@ -180,6 +180,16 @@ def sha256_file(path: str | Path, chunk_size: int = 1024 * 1024) -> str:
     return digest.hexdigest()
 
 
+def project_relative_path(path: str | Path, project_root: str | Path) -> Path:
+    """Return a path relative to the absolute project root."""
+
+    root = Path(project_root).resolve()
+    candidate = Path(path)
+    if not candidate.is_absolute():
+        candidate = root / candidate
+    return candidate.resolve().relative_to(root)
+
+
 def iter_fasta_records(path: str | Path) -> Iterator[tuple[str, str]]:
     """Yield FASTA records one at a time while rejecting duplicate identifiers."""
 

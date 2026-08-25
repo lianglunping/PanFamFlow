@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import runpy
 from pathlib import Path
 from types import SimpleNamespace
@@ -64,6 +65,77 @@ def _contrasts() -> pd.DataFrame:
     )
 
 
+def _factorial_design() -> pd.DataFrame:
+    rows: list[dict[str, str]] = []
+    for genotype in ("WT", "MUT"):
+        for condition in ("Control", "Stress"):
+            for replicate in ("1", "2", "3"):
+                rows.append(
+                    {
+                        "dataset_id": "DS_FACTORIAL",
+                        "sample_id": f"{genotype}_{condition}_{replicate}",
+                        "species_id": "SpA",
+                        "condition": condition,
+                        "genotype": genotype,
+                        "biological_replicate": replicate,
+                        "batch": "B1",
+                        "stress_category": "abiotic",
+                        "evidence_grade": "VERIFIED_PUBLIC_RAW_COUNTS",
+                        "accession": "GSE_FACTORIAL",
+                        "reference_version": "IRGSP-1.0.63",
+                        "file_verification_status": "CHECKSUM_VERIFIED",
+                    }
+                )
+    return pd.DataFrame(rows)
+
+
+def _factorial_counts() -> pd.DataFrame:
+    design = _factorial_design()
+    values: dict[str, list[int] | list[str]] = {"stable_id": ["G1", "G2"]}
+    for index, sample_id in enumerate(design["sample_id"]):
+        values[sample_id] = [100 + index, 50 + index]
+    return pd.DataFrame(values)
+
+
+def _factorial_contrasts() -> pd.DataFrame:
+    common = {
+        "dataset_id": "DS_FACTORIAL",
+        "design_formula": "~ genotype + condition + genotype:condition",
+        "factor": "condition",
+        "numerator": "Stress",
+        "denominator": "Control",
+        "context_factor": "genotype",
+        "minimum_replicates": 3,
+        "stress_category": "abiotic",
+        "is_primary": True,
+    }
+    return pd.DataFrame(
+        [
+            {
+                **common,
+                "contrast_id": "WT_Stress_vs_Control",
+                "contrast_type": "simple_effect",
+                "context_numerator": "WT",
+                "context_denominator": "",
+            },
+            {
+                **common,
+                "contrast_id": "MUT_Stress_vs_Control",
+                "contrast_type": "simple_effect",
+                "context_numerator": "MUT",
+                "context_denominator": "",
+            },
+            {
+                **common,
+                "contrast_id": "Stress_response_interaction",
+                "contrast_type": "interaction",
+                "context_numerator": "MUT",
+                "context_denominator": "WT",
+            },
+        ]
+    )
+
+
 def test_raw_count_audit_requires_integer_counts_registered_contrast_and_replicates() -> None:
     audited = audit_de_inputs(_counts(), _design(), _contrasts(), min_replicates=2)
 
@@ -97,6 +169,38 @@ def test_confounded_batch_and_condition_are_rejected_as_rank_deficient() -> None
 
     with pytest.raises(ValueError, match="rank deficient"):
         audit_de_inputs(_counts(), design, _contrasts(), min_replicates=2)
+
+
+def test_factorial_design_audits_simple_effects_and_interaction_cells() -> None:
+    audited = audit_de_inputs(
+        _factorial_counts(),
+        _factorial_design(),
+        _factorial_contrasts(),
+        min_replicates=2,
+    )
+
+    assert audited.dataset_audit.loc[0, "design_formula"] == (
+        "~ genotype + condition + genotype:condition"
+    )
+    assert audited.dataset_audit.loc[0, "design_rank"] == 4
+    assert audited.dataset_audit.loc[0, "design_columns"] == 4
+    assert audited.contrast_audit["numerator_replicates"].tolist() == [3, 3, 3]
+    assert audited.contrast_audit["denominator_replicates"].tolist() == [3, 3, 3]
+    assert audited.contrast_audit["contrast_status"].eq("PASS").all()
+    assert "genotype" in audited.design.columns
+
+
+def test_factorial_interaction_rejects_unknown_context_level() -> None:
+    contrasts = _factorial_contrasts()
+    contrasts.loc[contrasts["contrast_type"].eq("interaction"), "context_denominator"] = "UNKNOWN"
+
+    with pytest.raises(ValueError, match="context level UNKNOWN"):
+        audit_de_inputs(
+            _factorial_counts(),
+            _factorial_design(),
+            contrasts,
+            min_replicates=2,
+        )
 
 
 def test_result_integration_keeps_effect_fdr_and_cross_dataset_direction_separate() -> None:
@@ -141,6 +245,32 @@ def test_expression_rule_declares_containerized_deseq2_and_fig34_contract() -> N
     assert "Fig34_stress_expression_and_comparison.pdf" in rule
     assert "DESeqDataSetFromMatrix" in r_script
     assert "DESeq2" in r_script
+
+
+def test_deseq2_low_dispersion_fallback_is_exact_and_auditable() -> None:
+    r_script = (ROOT / "src" / "panfamflow" / "workflow" / "scripts" / "run_deseq2.R").read_text(
+        encoding="utf-8"
+    )
+
+    assert "all gene-wise dispersion estimates are within 2 orders" in r_script
+    assert "estimateDispersionsGeneEst" in r_script
+    assert re.search(r"dispersions\((\w+)\) <- mcols\(\1\)\$dispGeneEst", r_script)
+    assert "nbinomWaldTest" in r_script
+    assert "dispersion_fit_method" in r_script
+    assert "fallback_reason" in r_script
+
+
+def test_deseq2_factorial_contrasts_are_explicit_numeric_vectors() -> None:
+    r_script = (ROOT / "src" / "panfamflow" / "workflow" / "scripts" / "run_deseq2.R").read_text(
+        encoding="utf-8"
+    )
+
+    assert "contrast_type" in r_script
+    assert "context_factor" in r_script
+    assert "model.matrix" in r_script
+    assert "contrast_vector" in r_script
+    assert "results(dds, contrast = contrast_vector" in r_script
+    assert not re.search(r"results\(dds\s*\)", r_script)
 
 
 def test_fig34_integration_executes_without_treating_missing_fit_rows_as_zero(

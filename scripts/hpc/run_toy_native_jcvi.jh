@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+#JSUB -J panfamflow_toy_native_jcvi
+#JSUB -q normal
+#JSUB -n 8
+#JSUB -o logs/hpc/toy_native_jcvi.%J.out
+#JSUB -e logs/hpc/toy_native_jcvi.%J.err
+
+set -euo pipefail
+cd "$JH_SUB_CWD"
+
+module purge || true
+module load anaconda3
+
+engine="$JH_SUB_CWD/work/verified-engine-linux-64-198231"
+toy_root="$JH_SUB_CWD/examples/toy_complete"
+run_token="${JH_JOB_ID:-${LSB_JOBID:-${JOB_ID:-$$}}}"
+run_root="$JH_SUB_CWD/work/toy-native-jcvi.${run_token}"
+results_root="$run_root/results"
+config_path="$run_root/config.yaml"
+receipt="$run_root/receipt.tsv"
+target="$results_root/08_duplication/synteny_pairs/SpA_vs_SpB/provenance.json"
+
+test -x "$engine/bin/python"
+test ! -e "$run_root"
+mkdir -p "$results_root/01_normalized"
+for species in SpA SpB; do
+  cp -p \
+    "$toy_root/results/01_normalized/${species}.gene_transcript_map.tsv" \
+    "$results_root/01_normalized/"
+  cp -p \
+    "$toy_root/results/01_normalized/${species}.proteins.fa" \
+    "$results_root/01_normalized/"
+done
+
+"$engine/bin/python" - "$toy_root/config.yaml" "$config_path" "$run_root" "$toy_root" <<'PY'
+import sys
+from pathlib import Path
+
+import yaml
+
+source, destination, run_root, toy_root = map(Path, sys.argv[1:])
+config = yaml.safe_load(source.read_text(encoding="utf-8"))
+config["project"]["root"] = str(toy_root.resolve())
+config["project"]["results_dir"] = str((run_root / "results").resolve())
+config["project"]["work_dir"] = str((run_root / "work").resolve())
+config["project"]["logs_dir"] = str((run_root / "logs").resolve())
+config["run"]["modules"] = ["duplication"]
+config["deliverables"]["profile"] = "legacy"
+config["comparative_panel"]["enabled"] = False
+config["domain_logo"]["enabled"] = False
+config["differential_expression"]["enabled"] = False
+config["synteny"]["enabled"] = True
+config["synteny"]["backend"] = "jcvi"
+config["synteny"]["species_pairs_table"] = str(
+    (toy_root / "references" / "synteny_pairs.tsv").resolve()
+)
+config["synteny"]["precomputed_blocks"] = None
+destination.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
+PY
+
+export PANFAMFLOW_CONDA_BASE_PATH="$JH_SUB_CWD/scripts/hpc/conda_compat"
+export PATH="$JH_SUB_CWD/scripts/hpc/conda_compat/bin:$engine/bin:$PATH"
+export PYTHONPATH="$JH_SUB_CWD/src${PYTHONPATH:+:$PYTHONPATH}"
+
+"$engine/bin/python" - "$config_path" <<'PY'
+import sys
+from pathlib import Path
+
+from panfamflow.config import load_config
+
+load_config(Path(sys.argv[1]))
+PY
+snakemake \
+  --snakefile "$JH_SUB_CWD/src/panfamflow/workflow/Snakefile" \
+  --configfile "$config_path" \
+  --directory "$toy_root" \
+  --cores 8 \
+  --jobs 8 \
+  --latency-wait 120 \
+  --config panfamflow_selected_modules=duplication panfamflow_config_path="$config_path" \
+  --software-deployment-method conda \
+  --conda-base-path "$JH_SUB_CWD/scripts/hpc/conda_compat" \
+  --printshellcmds \
+  --show-failed-logs \
+  --rerun-incomplete \
+  --keep-going \
+  --retries 1 \
+  --rerun-triggers mtime input params code software-env \
+  -- "$target"
+
+test -s "$target"
+read -r backend pair_status jcvi_version < <(
+  "$engine/bin/python" - "$target" <<'PY'
+import json
+import sys
+
+record = json.load(open(sys.argv[1], encoding="utf-8"))
+assert record["command"], "native JCVI command is missing"
+print(record["backend"], record["pair_status"], record["package_versions"]["jcvi"])
+PY
+)
+test "$backend" = "jcvi"
+test "$pair_status" = "PASS"
+test "$jcvi_version" = "1.6.6"
+
+synteny_env="$(find "$toy_root/.snakemake/conda" -mindepth 1 -maxdepth 1 -type d \
+  -exec sh -c 'test -x "$1/bin/diamond" && test -x "$1/bin/python" && printf "%s\n" "$1"' _ {} \; \
+  | head -1)"
+test -n "$synteny_env"
+diamond_version="$($synteny_env/bin/diamond version | awk 'NF {print $NF; exit}')"
+test "$diamond_version" = "2.2.5"
+
+{
+  printf 'field\tvalue\n'
+  printf 'status\tPASS\n'
+  printf 'backend\t%s\n' "$backend"
+  printf 'pair_id\tSpA_vs_SpB\n'
+  printf 'pair_status\t%s\n' "$pair_status"
+  printf 'JCVI_version=1.6.6\n'
+  printf 'DIAMOND_version=2.2.5\n'
+  printf 'provenance_sha256\t%s\n' "$(sha256sum "$target" | awk '{print $1}')"
+} >"$receipt"
+
+printf 'NATIVE_JCVI\tPASS\tpair=SpA_vs_SpB\treceipt=%s\n' "$receipt"

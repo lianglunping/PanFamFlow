@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+"""Launch Snakemake with the task-local prefix activator pre-registered."""
+
+from __future__ import annotations
+
+import os
+import re
+import sys
+from pathlib import Path
+
+from snakemake.cli import main  # type: ignore[import-not-found]
+from snakemake.deployment.conda import Conda  # type: ignore[import-not-found]
+
+
+def launch() -> int:
+    compatibility_value = os.environ.get("PANFAMFLOW_CONDA_BASE_PATH")
+    if not compatibility_value:
+        raise RuntimeError("PANFAMFLOW_CONDA_BASE_PATH is required")
+    compatibility_base = str(Path(compatibility_value).expanduser().resolve())
+    activate = Path(compatibility_base) / "bin" / "activate"
+    if not activate.is_file():
+        raise RuntimeError(f"Missing compatibility activator: {activate}")
+
+    # Snakemake caches Conda instances by container image before rule execution.
+    # Register the immutable task-local activation base before CLI initialization.
+    Conda.instances.clear()
+    conda = Conda(prefix_path=compatibility_base)
+
+    probe_target = os.environ.get("PANFAMFLOW_CONDA_COMPAT_PROBE_TARGET")
+    if probe_target:
+        print(conda.shellcmd(probe_target, "command -v python"))
+        return 0
+
+    sys.argv[0] = re.sub(r"(-script\.pyw?|\.exe)?$", "", sys.argv[0])
+    result = main()
+    return 0 if result is None else int(result)
+
+
+if __name__ == "__main__":
+    raise SystemExit(launch())

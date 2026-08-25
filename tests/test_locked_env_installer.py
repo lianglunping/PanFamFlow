@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import subprocess
 import sys
 from pathlib import Path
 
@@ -66,3 +67,38 @@ def test_existing_locked_environment_receives_snakemake_done_marker(
 
     assert status.startswith("SKIP\tqc\t")
     assert (tmp_path / location).with_suffix(".env_setup_done").is_file()
+
+
+def test_new_locked_environment_is_created_offline(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    lock_dir = tmp_path / "locks"
+    lock_dir.mkdir()
+    lock = lock_dir / "qc.explicit.txt"
+    lock.write_text("@EXPLICIT\nhttps://example.invalid/pkg.conda\n", encoding="utf-8")
+    checksum = hashlib.sha256(lock.read_bytes()).hexdigest()
+    (lock_dir / "SHA256SUMS").write_text(
+        f"{checksum}  env-locks/linux-64/{lock.name}\n", encoding="utf-8"
+    )
+    location = Path(".snakemake/conda/qc_hash_")
+    observed_command: list[str] = []
+
+    def fake_run(command: list[str], **_: object) -> subprocess.CompletedProcess[str]:
+        observed_command.extend(command)
+        history = tmp_path / location / "conda-meta" / "history"
+        history.parent.mkdir(parents=True)
+        history.write_text("created offline by test\n", encoding="utf-8")
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr(MODULE.subprocess, "run", fake_run)
+    status = MODULE.install_environment(
+        MODULE.LockedEnvironment(Path("/repo/envs/qc.yaml"), location),
+        project_root=tmp_path,
+        lock_dir=lock_dir,
+        checksum_file=lock_dir / "SHA256SUMS",
+        micromamba=tmp_path / "micromamba",
+        mamba_root_prefix=tmp_path / "mamba-root",
+    )
+
+    assert "--offline" in observed_command
+    assert status.startswith("CREATE\tqc\t")

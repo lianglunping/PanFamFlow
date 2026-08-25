@@ -220,7 +220,7 @@ expression:
   mode: fastq_stringtie
 ```
 
-v0.1 生成 TPM，不自动执行统计推断型差异表达。
+该路线生成 TPM，只用于描述性表达。若要执行统计推断，需另外开启 `differential_expression.enabled: true`，并提供 raw integer counts、样本设计表和 contrast 注册表；TPM/FPKM 不能作为 DESeq2 输入。
 
 ## 10. 配置校验
 

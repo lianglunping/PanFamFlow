@@ -379,8 +379,8 @@ class DifferentialExpressionSettings(StrictModel):
     feature_type: str = "exon"
     feature_attribute: str = "Parent"
     container_image: str = (
-        "docker://panfamflow/expression-de@"
-        "sha256:6f85d371ca4db01fcad2ab615bfad9d792a6ea5a0223f62b16acf277e0526a9d"
+        "docker://ghcr.io/lianglunping/panfamflow-expression-de@"
+        "sha256:57252522c5af7ebfe6fcec649896065316771c8679cc36c2a3094b9e755eeb29"
     )
 
     @model_validator(mode="after")

@@ -28,6 +28,15 @@ CONTRAST_COLUMNS = (
     "stress_category",
     "is_primary",
 )
+FACTORIAL_CONTRAST_DEFAULTS = {
+    "design_formula": "",
+    "factor": "condition",
+    "contrast_type": "simple",
+    "context_factor": "",
+    "context_numerator": "",
+    "context_denominator": "",
+    "minimum_replicates": "",
+}
 RESULT_COLUMNS = (
     "dataset_id",
     "contrast_id",
@@ -57,12 +66,40 @@ def _require_columns(table: pd.DataFrame, columns: tuple[str, ...], label: str) 
         raise ValueError(f"{label} lacks required columns: {', '.join(missing)}")
 
 
-def _full_rank_design(design: pd.DataFrame) -> tuple[int, int, str]:
+def _design_terms(formula: str) -> tuple[tuple[str, ...], ...]:
+    normalized = formula.strip()
+    if not normalized.startswith("~"):
+        raise ValueError(f"DE design formula must start with ~: {formula}")
+    terms: list[tuple[str, ...]] = []
+    for raw_term in normalized[1:].split("+"):
+        factors = tuple(part.strip() for part in raw_term.strip().split(":"))
+        if not factors or any(not factor.isidentifier() for factor in factors):
+            raise ValueError(f"Unsupported DE design term: {raw_term.strip()}")
+        terms.append(factors)
+    if not terms:
+        raise ValueError("DE design formula has no terms.")
+    return tuple(terms)
+
+
+def _factor_columns(design: pd.DataFrame, factor: str) -> list[np.ndarray]:
+    if factor not in design.columns:
+        raise ValueError(f"DE design formula references missing factor {factor}.")
+    values = design[factor].astype(str)
+    levels = sorted(values.unique())
+    return [values.eq(level).astype(float).to_numpy() for level in levels[1:]]
+
+
+def _full_rank_design(design: pd.DataFrame, formula: str) -> tuple[int, int, str]:
     columns = [np.ones(len(design), dtype=float)]
-    for factor in ("condition", "batch"):
-        levels = sorted(design[factor].astype(str).unique())
-        for level in levels[1:]:
-            columns.append(design[factor].astype(str).eq(level).astype(float).to_numpy())
+    for term in _design_terms(formula):
+        term_columns: list[np.ndarray] = [np.ones(len(design), dtype=float)]
+        for factor in term:
+            factor_columns = _factor_columns(design, factor)
+            if not factor_columns:
+                term_columns = []
+                break
+            term_columns = [left * right for left in term_columns for right in factor_columns]
+        columns.extend(term_columns)
     matrix = np.column_stack(columns)
     rank = int(np.linalg.matrix_rank(matrix))
     expected = int(matrix.shape[1])
@@ -109,9 +146,15 @@ def audit_de_inputs(
         [counts[["stable_id"]].astype(str), numeric.astype("int64")], axis=1
     )
 
-    design_working = design[list(DESIGN_COLUMNS)].copy()
+    design_working = design.copy()
     design_working["sample_id"] = design_working["sample_id"].astype(str)
     design_working["dataset_id"] = design_working["dataset_id"].astype(str)
+    contrast_working = contrasts.copy()
+    for column, default in FACTORIAL_CONTRAST_DEFAULTS.items():
+        if column not in contrast_working.columns:
+            contrast_working[column] = default
+        contrast_working[column] = contrast_working[column].fillna(default)
+
     contrast_rows: list[dict[str, object]] = []
     dataset_rows: list[dict[str, object]] = []
     sample_rows: list[dict[str, object]] = []
@@ -120,31 +163,91 @@ def audit_de_inputs(
             raise ValueError(f"Dataset {dataset_id} mixes species in one DESeq2 fit.")
         if dataset_design["stress_category"].astype(str).nunique() != 1:
             raise ValueError(f"Dataset {dataset_id} mixes stress categories in one DESeq2 fit.")
-        rank, expected_rank, rank_status = _full_rank_design(dataset_design)
+        dataset_contrasts = contrast_working.loc[
+            contrast_working["dataset_id"].astype(str).eq(str(dataset_id))
+        ].copy()
+        if dataset_contrasts.empty:
+            raise ValueError(f"Dataset {dataset_id} has no registered contrast.")
+        explicit_formulas = {
+            str(value).strip()
+            for value in dataset_contrasts["design_formula"]
+            if str(value).strip()
+        }
+        if len(explicit_formulas) > 1:
+            raise ValueError(f"Dataset {dataset_id} declares multiple DE design formulas.")
+        if explicit_formulas:
+            design_formula = explicit_formulas.pop()
+        elif dataset_design["batch"].astype(str).nunique() > 1:
+            design_formula = "~ batch + condition"
+        else:
+            design_formula = "~ condition"
+        rank, expected_rank, rank_status = _full_rank_design(dataset_design, design_formula)
         if rank_status != "FULL_RANK":
             raise ValueError(
                 f"Dataset {dataset_id} design matrix is rank deficient ({rank}/{expected_rank})."
             )
-        dataset_contrasts = contrasts.loc[
-            contrasts["dataset_id"].astype(str).eq(str(dataset_id))
-        ].copy()
-        if dataset_contrasts.empty:
-            raise ValueError(f"Dataset {dataset_id} has no registered contrast.")
-        conditions = set(dataset_design["condition"].astype(str))
+
         for row in dataset_contrasts.to_dict(orient="records"):
+            factor = str(row["factor"])
             numerator = str(row["numerator"])
             denominator = str(row["denominator"])
-            if numerator == denominator or {numerator, denominator}.difference(conditions):
+            if factor not in dataset_design.columns:
+                raise ValueError(
+                    f"Contrast {row['contrast_id']} references missing factor {factor}."
+                )
+            factor_levels = set(dataset_design[factor].astype(str))
+            if numerator == denominator or {numerator, denominator}.difference(factor_levels):
                 raise ValueError(
                     f"Contrast {row['contrast_id']} is not estimable from dataset {dataset_id}."
                 )
-            counts_by_condition = dataset_design["condition"].astype(str).value_counts()
-            numerator_n = int(counts_by_condition.get(numerator, 0))
-            denominator_n = int(counts_by_condition.get(denominator, 0))
-            if min(numerator_n, denominator_n) < min_replicates:
+            contrast_type = str(row["contrast_type"])
+            context_factor = str(row["context_factor"])
+            context_numerator = str(row["context_numerator"])
+            context_denominator = str(row["context_denominator"])
+            required_replicates = max(
+                min_replicates,
+                int(row["minimum_replicates"]) if str(row["minimum_replicates"]) else 0,
+            )
+            if contrast_type == "simple":
+                numerator_n = int(dataset_design[factor].astype(str).eq(numerator).sum())
+                denominator_n = int(dataset_design[factor].astype(str).eq(denominator).sum())
+                component_counts = (numerator_n, denominator_n)
+            elif contrast_type in {"simple_effect", "interaction"}:
+                if not context_factor or context_factor not in dataset_design.columns:
+                    raise ValueError(
+                        f"Contrast {row['contrast_id']} requires a valid context factor."
+                    )
+                context_levels = set(dataset_design[context_factor].astype(str))
+                requested_contexts = [context_numerator]
+                if contrast_type == "interaction":
+                    requested_contexts.append(context_denominator)
+                for context_level in requested_contexts:
+                    if context_level not in context_levels:
+                        raise ValueError(
+                            f"Contrast {row['contrast_id']} references context level "
+                            f"{context_level} absent from dataset {dataset_id}."
+                        )
+                cell_counts = {
+                    (context_level, factor_level): int(
+                        (
+                            dataset_design[context_factor].astype(str).eq(context_level)
+                            & dataset_design[factor].astype(str).eq(factor_level)
+                        ).sum()
+                    )
+                    for context_level in requested_contexts
+                    for factor_level in (numerator, denominator)
+                }
+                numerator_n = cell_counts[(context_numerator, numerator)]
+                denominator_n = cell_counts[(context_numerator, denominator)]
+                component_counts = tuple(cell_counts.values())
+            else:
                 raise ValueError(
-                    f"Contrast {row['contrast_id']} has fewer than {min_replicates} "
-                    "biological replicates in a compared condition."
+                    f"Contrast {row['contrast_id']} has unsupported contrast_type {contrast_type}."
+                )
+            if min(component_counts) < required_replicates:
+                raise ValueError(
+                    f"Contrast {row['contrast_id']} has fewer than {required_replicates} "
+                    "biological replicates in a compared cell."
                 )
             contrast_rows.append(
                 {
@@ -169,6 +272,7 @@ def audit_de_inputs(
                 "file_verification_status": str(dataset_design["file_verification_status"].iloc[0]),
                 "sample_count": len(dataset_design),
                 "condition_count": int(dataset_design["condition"].nunique()),
+                "design_formula": design_formula,
                 "design_rank": rank,
                 "design_columns": expected_rank,
                 "dataset_status": "PASS",
@@ -189,7 +293,7 @@ def audit_de_inputs(
                 }
             )
     unknown_datasets = sorted(
-        set(contrasts["dataset_id"].astype(str)).difference(
+        set(contrast_working["dataset_id"].astype(str)).difference(
             design_working["dataset_id"].astype(str)
         )
     )
@@ -198,7 +302,7 @@ def audit_de_inputs(
     return DeInputAudit(
         counts=normalized_counts,
         design=design_working.sort_values(["dataset_id", "sample_id"]),
-        contrasts=contrasts[list(CONTRAST_COLUMNS)].copy(),
+        contrasts=contrast_working,
         dataset_audit=pd.DataFrame(dataset_rows),
         contrast_audit=pd.DataFrame(contrast_rows),
         sample_qc=pd.DataFrame(sample_rows),

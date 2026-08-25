@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+#JSUB -J panfamflow_public_de
+#JSUB -q normal
+#JSUB -n 16
+#JSUB -o logs/hpc/public_de.%J.out
+#JSUB -e logs/hpc/public_de.%J.err
+
+set -euo pipefail
+cd "$JH_SUB_CWD"
+
+module purge || true
+module load singularity
+
+engine="$JH_SUB_CWD/work/verified-engine-linux-64-198231"
+environment_receipt="$JH_SUB_CWD/work/public-expression-resume7/expression_de_environment_receipt.tsv"
+expression_env="$JH_SUB_CWD/work/public-expression-resume7/expression-de-env"
+public_root="$JH_SUB_CWD/work/public-expression-resume7"
+alignment_receipt="$public_root/alignment_receipt.tsv"
+saf="$public_root/reference/IRGSP-1.0.release63.gene_exons.saf"
+counts_root="$public_root/counts"
+featurecounts_output="$counts_root/featureCounts.tsv"
+raw_counts="$counts_root/raw_counts.tsv"
+de_root="$public_root/de/model"
+canonical_sif="$JH_SUB_CWD/.snakemake/singularity/88970d61641c50285db96eb4521eb8ba.simg"
+build_versions="$JH_SUB_CWD/work/verified-container-build-resume7-attempt2/expression_session_versions.txt"
+session="$public_root/requantification_session_versions.tsv"
+
+test -x "$engine/bin/python"
+test -x "$engine/bin/snakemake"
+test -x "$expression_env/bin/featureCounts"
+test -x "$expression_env/bin/samtools"
+grep -Fxq $'status\tPASS' "$environment_receipt"
+test -s "$canonical_sif"
+grep -Fxq 'R_version=4.6.1' "$build_versions"
+grep -Fxq 'DESeq2_version=1.52.0' "$build_versions"
+test -s "$saf"
+test "$(awk 'END {print NR - 1}' "$alignment_receipt")" -eq 24
+awk -F '\t' 'NR > 1 && $11 != "PASS" {exit 1}' "$alignment_receipt"
+mkdir -p "$counts_root" "$public_root/de" logs/hpc
+
+mapfile -t sample_ids < <(awk -F '\t' 'NR > 1 {print $2}' "$alignment_receipt")
+mapfile -t bam_paths < <(awk -F '\t' 'NR > 1 {print $5}' "$alignment_receipt")
+test "${#sample_ids[@]}" -eq 24
+test "${#bam_paths[@]}" -eq 24
+for bam in "${bam_paths[@]}"; do
+  test -s "$bam"
+  "$expression_env/bin/samtools" quickcheck -v "$bam"
+done
+
+if ! test -s "$featurecounts_output"; then
+  featurecounts_partial="$counts_root/featureCounts.tsv.partial"
+  test ! -e "$featurecounts_partial"
+  "$expression_env/bin/featureCounts" \
+    -T 16 \
+    -F SAF \
+    -a "$saf" \
+    -o "$featurecounts_partial" \
+    -p \
+    --countReadPairs \
+    -B \
+    -C \
+    -s 0 \
+    "${bam_paths[@]}"
+  test -s "$featurecounts_partial"
+  mv "$featurecounts_partial" "$featurecounts_output"
+  mv "$featurecounts_partial.summary" "$featurecounts_output.summary"
+fi
+
+sample_csv="$(IFS=,; printf '%s' "${sample_ids[*]}")"
+bam_csv="$(IFS=,; printf '%s' "${bam_paths[*]}")"
+"$engine/bin/python" scripts/hpc/prepare_public_expression_inputs.py counts \
+  "$featurecounts_output" \
+  "$sample_csv" \
+  "$bam_csv" \
+  "$raw_counts"
+test -s "$raw_counts"
+test "$(awk -F '\t' 'NR == 1 {print NF}' "$raw_counts")" -eq 25
+export PYTHONPATH="$expression_env/lib/python3.12/site-packages${PYTHONPATH:+:$PYTHONPATH}"
+
+"$engine/bin/snakemake" \
+  --snakefile scripts/hpc/public_expression_de.Snakefile \
+  --directory "$JH_SUB_CWD" \
+  --cores 4 \
+  --software-deployment-method apptainer \
+  --apptainer-prefix "$JH_SUB_CWD/.snakemake/singularity" \
+  --config "public_root=$public_root" \
+  --rerun-incomplete \
+  --latency-wait 120 \
+  --printshellcmds
+
+test "$(awk 'END {print NR - 1}' "$de_root/deseq2_fit_qc.tsv")" -eq 2
+grep -q '^GSE101734[[:space:]]' "$de_root/deseq2_fit_qc.tsv"
+grep -q '^GSE81906[[:space:]]' "$de_root/deseq2_fit_qc.tsv"
+test "$(awk -F '\t' 'NR > 1 {contrasts[$2] = 1} END {print length(contrasts)}' "$de_root/deseq2_all_results.tsv")" -eq 6
+grep -Fxq 'DESeq2_version=1.52.0' "$de_root/deseq2_session_info.txt"
+grep -Fxq 'R_version=4.6.1' "$de_root/deseq2_session_info.txt"
+{
+  printf 'field\tvalue\n'
+  printf 'status\tPASS\n'
+  printf 'featurecounts_version\t%s\n' "$("$expression_env/bin/featureCounts" -v 2>&1 | awk 'NF {print; exit}')"
+  printf 'sample_count\t24\n'
+  printf 'gene_count\t%s\n' "$(awk 'END {print NR - 1}' "$raw_counts")"
+  printf 'dataset_count\t2\n'
+  printf 'contrast_count\t6\n'
+  printf 'design_formula\t~ genotype + condition + genotype:condition\n'
+  printf 'fit_scope\tONE_DATASET_ONE_MODEL\n'
+  printf 'count_unit\tPAIRED_FRAGMENTS_ON_GENE_EXON_UNION\n'
+} >"$session"
+printf 'PUBLIC_DE PASS\tresults=%s\n' "$de_root/deseq2_all_results.tsv"

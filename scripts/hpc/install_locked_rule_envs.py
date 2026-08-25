@@ -88,6 +88,7 @@ def install_environment(
             str(micromamba),
             "create",
             "--yes",
+            "--offline",
             "--prefix",
             str(target),
             "--file",

@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+#JSUB -J panfamflow_sif_resume7
+#JSUB -q normal
+#JSUB -n 4
+#JSUB -o logs/hpc/expression_sif_resume7.%J.out
+#JSUB -e logs/hpc/expression_sif_resume7.%J.err
+
+set -euo pipefail
+cd "$JH_SUB_CWD"
+
+module purge || true
+module load singularity
+
+engine="$JH_SUB_CWD/work/verified-engine-linux-64-198231"
+archive="$JH_SUB_CWD/work/verified-container-staging/panfamflow-expression-de_57252522.attempt2.resume7.verified.oci.tar"
+build_root="$JH_SUB_CWD/work/verified-container-build-resume7-attempt2"
+sif="$build_root/panfamflow-expression-de_57252522.sif"
+sif_partial="$sif.partial"
+smoke_root="$build_root/smoke"
+smoke_prefix="$build_root/smoke-singularity"
+cache_name="88970d61641c50285db96eb4521eb8ba.simg"
+canonical_cache="$JH_SUB_CWD/.snakemake/singularity/$cache_name"
+
+test -x "$engine/bin/snakemake"
+test -s "$archive"
+printf '%s  %s\n' \
+  9b0d65a671d0c29f20cda14d9642449a0debc342a4d40856db8c23fb964448fc \
+  "$archive" | sha256sum --check --strict
+
+mkdir -p "$build_root" "$smoke_prefix" "$JH_SUB_CWD/.snakemake/singularity" logs/hpc
+test ! -e "$sif"
+test ! -e "$sif_partial"
+test ! -e "$canonical_cache"
+
+singularity build "$sif_partial" "oci-archive://$archive"
+singularity inspect --json "$sif_partial" >"$build_root/singularity_inspect.json"
+singularity exec "$sif_partial" R --version >"$build_root/R_version.txt" 2>&1
+singularity exec "$sif_partial" Rscript -e \
+  'cat("R_version=", as.character(getRversion()), "\nDESeq2_version=", as.character(packageVersion("DESeq2")), "\n", sep="")' \
+  >"$build_root/expression_session_versions.txt"
+grep -Fxq 'R_version=4.6.1' "$build_root/expression_session_versions.txt"
+grep -Fxq 'DESeq2_version=1.52.0' "$build_root/expression_session_versions.txt"
+
+mv "$sif_partial" "$sif"
+ln "$sif" "$smoke_prefix/$cache_name"
+"$engine/bin/snakemake" \
+  --snakefile scripts/hpc/expression_sif_smoke.Snakefile \
+  --directory "$JH_SUB_CWD" \
+  --cores 1 \
+  --software-deployment-method apptainer \
+  --apptainer-prefix "$smoke_prefix" \
+  --config "smoke_root=$smoke_root" \
+  --printshellcmds
+
+test "$(wc -l <"$smoke_root/deseq2_fit_qc.tsv")" -eq 3
+grep -q '^DS_ABIOTIC[[:space:]]' "$smoke_root/deseq2_fit_qc.tsv"
+grep -q '^DS_BIOTIC[[:space:]]' "$smoke_root/deseq2_fit_qc.tsv"
+grep -Fxq 'DESeq2_version=1.52.0' "$smoke_root/deseq2_session_info.txt"
+grep -Fxq 'R_version=4.6.1' "$smoke_root/deseq2_session_info.txt"
+sha256sum "$archive" "$sif" >"$build_root/SHA256SUMS"
+
+ln "$sif" "$canonical_cache.resume7"
+mv "$canonical_cache.resume7" "$canonical_cache"
+printf 'PROMOTED\t%s\n' "$canonical_cache"

@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+#JSUB -J panfamflow_public_ref
+#JSUB -q normal
+#JSUB -n 8
+#JSUB -o logs/hpc/public_reference.%J.out
+#JSUB -e logs/hpc/public_reference.%J.err
+
+set -euo pipefail
+cd "$JH_SUB_CWD"
+
+source_root="${PANFAMFLOW_PUBLIC_REFERENCE_SOURCE_ROOT:-$JH_SUB_CWD/work/public-expression-20260821/reference/ensembl-plants-release-63}"
+source_fasta="$source_root/Oryza_sativa.IRGSP-1.0.dna.toplevel.fa.gz"
+source_gff="$source_root/Oryza_sativa.IRGSP-1.0.63.gff3.gz"
+expected_fasta_sha="abe7b2ecd9eb545f106886063c79a7b39a764e4394a36688da4621c3a00158b2"
+expected_gff_sha="6082ad6d23fe860001fab6e8954929be8172d1f6d0f5f6eb54e8982841bb4502"
+environment_receipt="$JH_SUB_CWD/work/public-expression-resume7/expression_de_environment_receipt.tsv"
+expression_env="$JH_SUB_CWD/work/public-expression-resume7/expression-de-env"
+engine="$JH_SUB_CWD/work/verified-engine-linux-64-198231"
+reference_root="$JH_SUB_CWD/work/public-expression-resume7/reference"
+fasta="$reference_root/IRGSP-1.0.release63.fa"
+gff3="$reference_root/IRGSP-1.0.release63.gff3"
+saf="$reference_root/IRGSP-1.0.release63.gene_exons.saf"
+index_root="$reference_root/hisat2-index"
+index_prefix="$index_root/IRGSP-1.0.release63"
+receipt="$reference_root/reference_index_receipt.tsv"
+job_token="${JH_JOB_ID:-${JH_JOBID:-$$}}"
+
+test -x "$engine/bin/python"
+test -x "$expression_env/bin/hisat2-build"
+grep -Fxq $'status\tPASS' "$environment_receipt"
+printf '%s  %s\n' "$expected_fasta_sha" "$source_fasta" | sha256sum --check --strict
+printf '%s  %s\n' "$expected_gff_sha" "$source_gff" | sha256sum --check --strict
+mkdir -p "$reference_root" "$index_root" logs/hpc
+
+if test -s "$receipt"; then
+  grep -Fxq $'status\tPASS' "$receipt"
+  test "$(find "$index_root" -maxdepth 1 -type f -name 'IRGSP-1.0.release63.*.ht2*' | wc -l)" -eq 8
+  printf 'REFERENCE_INDEX VERIFIED_EXISTING\n'
+  exit 0
+fi
+
+if ! test -s "$fasta"; then
+  fasta_partial="$reference_root/IRGSP-1.0.release63.fa.${job_token}.partial"
+  test ! -e "$fasta_partial"
+  gzip -cd "$source_fasta" >"$fasta_partial"
+  test -s "$fasta_partial"
+  mv "$fasta_partial" "$fasta"
+fi
+if ! test -s "$gff3"; then
+  gff_partial="$reference_root/IRGSP-1.0.release63.gff3.${job_token}.partial"
+  test ! -e "$gff_partial"
+  gzip -cd "$source_gff" >"$gff_partial"
+  test -s "$gff_partial"
+  mv "$gff_partial" "$gff3"
+fi
+
+"$engine/bin/python" scripts/hpc/prepare_public_expression_inputs.py saf "$gff3" "$saf"
+test -s "$saf"
+test "$(awk 'END {print NR - 1}' "$saf")" -eq 178554
+test "$(awk -F '\t' 'NR > 1 {genes[$1] = 1} END {print length(genes)}' "$saf")" -eq 38993
+
+temporary_prefix="$index_root/IRGSP-1.0.release63.${job_token}.partial"
+test "$(find "$index_root" -maxdepth 1 -type f -name "$(basename "$temporary_prefix").*.ht2*" | wc -l)" -eq 0
+"$expression_env/bin/hisat2-build" -p 8 "$fasta" "$temporary_prefix"
+test "$(find "$index_root" -maxdepth 1 -type f -name "$(basename "$temporary_prefix").*.ht2*" | wc -l)" -eq 8
+for temporary_index in "$temporary_prefix".*.ht2*; do
+  suffix="${temporary_index#"$temporary_prefix"}"
+  final_index="$index_prefix$suffix"
+  test ! -e "$final_index"
+  mv "$temporary_index" "$final_index"
+done
+test "$(find "$index_root" -maxdepth 1 -type f -name 'IRGSP-1.0.release63.*.ht2*' | wc -l)" -eq 8
+
+fasta_sha="$(sha256sum "$fasta" | awk '{print $1}')"
+gff_sha="$(sha256sum "$gff3" | awk '{print $1}')"
+saf_sha="$(sha256sum "$saf" | awk '{print $1}')"
+index_manifest_sha="$({ find "$index_root" -maxdepth 1 -type f -name 'IRGSP-1.0.release63.*.ht2*' -print0 | sort -z | xargs -0 sha256sum; } | sha256sum | awk '{print $1}')"
+{
+  printf 'field\tvalue\n'
+  printf 'status\tPASS\n'
+  printf 'source_fasta_sha256\t%s\n' "$expected_fasta_sha"
+  printf 'source_gff_sha256\t%s\n' "$expected_gff_sha"
+  printf 'decompressed_fasta_sha256\t%s\n' "$fasta_sha"
+  printf 'decompressed_gff_sha256\t%s\n' "$gff_sha"
+  printf 'gene_saf_sha256\t%s\n' "$saf_sha"
+  printf 'hisat2_index_manifest_sha256\t%s\n' "$index_manifest_sha"
+  printf 'hisat2_version\t%s\n' "$("$expression_env/bin/hisat2" --version | head -n 1)"
+  printf 'gene_count\t38993\n'
+  printf 'unique_exon_count\t178554\n'
+} >"$receipt"
+printf 'REFERENCE_INDEX PASS\treceipt=%s\n' "$receipt"

@@ -131,7 +131,7 @@ backend：
 
 fastp → HISAT2 → sorted BAM → StringTie `-e -A` → family TPM matrix。gene ID 映射按 sample 的 species scope 处理，允许不同物种存在相同原始 gene ID。同物种 abundance table 未报告的目标基因记为 `ASSAYED_ZERO`（0.0），跨物种不适用单元记为 `NOT_APPLICABLE`（NA），只有 StringTie 明确报告的单元记为 `MEASURED`。该解释以前提“abundance table 完整且上游成功”为条件。
 
-两条表达路线都只提供表达模式与汇总，不实现 DESeq2 contrasts、DEG 跨条件重叠或 abiotic/biotic stress 的统计设计。
+上述两条基础表达路线只提供表达模式与汇总。另有默认关闭的 `differential_expression` 子路径：它只接收 raw integer counts，先审计生物学重复、design rank 和预注册 contrast，再在固定 DESeq2 容器中逐数据集建模，输出效应量、BH-FDR、DEG membership、PCA、拟合 QC 与 Fig34。TPM/FPKM 会在正式差异分析入口被拒绝；缺少合格重复、design 或 contrast 时保持失败关闭。
 
 ## `report`
 
