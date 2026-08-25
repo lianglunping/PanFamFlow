@@ -4,10 +4,9 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-PROJECT_SITE_URL = (
-    "https://lianglunping.github.io/PanFamFlow/index.html?rev=pages-entry-fix-20260819"
-)
+PROJECT_SITE_URL = "https://lianglunping.github.io/PanFamFlow/"
 TUTORIAL_URL = "https://lianglunping.github.io/PanFamFlow/tutorial/"
+STALE_CACHE_TOKEN = "pages-entry-fix-20260819"
 
 
 class EntryPointParser(HTMLParser):
@@ -35,11 +34,12 @@ def parse_html(path: Path) -> EntryPointParser:
     return parser
 
 
-def test_readmes_use_explicit_cache_busted_project_site_entry() -> None:
+def test_readmes_use_stable_project_site_entry() -> None:
     for readme in (REPO_ROOT / "README.md", REPO_ROOT / "README.zh-CN.md"):
         text = readme.read_text(encoding="utf-8")
         assert PROJECT_SITE_URL in text
         assert TUTORIAL_URL in text
+        assert STALE_CACHE_TOKEN not in text
 
 
 def test_repository_root_entry_never_redirects_to_itself() -> None:
@@ -47,6 +47,7 @@ def test_repository_root_entry_never_redirects_to_itself() -> None:
     assert parser.meta_refreshes == []
     assert PROJECT_SITE_URL in parser.links
     assert TUTORIAL_URL in parser.links
+    assert all(STALE_CACHE_TOKEN not in link for link in parser.links)
 
 
 def test_published_home_is_self_contained_and_links_to_tutorial() -> None:

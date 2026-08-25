@@ -219,6 +219,28 @@ def test_html_has_exact_anchors_and_matches_matrix_states():
         assert row["title"] in card.all_text()
 
 
+def test_implemented_cards_do_not_claim_canonical_results_are_missing():
+    parser = parse_html()
+    for row in read_matrix():
+        if row["state"] != "IMPLEMENTED":
+            continue
+        card = find_by_id(parser, row["anchor"])
+        assert "尚无专用 canonical 结果" not in card.all_text(), row["source_id"]
+
+    ogg_card = find_by_id(parser, "analysis-6-1").all_text()
+    assert "OGG 有无聚类只是目标家族组成相似性" in ogg_card
+    assert "未输出原资料中名称含 OGG 的同款图" not in ogg_card
+
+    promoter_card = find_by_id(parser, "analysis-10-2")
+    toy_slots = [
+        node for node in promoter_card.descendants() if "toy-evidence-slot" in node.classes
+    ]
+    assert len(toy_slots) == 1
+    toy_evidence = toy_slots[0].all_text()
+    assert toy_evidence.count("results/10_promoter/promoter_major_class_summary.tsv") == 1
+    assert toy_evidence.count("results/10_promoter/Fig23_promoter_four_major_classes.pdf") == 1
+
+
 def test_every_analysis_card_has_four_teaching_dimensions_and_depth():
     parser = parse_html()
     for source_id in EXPECTED_IDS:

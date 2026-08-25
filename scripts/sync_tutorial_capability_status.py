@@ -225,6 +225,7 @@ CARD_REPLACEMENTS = {
         "PanFamFlow 能提供基础数据，但该条目的连接、分母、统计或专用图还要按下方合同补齐。完成这些步骤前，只能作有限的描述。": "PanFamFlow 在 pan_family 模块中复制并绘制 OrthoFinder rooted species tree，同时从目标家族 OGG 0/1 矩阵计算 Jaccard 距离和 average-linkage 聚类，并输出来源、距离、linkage 与命名边界合同。",
         "当前只能教学性解释不同树的含义。": "可分别解释冻结物种集合的系统关系和目标家族 OGG 组成相似性；两者均有直接源表与 provenance。",
         "本地最小示例已验证可连接的基础产物，但本条目尚无专用 canonical 结果：orthology 模块保留 OrthoFinder 结果目录和 HOG 节点。基础产物：": "clean toy 会直接验证两类 canonical 产物、叶标签闭合和非系统发育命名合同。规范产物：",
+        "物种树、HOG 聚类树与目标家族基因树概念不同，且未输出原资料中名称含 OGG 的同款图": "物种树是系统发育对象；OGG 有无聚类只是目标家族组成相似性，不是系统树、单个 HOG 基因树或分化时间证据",
     },
     "4.4": {
         "当前没有核心结构域裁剪、氨基酸对齐和 sequence logo 规则": "流程读取经审计的核心结构域对齐，计算逐位点残基频率、信息量、覆盖与缺口状态，并生成可追溯 Logo",
@@ -238,6 +239,10 @@ CARD_REPLACEMENTS = {
         "不能声称已经完成共线性/Circos，不能从定位图或 duplication pair 推断共线块。": "不能把单个相似命中、染色体定位或 duplication pair 写成共线块，也不能把工程示例当成真实物种结论。",
         "无。": "synteny.enabled=true；每个物种对必须具备可追溯的坐标、蛋白和 block/anchor 证据。",
         "本地 toy 未生成该分析，与当前能力矩阵的 CONDITIONALLY_AVAILABLE 一致；不得用邻近基础表冒充。边界：仅在 synteny.enabled=true 且全基因组坐标、蛋白与成块证据通过审计时运行；相似命中或 duplication pair 不能替代共线块": "examples/toy_complete 使用预计算但经过严格审计的有序多锚点块，验证 Fig17、Fig21 和 Fig22 的产物合同；原生 JCVI 后端仍需在冻结 JCVI/DIAMOND 环境中单独保存命令、版本和 anchor provenance。",
+    },
+    "10.2": {
+        "results/10_promoter/promoter_major_class_summary.tsv；results/10_promoter/promoter_major_class_summary.tsv；": "results/10_promoter/promoter_major_class_summary.tsv；",
+        "results/10_promoter/Fig23_promoter_four_major_classes.pdf；results/10_promoter/Fig23_promoter_four_major_classes.pdf": "results/10_promoter/Fig23_promoter_four_major_classes.pdf",
     },
     "9.8": {
         "当前仅分别生成 subfamily 和 group 的配对分层，没有交互层级的推断合同": "流程生成 subfamily×group 二维配对层，并以注册 cluster 的中位数作为独立单位执行受限推断",
@@ -426,6 +431,12 @@ def main() -> None:
             fragment = replace_text(fragment, old_audit.get(field, ""), new_audit.get(field, ""))
         for old_text, new_text in CARD_REPLACEMENTS.get(source_id, {}).items():
             fragment = replace_text(fragment, old_text, new_text)
+        if new_state == "IMPLEMENTED":
+            fragment = replace_text(
+                fragment,
+                "本地最小示例已验证可连接的基础产物，但本条目尚无专用 canonical 结果：",
+                "clean toy 已验证本条目的规范执行路径与可追溯结果：",
+            )
         search_blob = " ".join(
             str(new_row.get(field, ""))
             for field in (

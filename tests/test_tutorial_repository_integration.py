@@ -8,6 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 HTML = ROOT / "docs" / "index.html"
 PRO_CONTENT_BASELINE = "eebe5af5f58de3b932bc54a2b1b540579053889b"
+CURRENT_STATUS_SUMMARY = "53 `IMPLEMENTED`、5 `CONDITIONALLY_AVAILABLE`"
 
 
 class Parser(HTMLParser):
@@ -90,3 +91,33 @@ def test_responsive_overflow_guards_are_present() -> None:
         ".chapter-quick-nav{max-width:100%}",
     ):
         assert guard in text
+
+
+def test_published_supporting_docs_match_current_capability_release() -> None:
+    gap_audit = (ROOT / "docs/TUTORIAL_GAP_AUDIT.zh-CN.md").read_text(encoding="utf-8")
+    integration_qa = (ROOT / "docs/TUTORIAL_REPOSITORY_INTEGRATION_QA.zh-CN.md").read_text(
+        encoding="utf-8"
+    )
+    validation = (ROOT / "docs/VALIDATION.md").read_text(encoding="utf-8")
+    for text in (gap_audit, integration_qa, validation):
+        assert CURRENT_STATUS_SUMMARY in text
+    for stale in (
+        "21 `IMPLEMENTED`、29 `CONDITIONALLY_AVAILABLE`",
+        "远程 GitHub Pages 尚未部署",
+        "当前能力矩阵明确为 NOT_SUPPORTED",
+    ):
+        assert stale not in gap_audit
+        assert stale not in integration_qa
+
+    assert "PR #10" in integration_qa
+    assert "HTTP 200" in integration_qa
+    assert "当前发布验收快照（2026-08-25）" in validation  # noqa: RUF001
+
+
+def test_synteny_toy_evidence_matches_conditional_implementation() -> None:
+    text = (ROOT / "docs/TUTORIAL_TOY_EVIDENCE_SCHEMA.tsv").read_text(encoding="utf-8")
+    row = next(line for line in text.splitlines() if "\tC8-SYNTENY\t" in line)
+    assert "results/08_duplication/synteny_anchors.tsv" in row
+    assert "\tVERIFIED\t" in row
+    assert "NONE_CURRENTLY" not in row
+    assert "NOT_SUPPORTED" not in row

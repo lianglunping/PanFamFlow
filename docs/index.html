@@ -446,7 +446,7 @@ inputs:
   </div>
   <aside class="toy-evidence-slot" id="toy-5-2" aria-label="5.2 示例证据">
     <strong>本地最小示例运行证据</strong>
-    <p>本地最小示例已验证可连接的基础产物，但本条目尚无专用 canonical 结果：gene_structure_summary.tsv 提供结构汇总基础。基础产物：<code>results/04_gene_structure/gene_structure_summary.tsv</code>。边界：当前不保证按亚家族输出模板要求的全部描述统计</p>
+    <p>clean toy 已验证本条目的规范执行路径与可追溯结果：gene_structure_summary.tsv 提供结构汇总基础。基础产物：<code>results/04_gene_structure/gene_structure_summary.tsv</code>。边界：当前不保证按亚家族输出模板要求的全部描述统计</p>
     <p class="muted">这是专门构造的极小测试数据，只验证流程可运行和文件合同；不替代真实水稻材料、正式 HOG 节点和生物学验收。</p>
   </aside>
   <a class="back-to-chapter" href="#chapter-5">返回本章顶部</a>
@@ -701,12 +701,12 @@ uv run panfamflow run -c config.yaml -m pan_family</code></pre></div></section>
       <h4>正常结果与异常信号</h4><p>正常结果应当能用唯一标识连接，分母和分组口径明确，质量标记可以解释。出现标识重复、分母不明、缺失与不适用混淆或异常值被静默删除时，应先停下排错。</p>
       <details class="technical-note"><summary>展开逐列阅读与质量检查</summary><div class="technical-row"><strong>精确阅读顺序</strong><code class="technical-block">在定义对象前不应阅读或命名为系统发育树；presence/absence dendrogram 应明确为相似性聚类。</code></div><div class="technical-row"><strong>精确质量检查</strong><code class="technical-block">树对象、序列/矩阵来源、模型/距离、节点支持、叶标签和 root 全部需记录。</code></div></details>
       <div class="claim-grid"><div class="claim good"><strong>可以支持</strong><p>可分别解释冻结物种集合的系统关系和目标家族 OGG 组成相似性；两者均有直接源表与 provenance。</p></div><div class="claim bad"><strong>不能支持</strong><p>不能把目标家族 gene tree、species tree 或 Jaccard 聚类互相替代。</p></div></div>
-      <h4>当前限制</h4><p>物种树、HOG 聚类树与目标家族基因树概念不同，且未输出原资料中名称含 OGG 的同款图</p>
+      <h4>当前限制</h4><p>物种树是系统发育对象；OGG 有无聚类只是目标家族组成相似性，不是系统树、单个 HOG 基因树或分化时间证据</p>
     </div></div>
   </div>
   <aside class="toy-evidence-slot" id="toy-6-1" aria-label="6.1 示例证据">
     <strong>本地最小示例运行证据</strong>
-    <p>本地最小示例已验证可连接的基础产物，但本条目尚无专用 canonical 结果：pan_family 同时输出 OrthoFinder rooted species tree 与基于目标家族 OGG 0/1 矩阵的 Jaccard-average-linkage 聚类，并用合同表禁止混称。基础产物：<code>results/06_pan_family/orthofinder_species_tree.nwk；results/06_pan_family/orthofinder_species_tree.pdf；results/06_pan_family/ogg_presence_absence_clustering.pdf；results/06_pan_family/ogg_presence_absence_distances.tsv；results/06_pan_family/ogg_presence_absence_linkage.tsv；results/06_pan_family/ogg_tree_provenance.tsv；results/06_pan_family/ogg_tree_contract.tsv</code>。边界：物种树、HOG 聚类树与目标家族基因树概念不同，且未输出原资料中名称含 OGG 的同款图</p>
+    <p>clean toy 已验证本条目的规范执行路径与可追溯结果：pan_family 同时输出 OrthoFinder rooted species tree 与基于目标家族 OGG 0/1 矩阵的 Jaccard-average-linkage 聚类，并用合同表禁止混称。基础产物：<code>results/06_pan_family/orthofinder_species_tree.nwk；results/06_pan_family/orthofinder_species_tree.pdf；results/06_pan_family/ogg_presence_absence_clustering.pdf；results/06_pan_family/ogg_presence_absence_distances.tsv；results/06_pan_family/ogg_presence_absence_linkage.tsv；results/06_pan_family/ogg_tree_provenance.tsv；results/06_pan_family/ogg_tree_contract.tsv</code>。边界：物种树是系统发育对象；OGG 有无聚类只是目标家族组成相似性，不是系统树、单个 HOG 基因树或分化时间证据</p>
     <p class="muted">这是专门构造的极小测试数据，只验证流程可运行和文件合同；不替代真实水稻材料、正式 HOG 节点和生物学验收。</p>
   </aside>
   <a class="back-to-chapter" href="#chapter-6">返回本章顶部</a>
@@ -794,7 +794,7 @@ uv run panfamflow run -c config.yaml -m pan_family</code></pre></div></section>
   </div>
   <aside class="toy-evidence-slot" id="toy-6-3" aria-label="6.3 示例证据">
     <strong>本地最小示例运行证据</strong>
-    <p>本地最小示例已验证可连接的基础产物，但本条目尚无专用 canonical 结果：membership、presence 与 unassigned 表提供可审计证据。基础产物：<code>results/06_pan_family/unassigned_family_members.tsv</code>。边界：未实现人为综合分数；质量判定必须逐指标报告</p>
+    <p>clean toy 已验证本条目的规范执行路径与可追溯结果：membership、presence 与 unassigned 表提供可审计证据。基础产物：<code>results/06_pan_family/unassigned_family_members.tsv</code>。边界：未实现人为综合分数；质量判定必须逐指标报告</p>
     <p class="muted">这是专门构造的极小测试数据，只验证流程可运行和文件合同；不替代真实水稻材料、正式 HOG 节点和生物学验收。</p>
   </aside>
   <a class="back-to-chapter" href="#chapter-6">返回本章顶部</a>
@@ -1016,7 +1016,7 @@ chromosome:
   </div>
   <aside class="toy-evidence-slot" id="toy-7-2" aria-label="7.2 示例证据">
     <strong>本地最小示例运行证据</strong>
-    <p>本地最小示例已验证可连接的基础产物，但本条目尚无专用 canonical 结果：chromosome 表可与 pan-family class 连接。基础产物：<code>results/07_chromosome/chromosome_distribution.tsv</code>。边界：当前图未直接编码 HOG 泛基因类型</p>
+    <p>clean toy 已验证本条目的规范执行路径与可追溯结果：chromosome 表可与 pan-family class 连接。基础产物：<code>results/07_chromosome/chromosome_distribution.tsv</code>。边界：当前图未直接编码 HOG 泛基因类型</p>
     <p class="muted">这是专门构造的极小测试数据，只验证流程可运行和文件合同；不替代真实水稻材料、正式 HOG 节点和生物学验收。</p>
   </aside>
   <a class="back-to-chapter" href="#chapter-7">返回本章顶部</a>
@@ -1365,7 +1365,7 @@ kaks:
   </div>
   <aside class="toy-evidence-slot" id="toy-9-2" aria-label="9.2 示例证据">
     <strong>本地最小示例运行证据</strong>
-    <p>本地最小示例已验证可连接的基础产物，但本条目尚无专用 canonical 结果：kaks_pairs.tsv 保留物种和 HOG 配对信息。基础产物：<code>results/09_kaks/kaks_pairs.tsv</code>。边界：需明确物种内或物种间配对口径并控制伪重复</p>
+    <p>clean toy 已验证本条目的规范执行路径与可追溯结果：kaks_pairs.tsv 保留物种和 HOG 配对信息。基础产物：<code>results/09_kaks/kaks_pairs.tsv</code>。边界：需明确物种内或物种间配对口径并控制伪重复</p>
     <p class="muted">这是专门构造的极小测试数据，只验证流程可运行和文件合同；不替代真实水稻材料、正式 HOG 节点和生物学验收。</p>
   </aside>
   <a class="back-to-chapter" href="#chapter-9">返回本章顶部</a>
@@ -1423,7 +1423,7 @@ kaks:
   </div>
   <aside class="toy-evidence-slot" id="toy-9-4" aria-label="9.4 示例证据">
     <strong>本地最小示例运行证据</strong>
-    <p>本地最小示例已验证可连接的基础产物，但本条目尚无专用 canonical 结果：kaks_pairs.tsv 与 duplication_mode 可形成比较数据。基础产物：<code>results/09_kaks/kaks_pairs.tsv</code>。边界：当前未自动执行组间检验、效应量或多重校正</p>
+    <p>clean toy 已验证本条目的规范执行路径与可追溯结果：kaks_pairs.tsv 与 duplication_mode 可形成比较数据。基础产物：<code>results/09_kaks/kaks_pairs.tsv</code>。边界：当前未自动执行组间检验、效应量或多重校正</p>
     <p class="muted">这是专门构造的极小测试数据，只验证流程可运行和文件合同；不替代真实水稻材料、正式 HOG 节点和生物学验收。</p>
   </aside>
   <a class="back-to-chapter" href="#chapter-9">返回本章顶部</a>
@@ -1467,7 +1467,7 @@ kaks:
   </div>
   <aside class="toy-evidence-slot" id="toy-9-5" aria-label="9.5 示例证据">
     <strong>本地最小示例运行证据</strong>
-    <p>本地最小示例已验证可连接的基础产物，但本条目尚无专用 canonical 结果：逐配对 Ks 与 saturation QC 已输出。基础产物：<code>results/09_kaks/kaks_pairs.tsv</code>。边界：Ks 饱和、旁系同源选择和 WGD 峰解释需专门模型</p>
+    <p>clean toy 已验证本条目的规范执行路径与可追溯结果：逐配对 Ks 与 saturation QC 已输出。基础产物：<code>results/09_kaks/kaks_pairs.tsv</code>。边界：Ks 饱和、旁系同源选择和 WGD 峰解释需专门模型</p>
     <p class="muted">这是专门构造的极小测试数据，只验证流程可运行和文件合同；不替代真实水稻材料、正式 HOG 节点和生物学验收。</p>
   </aside>
   <a class="back-to-chapter" href="#chapter-9">返回本章顶部</a>
@@ -1607,7 +1607,7 @@ promoter:
   </div>
   <aside class="toy-evidence-slot" id="toy-10-1" aria-label="10.1 示例证据">
     <strong>本地最小示例运行证据</strong>
-    <p>本地最小示例已验证可连接的基础产物，但本条目尚无专用 canonical 结果：promoter 规则从同一逐命中源表按审计后的 major_class 汇总，输出带 motif-hit、基因覆盖和启动子长度分母的四大类圆环图与源表。基础产物：<code>results/10_promoter/promoter_major_class_summary.tsv；results/10_promoter/Fig23_promoter_four_major_classes.pdf；results/10_promoter/Fig23_promoter_four_major_classes.png</code>。边界：圆环比例的分母是 motif hit；genes_with_hit/gene_denominator 与 hits_per_kb 是另两种描述量，三者不可混称为调控强度或富集</p>
+    <p>clean toy 已验证本条目的规范执行路径与可追溯结果：promoter 规则从同一逐命中源表按审计后的 major_class 汇总，输出带 motif-hit、基因覆盖和启动子长度分母的四大类圆环图与源表。基础产物：<code>results/10_promoter/promoter_major_class_summary.tsv；results/10_promoter/Fig23_promoter_four_major_classes.pdf；results/10_promoter/Fig23_promoter_four_major_classes.png</code>。边界：圆环比例的分母是 motif hit；genes_with_hit/gene_denominator 与 hits_per_kb 是另两种描述量，三者不可混称为调控强度或富集</p>
     <p class="muted">这是专门构造的极小测试数据，只验证流程可运行和文件合同；不替代真实水稻材料、正式 HOG 节点和生物学验收。</p>
   </aside>
   <a class="back-to-chapter" href="#chapter-10">返回本章顶部</a>
@@ -1639,7 +1639,7 @@ promoter:
     <div role="tabpanel" class="tab-panel" id="panel-analysis-10-2-run" aria-labelledby="tab-analysis-10-2-run" data-panel="run"><div class="dimension-operation teaching-dimension">
       <h4>流程会做什么</h4><p>PanFamFlow 能提供基础数据，但该条目的连接、分母、统计或专用图还要按下方合同补齐。完成这些步骤前，只能作有限的描述。</p>
       <h4>运行后到哪里找结果</h4><p>先从规范结果目录寻找主表或主图，再回到日志和质量字段核对产生过程。不要只保留图片而丢失表格和运行证据。</p>
-      <details class="technical-note"><summary>展开精确命令、路径与扩展要求</summary><div class="technical-row"><strong>实际运行入口</strong><code class="technical-block">模块 promoter；从 major_class×gene 零值完整网格汇总命中负担、基因覆盖率和每 kb 频率。</code></div><div class="technical-row"><strong>规范输出</strong><code class="technical-block">results/10_promoter/promoter_major_class_summary.tsv；results/10_promoter/promoter_major_class_summary.tsv；results/10_promoter/promoter_elements_per_gene.tsv；results/10_promoter/Fig23_promoter_four_major_classes.pdf；results/10_promoter/Fig23_promoter_four_major_classes.pdf</code></div><div class="technical-row"><strong>扩展所需条件</strong><code class="technical-block">如需组间推断，另行预注册独立单位、背景集合、效应量和多重检验；本结果仅为描述性。</code></div></details>
+      <details class="technical-note"><summary>展开精确命令、路径与扩展要求</summary><div class="technical-row"><strong>实际运行入口</strong><code class="technical-block">模块 promoter；从 major_class×gene 零值完整网格汇总命中负担、基因覆盖率和每 kb 频率。</code></div><div class="technical-row"><strong>规范输出</strong><code class="technical-block">results/10_promoter/promoter_major_class_summary.tsv；results/10_promoter/promoter_elements_per_gene.tsv；results/10_promoter/Fig23_promoter_four_major_classes.pdf</code></div><div class="technical-row"><strong>扩展所需条件</strong><code class="technical-block">如需组间推断，另行预注册独立单位、背景集合、效应量和多重检验；本结果仅为描述性。</code></div></details>
     </div></div>
     <div role="tabpanel" class="tab-panel" id="panel-analysis-10-2-interpret" aria-labelledby="tab-analysis-10-2-interpret" data-panel="interpret"><div class="dimension-interpretation teaching-dimension">
       <h4>先看什么，再看什么</h4><p>先看启动子边界和基序映射质量，再看每基因命中、主类别与子类别；基序命中不是结合证据。</p>
@@ -1651,7 +1651,7 @@ promoter:
   </div>
   <aside class="toy-evidence-slot" id="toy-10-2" aria-label="10.2 示例证据">
     <strong>本地最小示例运行证据</strong>
-    <p>本地最小示例已验证可连接的基础产物，但本条目尚无专用 canonical 结果：promoter_major_class_summary.tsv 同时报告 motif_hit_count、genes_with_hit、gene_denominator、gene_prevalence、promoter_bp_denominator 和 hits_per_kb。基础产物：<code>results/10_promoter/promoter_major_class_summary.tsv；results/10_promoter/promoter_major_class_summary.tsv；results/10_promoter/promoter_elements_per_gene.tsv；results/10_promoter/Fig23_promoter_four_major_classes.pdf；results/10_promoter/Fig23_promoter_four_major_classes.pdf</code>。边界：必须冻结 motif 数据库/PlantCARE 来源、阈值、去重规则和 category_map；主类别命中多不等于相应通路被激活</p>
+    <p>clean toy 已验证本条目的规范执行路径与可追溯结果：promoter_major_class_summary.tsv 同时报告 motif_hit_count、genes_with_hit、gene_denominator、gene_prevalence、promoter_bp_denominator 和 hits_per_kb。基础产物：<code>results/10_promoter/promoter_major_class_summary.tsv；results/10_promoter/promoter_elements_per_gene.tsv；results/10_promoter/Fig23_promoter_four_major_classes.pdf</code>。边界：必须冻结 motif 数据库/PlantCARE 来源、阈值、去重规则和 category_map；主类别命中多不等于相应通路被激活</p>
     <p class="muted">这是专门构造的极小测试数据，只验证流程可运行和文件合同；不替代真实水稻材料、正式 HOG 节点和生物学验收。</p>
   </aside>
   <a class="back-to-chapter" href="#chapter-10">返回本章顶部</a>
@@ -1695,7 +1695,7 @@ promoter:
   </div>
   <aside class="toy-evidence-slot" id="toy-10-3" aria-label="10.3 示例证据">
     <strong>本地最小示例运行证据</strong>
-    <p>本地最小示例已验证可连接的基础产物，但本条目尚无专用 canonical 结果：promoter_subclass_summary.tsv 对 subclass 输出命中负担、命中基因数、完整基因分母、基因覆盖率、启动子 bp 分母与每 kb 频率，并生成 Fig24。基础产物：<code>results/10_promoter/promoter_subclass_summary.tsv；results/10_promoter/Fig24_promoter_subclasses.pdf；results/10_promoter/Fig24_promoter_subclasses.png</code>。边界：subclass 名称和闭合性依赖版本化 category_map；描述性频率不自动构成富集、真实 TF 结合或因果调控证据</p>
+    <p>clean toy 已验证本条目的规范执行路径与可追溯结果：promoter_subclass_summary.tsv 对 subclass 输出命中负担、命中基因数、完整基因分母、基因覆盖率、启动子 bp 分母与每 kb 频率，并生成 Fig24。基础产物：<code>results/10_promoter/promoter_subclass_summary.tsv；results/10_promoter/Fig24_promoter_subclasses.pdf；results/10_promoter/Fig24_promoter_subclasses.png</code>。边界：subclass 名称和闭合性依赖版本化 category_map；描述性频率不自动构成富集、真实 TF 结合或因果调控证据</p>
     <p class="muted">这是专门构造的极小测试数据，只验证流程可运行和文件合同；不替代真实水稻材料、正式 HOG 节点和生物学验收。</p>
   </aside>
   <a class="back-to-chapter" href="#chapter-10">返回本章顶部</a>
@@ -2091,7 +2091,7 @@ promoter:
   </div>
   <aside class="toy-evidence-slot" id="toy-10-12" aria-label="10.12 示例证据">
     <strong>本地最小示例运行证据</strong>
-    <p>本地最小示例已验证可连接的基础产物，但本条目尚无专用 canonical 结果：pdf_md_complete 路径把 promoter hit 与目标家族 HOG membership 一对一连接，输出完整零值网格、基因数、启动子长度分母、每基因与每 kb 命中率及 QC。基础产物：<code>results/10_promoter/promoter_by_hog.tsv；results/10_promoter/promoter_by_hog.xlsx；results/10_promoter/promoter_by_hog.pdf；results/10_promoter/promoter_by_hog_qc.tsv</code>。边界：HOG 层 motif 命中率是描述性证据，不等于富集、真实 TF 结合或因果调控；Unassigned 基因必须保留</p>
+    <p>clean toy 已验证本条目的规范执行路径与可追溯结果：pdf_md_complete 路径把 promoter hit 与目标家族 HOG membership 一对一连接，输出完整零值网格、基因数、启动子长度分母、每基因与每 kb 命中率及 QC。基础产物：<code>results/10_promoter/promoter_by_hog.tsv；results/10_promoter/promoter_by_hog.xlsx；results/10_promoter/promoter_by_hog.pdf；results/10_promoter/promoter_by_hog_qc.tsv</code>。边界：HOG 层 motif 命中率是描述性证据，不等于富集、真实 TF 结合或因果调控；Unassigned 基因必须保留</p>
     <p class="muted">这是专门构造的极小测试数据，只验证流程可运行和文件合同；不替代真实水稻材料、正式 HOG 节点和生物学验收。</p>
   </aside>
   <a class="back-to-chapter" href="#chapter-10">返回本章顶部</a>
@@ -2135,7 +2135,7 @@ promoter:
   </div>
   <aside class="toy-evidence-slot" id="toy-10-13" aria-label="10.13 示例证据">
     <strong>本地最小示例运行证据</strong>
-    <p>本地最小示例已验证可连接的基础产物，但本条目尚无专用 canonical 结果：promoter 规则按冻结的代表物种与 subfamily 分组确定性选择代表基因，输出选择原因、完整 gene×element 源表和 Fig28。基础产物：<code>results/10_promoter/representative_gene_element_matrix.tsv；results/10_promoter/Fig28_representative_gene_top_elements.pdf；results/10_promoter/Fig28_representative_gene_top_elements.png</code>。边界：代表基因由预注册规则选择，只用于展示；Top-N 是显示过滤，不代表元件或基因的生物学重要性排序</p>
+    <p>clean toy 已验证本条目的规范执行路径与可追溯结果：promoter 规则按冻结的代表物种与 subfamily 分组确定性选择代表基因，输出选择原因、完整 gene×element 源表和 Fig28。基础产物：<code>results/10_promoter/representative_gene_element_matrix.tsv；results/10_promoter/Fig28_representative_gene_top_elements.pdf；results/10_promoter/Fig28_representative_gene_top_elements.png</code>。边界：代表基因由预注册规则选择，只用于展示；Top-N 是显示过滤，不代表元件或基因的生物学重要性排序</p>
     <p class="muted">这是专门构造的极小测试数据，只验证流程可运行和文件合同；不替代真实水稻材料、正式 HOG 节点和生物学验收。</p>
   </aside>
   <a class="back-to-chapter" href="#chapter-10">返回本章顶部</a>
@@ -2276,7 +2276,7 @@ expression:
   </div>
   <aside class="toy-evidence-slot" id="toy-11-1" aria-label="11.1 示例证据">
     <strong>本地最小示例运行证据</strong>
-    <p>本地最小示例已验证可连接的基础产物，但本条目尚无专用 canonical 结果：expression 规则按 stable_id 连接 pan-family class，并输出物种内可比的分层表、规范图和适用性状态。基础产物：<code>results/11_expression/expression_by_pan_class.tsv；results/11_expression/Fig30_expression_by_pan_class.pdf</code>。边界：跨物种绝对 TPM 不直接比较；应先看物种内标准化、样本数、组织/条件和 NOT_APPLICABLE 状态</p>
+    <p>clean toy 已验证本条目的规范执行路径与可追溯结果：expression 规则按 stable_id 连接 pan-family class，并输出物种内可比的分层表、规范图和适用性状态。基础产物：<code>results/11_expression/expression_by_pan_class.tsv；results/11_expression/Fig30_expression_by_pan_class.pdf</code>。边界：跨物种绝对 TPM 不直接比较；应先看物种内标准化、样本数、组织/条件和 NOT_APPLICABLE 状态</p>
     <p class="muted">这是专门构造的极小测试数据，只验证流程可运行和文件合同；不替代真实水稻材料、正式 HOG 节点和生物学验收。</p>
   </aside>
   <a class="back-to-chapter" href="#chapter-11">返回本章顶部</a>
