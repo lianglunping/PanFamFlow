@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import yaml
+
 from panfamflow.config import load_config
 from panfamflow.runner import (
     build_snakemake_command,
@@ -23,6 +25,29 @@ def test_build_snakemake_command_is_list_based() -> None:
         assert "--dry-run" in command
         assert any(item == "panfamflow_selected_modules=qc" for item in command)
         assert command[-1].endswith("results/00_qc/qc.done")
+
+
+def test_build_snakemake_command_materializes_model_defaults(tmp_path: Path) -> None:
+    raw = yaml.safe_load(TOY_CONFIG.read_text(encoding="utf-8"))
+    for section in ("orthofinder", "duplication", "expression"):
+        raw.pop(section)
+    raw["project"]["root"] = str(tmp_path)
+    minimal_config = tmp_path / "minimal.yaml"
+    minimal_config.write_text(
+        yaml.safe_dump(raw, sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
+    )
+
+    config = load_config(minimal_config)
+    command, stack = build_snakemake_command(config, minimal_config, ("qc",))
+    runtime_config = Path(command[command.index("--configfile") + 1])
+    with stack:
+        resolved = yaml.safe_load(runtime_config.read_text(encoding="utf-8"))
+        assert resolved["orthofinder"]["search_threads"] == 32
+        assert resolved["duplication"]["backend"] == "dupgen_finder_unique"
+        assert resolved["expression"]["mode"] == "imported_matrix"
+        assert f"panfamflow_config_path={minimal_config.resolve()}" in command
+    assert not runtime_config.exists()
 
 
 def test_smart_resume_flags_are_enabled_by_default() -> None:

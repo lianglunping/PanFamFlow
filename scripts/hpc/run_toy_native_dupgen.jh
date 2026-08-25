@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+#JSUB -J panfamflow_toy_native_dupgen
+#JSUB -q normal
+#JSUB -n 8
+#JSUB -o logs/hpc/toy_native_dupgen.%J.out
+#JSUB -e logs/hpc/toy_native_dupgen.%J.err
+
+set -euo pipefail
+cd "$JH_SUB_CWD"
+
+module purge || true
+module load anaconda3
+
+commit="54b950216efe7700f84395d03565cf75cd745e14"
+engine="$JH_SUB_CWD/work/verified-engine-linux-64-198231"
+source_root="$JH_SUB_CWD/work/vendor/DupGen_finder-$commit"
+toy_root="$JH_SUB_CWD/examples/toy_complete"
+run_token="${JH_JOB_ID:-${LSB_JOBID:-${JOB_ID:-$$}}}"
+run_root="$JH_SUB_CWD/work/toy-native-dupgen.$run_token"
+results_root="$run_root/results"
+config_path="$run_root/config.yaml"
+receipt="$run_root/receipt.tsv"
+tool_root="$run_root/tools/DupGen_finder"
+target="$results_root/08_duplication/duplication_mode.tsv"
+
+test -x "$engine/bin/python"
+test -d "$source_root/.git"
+test "$(cd "$source_root" && git rev-parse HEAD)" = "$commit"
+test ! -e "$run_root"
+mkdir -p "$results_root/01_normalized" "$results_root/02_family" \
+  "$results_root/04_gene_structure" "$results_root/06_pan_family" "$run_root/tools"
+cp -a "$source_root" "$tool_root"
+make -C "$tool_root"
+test -x "$tool_root/DupGen_finder-unique.pl"
+
+for species in SpA SpB SpC SpD; do
+  cp -p "$toy_root/results/01_normalized/${species}.gene_transcript_map.tsv" \
+    "$results_root/01_normalized/"
+  cp -p "$toy_root/results/01_normalized/${species}.proteins.fa" \
+    "$results_root/01_normalized/"
+done
+cp -p "$toy_root/results/02_family/family_members.tsv" "$results_root/02_family/"
+cp -p "$toy_root/results/04_gene_structure/gene_structure_metrics.tsv" \
+  "$results_root/04_gene_structure/"
+cp -p "$toy_root/results/06_pan_family/family_hog_membership.tsv" \
+  "$results_root/06_pan_family/"
+cp -p "$toy_root/results/06_pan_family/pan_family_classification.tsv" \
+  "$results_root/06_pan_family/"
+
+"$engine/bin/python" - "$toy_root/config.yaml" "$config_path" "$run_root" "$toy_root" \
+  "$tool_root/DupGen_finder-unique.pl" <<'PY'
+import sys
+from pathlib import Path
+
+import yaml
+
+source, destination, run_root, toy_root, executable = map(Path, sys.argv[1:])
+config = yaml.safe_load(source.read_text(encoding="utf-8"))
+config["project"]["root"] = str(toy_root.resolve())
+config["project"]["results_dir"] = str((run_root / "results").resolve())
+config["project"]["work_dir"] = str((run_root / "work").resolve())
+config["project"]["logs_dir"] = str((run_root / "logs").resolve())
+config["run"]["modules"] = ["duplication"]
+config["deliverables"]["profile"] = "legacy"
+config["comparative_panel"]["enabled"] = False
+config["domain_logo"]["enabled"] = False
+config["differential_expression"]["enabled"] = False
+config["synteny"]["enabled"] = False
+config["duplication"]["backend"] = "dupgen_finder_unique"
+config["duplication"]["targets"] = ["SpA"]
+config["duplication"]["precomputed_table"] = None
+config["duplication"]["dupgen_executable"] = str(executable.resolve())
+destination.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
+PY
+
+export PANFAMFLOW_CONDA_BASE_PATH="$JH_SUB_CWD/scripts/hpc/conda_compat"
+export PATH="$JH_SUB_CWD/scripts/hpc/conda_compat/bin:$engine/bin:$PATH"
+export PYTHONPATH="$JH_SUB_CWD/src${PYTHONPATH:+:$PYTHONPATH}"
+
+snakemake \
+  --snakefile "$JH_SUB_CWD/src/panfamflow/workflow/Snakefile" \
+  --configfile "$config_path" \
+  --directory "$toy_root" \
+  --cores 8 \
+  --jobs 8 \
+  --latency-wait 120 \
+  --config panfamflow_selected_modules=duplication panfamflow_config_path="$config_path" \
+  --software-deployment-method conda \
+  --conda-base-path "$JH_SUB_CWD/scripts/hpc/conda_compat" \
+  --printshellcmds \
+  --show-failed-logs \
+  --rerun-incomplete \
+  --keep-going \
+  --retries 1 \
+  --rerun-triggers mtime input params code software-env \
+  -- "$target"
+
+test -s "$target"
+"$engine/bin/python" - "$target" <<'PY'
+import sys
+import pandas as pd
+
+table = pd.read_csv(sys.argv[1], sep="\t", dtype=str)
+assert not table.empty
+assert table["backend"].eq("dupgen_finder_unique").all()
+assert table["species_id"].eq("SpA").all()
+assert table["stable_id"].is_unique
+PY
+
+dupgen_version="$(cd "$tool_root" && git rev-parse HEAD)"
+dupgen_sha256="$(sha256sum "$tool_root/DupGen_finder-unique.pl" | awk '{print $1}')"
+duplication_sha256="$(sha256sum "$target" | awk '{print $1}')"
+diamond_path="$(find "$toy_root/.snakemake/conda" -path '*/bin/diamond' -type f -perm -u+x -print -quit)"
+test -n "$diamond_path"
+diamond_version="$("$diamond_path" version | awk 'NF {print $NF; exit}')"
+row_count="$(awk 'END {print NR-1}' "$target")"
+attempt_count="$(find "$run_root/work/08_duplication/SpA" -mindepth 1 -maxdepth 1 -type d -name 'attempt-*' | wc -l)"
+
+{
+  printf 'field\tvalue\n'
+  printf 'status\tPASS\n'
+  printf 'scheduler_host\t%s\n' "$(hostname)"
+  printf 'target\tSpA\n'
+  printf 'backend\tdupgen_finder_unique\n'
+  printf 'dupgen_commit\t%s\n' "$dupgen_version"
+  printf 'dupgen_executable_sha256\t%s\n' "$dupgen_sha256"
+  printf 'diamond_version\t%s\n' "$diamond_version"
+  printf 'diamond_executable\t%s\n' "$diamond_path"
+  printf 'assignment_rows\t%s\n' "$row_count"
+  printf 'immutable_attempt_directories\t%s\n' "$attempt_count"
+  printf 'duplication_mode_sha256\t%s\n' "$duplication_sha256"
+} >"$receipt"
+
+printf 'NATIVE_DUPGEN\tPASS\ttarget=SpA\treceipt=%s\n' "$receipt"

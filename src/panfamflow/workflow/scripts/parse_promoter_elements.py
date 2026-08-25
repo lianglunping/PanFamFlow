@@ -8,10 +8,12 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from external_evidence_utils import validate_external_evidence_table
 from promoter_distribution_utils import (
     attach_pan_family_class,
     build_promoter_distributions,
     build_promoter_hog_distributions,
+    summarize_promoter_categories,
 )
 from workflow_utils import read_delimited_table, resolve_column, save_table, save_workbook
 
@@ -71,6 +73,12 @@ if backend == "fimo":
         elements = elements[keep]
 else:
     source = read_delimited_table(snakemake.params.precomputed_table)
+    validate_external_evidence_table(
+        source,
+        evidence_kind="plantcare",
+        strict=str(snakemake.params.external_import_validation) == "strict",
+        id_alternatives=("stable_id", "sequence_id"),
+    )
     stable_column = resolve_column(source, ["stable_id", "sequence_id"], required=False)
     element_column = resolve_column(source, ["element", "motif_id", "cis_element"])
     if stable_column is not None:
@@ -145,15 +153,18 @@ for metadata_column in ("subfamily", "group"):
     if metadata_column not in members:
         members[metadata_column] = "Unassigned"
 distributions, distribution_qc = build_promoter_distributions(elements, coordinates, members)
-major_class_source = (
-    elements.groupby("major_class", dropna=False, as_index=False)
-    .agg(motif_hit_count=("element", "size"), n_genes=("stable_id", "nunique"))
-    .sort_values(["motif_hit_count", "major_class"], ascending=[False, True])
-)
-subclass_source = (
-    elements.groupby(["major_class", "subclass"], dropna=False, as_index=False)
-    .agg(motif_hit_count=("element", "size"), n_genes=("stable_id", "nunique"))
-    .sort_values(["motif_hit_count", "major_class", "subclass"], ascending=[False, True, True])
+major_class_source = summarize_promoter_categories(
+    elements,
+    coordinates,
+    ["major_class"],
+).sort_values(["motif_hit_count", "major_class"], ascending=[False, True])
+subclass_source = summarize_promoter_categories(
+    elements,
+    coordinates,
+    ["major_class", "subclass"],
+).sort_values(
+    ["motif_hit_count", "major_class", "subclass"],
+    ascending=[False, True, True],
 )
 subfamily_heatmap_source = distributions.loc[
     distributions["aggregation_level"].eq("SUBFAMILY")
@@ -279,33 +290,77 @@ save_workbook(
     snakemake.output.xlsx,
 )
 
-class_counts = elements["major_class"].value_counts().sort_values(ascending=False)
-fig, axis = plt.subplots(figsize=(7.0, 4.8))
-axis.bar(class_counts.index.astype(str), class_counts.values)
-axis.set_xlabel("Cis-element major class")
-axis.set_ylabel("Number of motif hits")
-axis.tick_params(axis="x", rotation=30)
-axis.spines[["top", "right"]].set_visible(False)
+class_plot = major_class_source.loc[major_class_source["motif_hit_count"].gt(0)].copy()
+fig, axis = plt.subplots(figsize=(8.2, 5.6))
+if class_plot.empty:
+    axis.text(0.5, 0.5, "No promoter motif hits", ha="center", va="center")
+    axis.set_axis_off()
+else:
+    palette = plt.get_cmap("Set2")(np.linspace(0.05, 0.95, len(class_plot)))
+    wedges, _, _ = axis.pie(
+        class_plot["motif_hit_count"],
+        startangle=90,
+        counterclock=False,
+        colors=palette,
+        autopct=lambda value: f"{value:.1f}%" if value >= 3 else "",
+        pctdistance=0.78,
+        wedgeprops={"width": 0.44, "edgecolor": "white"},
+    )
+    labels = [
+        f"{row.major_class}: {int(row.motif_hit_count)} hits; "
+        f"{int(row.genes_with_hit)}/{int(row.gene_denominator)} genes"
+        for row in class_plot.itertuples(index=False)
+    ]
+    axis.legend(wedges, labels, loc="center left", bbox_to_anchor=(1.0, 0.5), frameon=False)
+    axis.set_title("Promoter cis-element major-class composition")
+    axis.text(
+        0,
+        0,
+        f"n={int(class_plot['motif_hit_count'].sum())}\nmotif hits",
+        ha="center",
+        va="center",
+        fontsize=9,
+    )
 fig.tight_layout()
-fig.savefig(snakemake.output.class_plot_pdf)
-fig.savefig(snakemake.output.class_plot_png, dpi=int(snakemake.params.png_dpi))
-fig.savefig(snakemake.output.fig23_pdf)
-fig.savefig(snakemake.output.fig23_png, dpi=int(snakemake.params.png_dpi))
+fig.savefig(snakemake.output.class_plot_pdf, facecolor="white")
+fig.savefig(
+    snakemake.output.class_plot_png,
+    dpi=int(snakemake.params.png_dpi),
+    facecolor="white",
+)
+fig.savefig(snakemake.output.fig23_pdf, facecolor="white")
+fig.savefig(snakemake.output.fig23_png, dpi=int(snakemake.params.png_dpi), facecolor="white")
 plt.close(fig)
 
 subclass_plot = subclass_source.sort_values("motif_hit_count").tail(
     int(snakemake.params.top_n_elements)
 )
-fig, axis = plt.subplots(figsize=(8.0, max(4.8, 0.28 * len(subclass_plot))))
-axis.barh(subclass_plot["subclass"].astype(str), subclass_plot["motif_hit_count"])
-axis.set_xlabel("Number of motif hits")
-axis.set_ylabel("Cis-element subclass")
-axis.set_title("Promoter cis-element subclasses")
-axis.spines[["top", "right"]].set_visible(False)
-axis.grid(False)
-fig.tight_layout()
-fig.savefig(snakemake.output.fig24_pdf)
-fig.savefig(snakemake.output.fig24_png, dpi=int(snakemake.params.png_dpi))
+fig, axes = plt.subplots(
+    1,
+    2,
+    figsize=(11.0, max(4.8, 0.30 * len(subclass_plot))),
+    sharey=True,
+)
+labels = subclass_plot["subclass"].astype(str)
+axes[0].barh(labels, subclass_plot["motif_hit_count"], color="#0072B2")
+axes[0].set_xlabel("Motif hits")
+axes[0].set_ylabel("Cis-element subclass")
+axes[1].barh(labels, subclass_plot["gene_prevalence"], color="#009E73")
+axes[1].set_xlabel("Genes with hit / all promoter genes")
+axes[1].set_xlim(0, 1)
+for axis in axes:
+    axis.spines[["top", "right"]].set_visible(False)
+    axis.grid(False)
+fig.suptitle("Promoter cis-element subclasses: burden and gene prevalence")
+fig.text(
+    0.01,
+    0.01,
+    "Descriptive counts and denominators; these panels do not test enrichment or causal regulation.",
+    fontsize=8,
+)
+fig.tight_layout(rect=(0, 0.035, 1, 0.97))
+fig.savefig(snakemake.output.fig24_pdf, facecolor="white")
+fig.savefig(snakemake.output.fig24_png, dpi=int(snakemake.params.png_dpi), facecolor="white")
 plt.close(fig)
 
 top_n = int(snakemake.params.top_n_elements)

@@ -36,8 +36,8 @@ STATE_LABELS = {
 
 EXPECTED_STATE_COUNTS = Counter(
     {
-        "IMPLEMENTED": 52,
-        "CONDITIONALLY_AVAILABLE": 6,
+        "IMPLEMENTED": 53,
+        "CONDITIONALLY_AVAILABLE": 5,
     }
 )
 
@@ -391,7 +391,8 @@ def test_four_plain_language_scientific_redlines_are_visible() -> None:
 def test_no_remote_runtime_assets_or_retired_domain() -> None:
     raw = HTML_PATH.read_text(encoding="utf-8")
     parser = parse_html()
-    assert "llp98.work" not in raw
+    retired_domain = "llp98" + ".work"
+    assert retired_domain not in raw
     assert parser.external_scripts == []
     assert parser.external_stylesheets == []
     assert parser.remote_media == []

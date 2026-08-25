@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+#JSUB -J panfamflow_toy_exact_contracts
+#JSUB -q normal
+#JSUB -n 4
+#JSUB -o logs/hpc/toy_exact_contracts.%J.out
+#JSUB -e logs/hpc/toy_exact_contracts.%J.err
+
+set -euo pipefail
+cd "$JH_SUB_CWD"
+
+module purge || true
+module load anaconda3
+
+engine="$JH_SUB_CWD/work/verified-engine-linux-64-198231"
+toy_project_root="$JH_SUB_CWD/examples/toy_complete"
+run_token="${JH_JOB_ID:-${LSB_JOBID:-${JOB_ID:-$$}}}"
+validation_root="$JH_SUB_CWD/work/toy-exact-contracts.${run_token}"
+receipt="$validation_root/receipt.tsv"
+
+test -x "$engine/bin/python"
+test ! -e "$validation_root"
+mkdir -p "$validation_root"
+export PYTHONPATH="$JH_SUB_CWD/src${PYTHONPATH:+:$PYTHONPATH}"
+
+"$engine/bin/python" scripts/hpc/verify_toy_exact_contracts.py "$toy_project_root" "$receipt"
+test -s "$receipt"
+printf 'TOY_EXACT_CONTRACTS\tPASS\treceipt=%s\n' "$receipt"

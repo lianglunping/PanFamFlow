@@ -8,6 +8,7 @@ import json
 import os
 import shutil
 import subprocess
+import tempfile
 from collections.abc import Sequence
 from contextlib import ExitStack
 from dataclasses import dataclass
@@ -91,13 +92,30 @@ def build_snakemake_command(
     stack = ExitStack()
     snakefile_resource = resources.files("panfamflow.workflow").joinpath("Snakefile")
     snakefile = stack.enter_context(resources.as_file(snakefile_resource))
-    resolved_config = config_path.expanduser().resolve()
+    source_config = config_path.expanduser().resolve()
     root = project_root(config, config_path)
     targets = list(targets_for_modules(modules, str(config.project.results_dir)))
 
+    # Snakemake parses every included rule file before selecting the requested
+    # targets.  Pass the fully validated Pydantic model, including defaults for
+    # unselected modules, instead of the user's potentially minimal YAML.  The
+    # source path remains recorded separately for provenance and input auditing.
+    runtime_directory = Path(
+        stack.enter_context(tempfile.TemporaryDirectory(prefix="panfamflow-config-"))
+    )
+    runtime_config = runtime_directory / "resolved_config.yaml"
+    runtime_config.write_text(
+        yaml.safe_dump(
+            config.model_dump(mode="json", exclude_none=False),
+            sort_keys=False,
+            allow_unicode=True,
+        ),
+        encoding="utf-8",
+    )
+
     command = [*_engine_prefix(config), "snakemake"]
     command.extend(["--snakefile", str(snakefile.resolve())])
-    command.extend(["--configfile", str(resolved_config)])
+    command.extend(["--configfile", str(runtime_config)])
     command.extend(["--directory", str(root)])
     command.extend(["--cores", str(cores or config.run.cores)])
     command.extend(["--jobs", str(config.run.jobs)])
@@ -106,7 +124,7 @@ def build_snakemake_command(
         [
             "--config",
             f"panfamflow_selected_modules={','.join(modules)}",
-            f"panfamflow_config_path={resolved_config}",
+            f"panfamflow_config_path={source_config}",
         ]
     )
 

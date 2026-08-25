@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
+from external_evidence_utils import validate_external_evidence_table
 from sequence_logo_utils import build_sequence_logo
 from stratified_summary_utils import build_family_distribution
 from workflow_utils import (
@@ -211,6 +212,12 @@ def optional_annotations(path_value: str, prefix: str) -> pd.DataFrame | None:
     if not path_value:
         return None
     table = read_delimited_table(path_value)
+    validate_external_evidence_table(
+        table,
+        evidence_kind=prefix,
+        strict=str(snakemake.params.external_import_validation) == "strict",
+        id_alternatives=("stable_id", "protein_id"),
+    )
     stable_column = resolve_column(table, ["stable_id", "protein_id"], required=False)
     if stable_column is None:
         species_column = resolve_column(table, ["species_id", "species"])

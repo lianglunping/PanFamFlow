@@ -106,6 +106,18 @@ def test_toy_complete_raw_counts_cover_abiotic_and_biotic_designs() -> None:
     assert audited.contrast_audit["denominator_replicates"].min() >= 2
 
 
+def test_toy_complete_promoter_fixture_covers_the_four_frozen_major_classes() -> None:
+    promoter = pd.read_csv(TOY_COMPLETE / "references" / "promoter.tsv", sep="\t")
+
+    assert set(promoter["major_class"]) == {
+        "Growth_development",
+        "Hormone_response",
+        "Light_response",
+        "Stress_response",
+    }
+    assert promoter.loc[promoter["element"].eq("ABRE"), "major_class"].eq("Hormone_response").all()
+
+
 def test_toy_complete_is_a_clean_input_fixture() -> None:
     forbidden = ["results", "work", "logs", ".snakemake", ".panfamflow"]
     assert [name for name in forbidden if (TOY_COMPLETE / name).exists()] == []

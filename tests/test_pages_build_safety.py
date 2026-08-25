@@ -16,6 +16,7 @@ def write_tutorial_assets(tutorial: Path) -> None:
     fixtures = {
         "ANALYSIS_COVERAGE.tsv": "source_id\tstate\n4.1\tIMPLEMENTED\n",
         "ANALYSIS_COVERAGE.zh-CN.md": "# coverage\n",
+        "EXTERNAL_EVIDENCE_IMPORTS.zh-CN.md": "# external evidence imports\n",
         "TEMPLATE_EQUIVALENCE_AUDIT.zh-CN.md": "# template equivalence\n",
         "TEMPLATE_FIGURE_EQUIVALENCE.tsv": (
             "template_figure\tequivalence_status\nFig01\tMATCHED_CORE\n"

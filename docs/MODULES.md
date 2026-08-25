@@ -34,7 +34,7 @@
 - `family_distribution.tsv/.xlsx`
 - `family_distribution.pdf/.png`
 
-可导入 subfamily、CDD/domain validation 和 subcellular localization 表。大规模项目只加载候选 family 的序列和 mapping 子集，避免把全体 proteome/CDS 同时载入内存。
+可导入 subfamily、CDD/domain validation 和 WoLF PSORT subcellular localization 表。新正式项目应把 `external_import_validation` 设为 `strict`，并提供来源、版本、访问日期和 URL；字段模板与解释边界见 [`EXTERNAL_EVIDENCE_IMPORTS.zh-CN.md`](EXTERNAL_EVIDENCE_IMPORTS.zh-CN.md)。大规模项目只加载候选 family 的序列和 mapping 子集，避免把全体 proteome/CDS 同时载入内存。
 
 ## `phylogeny`
 
@@ -69,6 +69,8 @@
 - rarefaction 原始迭代、汇总和图件
 - HOG/基因双分母 pan-class 表图
 - species/subfamily × pan-class 的 gene/HOG 数量与比例表图
+- OrthoFinder rooted species tree 的 Newick、PDF/PNG 和来源哈希
+- 目标家族 OGG 0/1 矩阵的 Jaccard 距离、average-linkage 聚类 PDF/PNG 和非系统发育命名合同
 
 分类表为向后兼容保留 `HOG_ID` 列名，同时用 `orthology_group_type`、`orthology_source_file`、`analysis_unit` 区分 HOG 与普通 Orthogroup，并记录 `pan_family_class`、`presence_basis` 和 `absence_validation_status`。矩阵中的 0 表示注释/同源群层面未检出，不自动代表已验证的基因丢失。旧预发布模块名 `pangenome` 仅作为兼容别名。
 
@@ -113,13 +115,13 @@ pair source：
 backend：
 
 - `fimo`：扫描 versioned MEME motif database。
-- `precomputed_plantcare`：导入 PlantCARE/其他来源表。
+- `precomputed_plantcare`：导入 PlantCARE/其他来源表；`strict` 模式要求服务、版本、访问日期和 URL。
 
 所有 ID 必须可映射到提取的 family promoter。
 
-规范输出包括逐命中 `promoter_elements.tsv`、逐元件汇总 `promoter_element_summary.tsv`、逐基因主类别汇总 `promoter_elements_per_gene.tsv`、多维分布长表 `promoter_element_distributions.tsv`、分布 QC 表、工作簿、主类别计数图、Top-N 元件图，以及物种×亚家族、亚家族、物种、群体、群体×亚家族五组标准化热图。
+规范输出包括逐命中 `promoter_elements.tsv`、逐元件汇总 `promoter_element_summary.tsv`、逐基因主类别汇总 `promoter_elements_per_gene.tsv`、主类别/子类别源表、多维分布长表 `promoter_element_distributions.tsv`、分布 QC 表、工作簿、Fig23 四大类圆环图、Fig24 子类别命中数与基因检出率双面板、Top-N 元件图，以及物种×亚家族、亚家族、物种、群体、群体×亚家族五组标准化热图。
 
-多维分布表为每个聚合单元和每种元件补齐真零组合，同时保留 `n_genes`、`total_promoter_bp`、`hits_per_gene` 和 `hits_per_kb`。标准化固定为对每个元件跨聚合单元的 `hits_per_kb` 计算总体 z-score（`ddof=0`），并用 `PASS`、`ZERO_VARIANCE`、`INSUFFICIENT_CELLS` 或 `MISSING_DENOMINATOR` 记录可解释性。亚家族和群体输出依赖相应元数据；HOG 层级仍未自动聚合，逐项状态见 `ANALYSIS_COVERAGE.tsv`。
+主类别和子类别源表同时保留 motif 命中数、命中比例、有命中的基因数、全部启动子基因分母、基因检出率、启动子总长度和每 kb 命中率。多维分布表为每个聚合单元和每种元件补齐真零组合，同时保留 `n_genes`、`total_promoter_bp`、`hits_per_gene` 和 `hits_per_kb`。标准化固定为对每个元件跨聚合单元的 `hits_per_kb` 计算总体 z-score（`ddof=0`），并用 `PASS`、`ZERO_VARIANCE`、`INSUFFICIENT_CELLS` 或 `MISSING_DENOMINATOR` 记录可解释性。亚家族和群体输出依赖相应元数据；HOG 层级由 `pdf_md_complete` 路径生成独立源表和 QC，逐项状态见 `ANALYSIS_COVERAGE.tsv`。
 
 ## `expression`
 

@@ -8,6 +8,7 @@ on:
       - "docs/index.html"
       - "docs/ANALYSIS_COVERAGE.tsv"
       - "docs/ANALYSIS_COVERAGE.zh-CN.md"
+      - "docs/EXTERNAL_EVIDENCE_IMPORTS.zh-CN.md"
       - "docs/TUTORIAL_CONTENT_MATRIX.tsv"
       - "docs/TUTORIAL_GAP_AUDIT.zh-CN.md"
       - "docs/TUTORIAL_REPOSITORY_INTEGRATION_QA.zh-CN.md"

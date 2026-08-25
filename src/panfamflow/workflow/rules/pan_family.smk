@@ -40,6 +40,38 @@ rule pan_family_classification:
             join_path(RESULTS, "06_pan_family", "pan_family_subfamily_class_summary.tsv"),
             non_empty=True,
         ),
+        species_tree_newick=ensure(
+            join_path(RESULTS, "06_pan_family", "orthofinder_species_tree.nwk"),
+            non_empty=True,
+        ),
+        species_tree_pdf=join_path(
+            RESULTS, "06_pan_family", "orthofinder_species_tree.pdf"
+        ),
+        species_tree_png=join_path(
+            RESULTS, "06_pan_family", "orthofinder_species_tree.png"
+        ),
+        ogg_clustering_pdf=join_path(
+            RESULTS, "06_pan_family", "ogg_presence_absence_clustering.pdf"
+        ),
+        ogg_clustering_png=join_path(
+            RESULTS, "06_pan_family", "ogg_presence_absence_clustering.png"
+        ),
+        ogg_distances=ensure(
+            join_path(RESULTS, "06_pan_family", "ogg_presence_absence_distances.tsv"),
+            non_empty=True,
+        ),
+        ogg_linkage=ensure(
+            join_path(RESULTS, "06_pan_family", "ogg_presence_absence_linkage.tsv"),
+            non_empty=True,
+        ),
+        ogg_tree_provenance=ensure(
+            join_path(RESULTS, "06_pan_family", "ogg_tree_provenance.tsv"),
+            non_empty=True,
+        ),
+        ogg_tree_contract=ensure(
+            join_path(RESULTS, "06_pan_family", "ogg_tree_contract.tsv"),
+            non_empty=True,
+        ),
         xlsx=ensure(
             join_path(RESULTS, "06_pan_family", "pan_family_results.xlsx"),
             non_empty=True,

@@ -46,7 +46,7 @@ PanFamFlow 的输入是**已经组装并注释的 genome FASTA + GFF3**。OrthoF
 
 来源方案要求 HMMER/BLASTP、IQ-TREE、Core/Soft-core/Shell/Cloud、MCScanX/DupGen_finder、Ka/Ks、2 kb promoter、PlantCARE/FIMO 和 RNA-seq 等分析。PanFamFlow 在此基础上增加 canonical transcript、稳定 ID、拒绝候选审计、HOG 节点固定、输入 SHA256、恢复机制和整合主表。要求与实现的逐项映射见 [docs/DESIGN_BASIS.md](docs/DESIGN_BASIS.md)。
 
-两份来源材料的原始文字清单有 51 个条目；逐图核对 PDF 后又补入 7 个原先漏列的独立分析主题，当前权威目录共 58 项（4.1–11.7，按章节连续编号）。PanFamFlow **不声称 58 项均已自动实现或均已完成生物学验证**：当前代码能力审计为 52 项 `IMPLEMENTED`、6 项 `CONDITIONALLY_AVAILABLE`。后者已有规范执行路径，但需要显式开启 Logo、共线性或 raw-count DE，或需要完整 HOG/设计输入。解释范围前请先阅读[中文审计说明](docs/ANALYSIS_COVERAGE.zh-CN.md)和[机器可读明细](docs/ANALYSIS_COVERAGE.tsv)。
+两份来源材料的原始文字清单有 51 个条目；逐图核对 PDF 后又补入 7 个原先漏列的独立分析主题，当前权威目录共 58 项（4.1–11.7，按章节连续编号）。PanFamFlow **不声称 58 项均已自动实现或均已完成生物学验证**：当前代码能力审计为 53 项 `IMPLEMENTED`、5 项 `CONDITIONALLY_AVAILABLE`。后者已有规范执行路径，但需要显式开启 Logo、共线性或 raw-count DE，并满足相应输入门禁。解释范围前请先阅读[中文审计说明](docs/ANALYSIS_COVERAGE.zh-CN.md)和[机器可读明细](docs/ANALYSIS_COVERAGE.tsv)。
 
 上述 58 项是“主题能力状态”，不是 PDF 图件完成率，也不是某次真实研究的结果完成率。按 PDF Fig01–Fig34 和方法 MD 重新核对后，当前 33 条逐图审计记录中有 28 条 `MATCHED_CORE`、5 条 `CONDITIONAL_MATCH`；每条均登记规范源表和 PDF/PNG 合同。这里的“匹配”只表示工程路径已建立，仍须通过 clean run、原生工具链、无工作复跑、局部恢复和真实数据科学验收；详情见[模板等价性审计](docs/TEMPLATE_EQUIVALENCE_AUDIT.zh-CN.md)和[逐图矩阵](docs/TEMPLATE_FIGURE_EQUIVALENCE.tsv)。
 

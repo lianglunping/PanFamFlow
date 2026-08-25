@@ -18,7 +18,6 @@ run_token="${JH_JOB_ID:-${LSB_JOBID:-${JOB_ID:-$$}}}"
 validation_root="$JH_SUB_CWD/work/toy-traceability-provenance.${run_token}"
 receipt="$validation_root/receipt.tsv"
 run_log="$validation_root/run.log"
-
 targets=(
   results/00_qc/id_mapping_audit.tsv
   results/01_normalized/canonical_transcript_provenance.tsv
@@ -60,74 +59,7 @@ for target in "${targets[@]}"; do
   test -s "${toy_project_root}/${target%.tsv}.xlsx"
 done
 
-python - "$toy_project_root" "$receipt" "$preexisting_artifact_count" <<'PY'
-from __future__ import annotations
-
-import hashlib
-import sys
-from pathlib import Path
-
-import pandas as pd
-
-root = Path(sys.argv[1])
-receipt_path = Path(sys.argv[2])
-preexisting_artifact_count = int(sys.argv[3])
-results = root / "results"
-contract = Path("docs/REQUIREMENT_TRACEABILITY.tsv")
-figure_contract_path = Path("docs/FIGURE_CONTRACT.tsv")
-traceability = pd.read_csv(results / "report/requirement_traceability.tsv", sep="\t", dtype=str)
-result_manifest = pd.read_csv(results / "report/result_manifest.tsv", sep="\t", dtype=str)
-figure_manifest = pd.read_csv(results / "report/figure_manifest.tsv", sep="\t", dtype=str)
-table_manifest = pd.read_csv(results / "report/table_manifest.tsv", sep="\t", dtype=str)
-frozen = pd.read_csv(contract, sep="\t", dtype=str)
-figure_contract = pd.read_csv(figure_contract_path, sep="\t", dtype=str)
-expected_table_pairs = figure_contract["source_table"].nunique()
-
-if len(traceability) != 61 or len(frozen) != 61:
-    raise SystemExit("Traceability contract must contain exactly 61 rows.")
-if set(traceability["requirement_id"]) != set(frozen["requirement_id"]):
-    raise SystemExit("Runtime and frozen traceability IDs differ.")
-missing = [artifact for artifact in frozen["artifact"] if not (root / artifact).is_file()]
-if missing:
-    raise SystemExit("Missing frozen traceability artifacts: " + ", ".join(missing))
-if len(figure_manifest) != 34 or set(figure_manifest["status"]) != {"GENERATED"}:
-    raise SystemExit("Figure manifest is not 34/34 GENERATED.")
-if len(table_manifest) != expected_table_pairs or set(table_manifest["status"]) != {
-    "GENERATED"
-}:
-    raise SystemExit("Table manifest does not contain all generated pairs.")
-if set(table_manifest["parity_status"]) != {"PASS_ROWS_AND_COLUMNS"}:
-    raise SystemExit("TSV/XLSX parity failed.")
-
-required_paths = {
-    "00_qc/id_mapping_audit.tsv",
-    "01_normalized/canonical_transcript_provenance.tsv",
-    "06_pan_family/hog_node_provenance.tsv",
-}
-if not required_paths.issubset(set(result_manifest["relative_path"])):
-    raise SystemExit("Result manifest omits a repaired provenance artifact.")
-
-for relative in required_paths:
-    table = pd.read_csv(results / relative, sep="\t", dtype=str)
-    if table.empty or set(table["status"]) != {"PASS"}:
-        raise SystemExit(f"Provenance artifact is not PASS: {relative}")
-
-receipt_path.write_text(
-    "field\tvalue\n"
-    "status\tPASS\n"
-    f"compute_host\t{Path('/etc/hostname').read_text().strip()}\n"
-    f"traceability_rows\t{len(traceability)}\n"
-    f"traceability_sha256\t{hashlib.sha256((results / 'report/requirement_traceability.tsv').read_bytes()).hexdigest()}\n"
-    f"result_manifest_rows\t{len(result_manifest)}\n"
-    f"result_manifest_sha256\t{hashlib.sha256((results / 'report/result_manifest.tsv').read_bytes()).hexdigest()}\n"
-    f"figure_manifest_rows\t{len(figure_manifest)}\n"
-    f"table_manifest_rows\t{len(table_manifest)}\n"
-    f"expected_table_pairs\t{expected_table_pairs}\n"
-    f"preexisting_artifact_count\t{preexisting_artifact_count}\n"
-    "missing_registered_artifacts\t0\n",
-    encoding="utf-8",
-)
-PY
-
+python scripts/hpc/verify_toy_traceability_provenance.py \
+  "$toy_project_root" "$receipt" "$preexisting_artifact_count"
 test -s "$receipt"
 printf 'TOY_TRACEABILITY_PROVENANCE\tPASS\treceipt=%s\n' "$receipt"

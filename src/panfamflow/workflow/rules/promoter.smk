@@ -28,7 +28,7 @@ rule extract_family_promoters:
         "../scripts/extract_promoters.py"
 
 
-if PROMOTER_BACKEND == "fimo":
+if PROMOTER_BACKEND == "fimo" and "promoter" in SELECTED_MODULES:
     rule scan_promoters_fimo:
         input:
             promoters=rules.extract_family_promoters.output.fasta,
@@ -151,6 +151,9 @@ rule parse_promoter_elements:
         top_n_elements=int(config.get("promoter", {}).get("top_n_elements", 20)),
         png_dpi=PNG_DPI,
         complete_profile=COMPLETE_PROFILE,
+        external_import_validation=config.get("promoter", {}).get(
+            "external_import_validation", "legacy"
+        ),
     conda:
         "../envs/promoter.yaml"
     retries:

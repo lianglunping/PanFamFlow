@@ -19,7 +19,7 @@ FIGURE_EQUIVALENCE_PATH = ROOT / "docs" / "TEMPLATE_FIGURE_EQUIVALENCE.tsv"
 FIGURE_CONTRACT_PATH = ROOT / "docs" / "FIGURE_CONTRACT.tsv"
 HTML_PATH = ROOT / "docs" / "index.html"
 
-CONDITIONAL_IDS = {"4.4", "6.1", "8.6", "11.3", "11.4", "11.5"}
+CONDITIONAL_IDS = {"4.4", "8.6", "11.3", "11.4", "11.5"}
 OPTIONAL_FIGURES = {"Fig03", "Fig09", "Fig17", "Fig21-22", "Fig34"}
 STATE_LABELS = {
     "IMPLEMENTED": ("implemented", "已实现"),
@@ -29,6 +29,11 @@ STATE_LABELS = {
 }
 
 COVERAGE_OVERRIDES = {
+    "6.1": {
+        "evidence": "pan_family 同时输出 OrthoFinder rooted species tree 与基于目标家族 OGG 0/1 矩阵的 Jaccard-average-linkage 聚类，并用合同表禁止混称",
+        "output": "results/06_pan_family/orthofinder_species_tree.pdf；results/06_pan_family/ogg_presence_absence_clustering.pdf；results/06_pan_family/ogg_tree_contract.tsv",
+        "limitation": "物种树是系统发育对象；OGG 有无聚类只是目标家族组成相似性，不是系统树、单个 HOG 基因树或分化时间证据",
+    },
     "4.4": {
         "evidence": "domain_logo 可选子路径读取经过审计的核心结构域对齐，输出逐位点残基频率、信息量、域片段和 Logo QC",
         "output": "results/03_phylogeny/Fig09_core_domain_logo.pdf；results/03_phylogeny/family_domain_segments.tsv",
@@ -43,6 +48,21 @@ COVERAGE_OVERRIDES = {
         "evidence": "kaks 同时生成 subfamily×group 二维配对层、cluster 中位数独立单位、整体/两两检验、效应量、BH-FDR 和 Fig06",
         "output": "results/09_kaks/kaks_by_subfamily_group.tsv；results/09_kaks/kaks_cluster_inference_tests.tsv；results/09_kaks/Fig06_kaks_by_subfamily_group.pdf",
         "limitation": "同一基因参与的 raw pair 不独立；正式推断使用注册 cluster 单位，物种与系统发育混杂仍需在研究设计中控制",
+    },
+    "10.1": {
+        "evidence": "promoter 规则从同一逐命中源表按审计后的 major_class 汇总，输出带 motif-hit、基因覆盖和启动子长度分母的四大类圆环图与源表",
+        "output": "results/10_promoter/promoter_major_class_summary.tsv；results/10_promoter/Fig23_promoter_four_major_classes.pdf",
+        "limitation": "圆环比例的分母是 motif hit；genes_with_hit/gene_denominator 与 hits_per_kb 是另两种描述量，三者不可混称为调控强度或富集",
+    },
+    "10.2": {
+        "evidence": "promoter_major_class_summary.tsv 同时报告 motif_hit_count、genes_with_hit、gene_denominator、gene_prevalence、promoter_bp_denominator 和 hits_per_kb",
+        "output": "results/10_promoter/promoter_major_class_summary.tsv；results/10_promoter/Fig23_promoter_four_major_classes.pdf",
+        "limitation": "必须冻结 motif 数据库/PlantCARE 来源、阈值、去重规则和 category_map；主类别命中多不等于相应通路被激活",
+    },
+    "10.3": {
+        "evidence": "promoter_subclass_summary.tsv 对 subclass 输出命中负担、命中基因数、完整基因分母、基因覆盖率、启动子 bp 分母与每 kb 频率，并生成 Fig24",
+        "output": "results/10_promoter/promoter_subclass_summary.tsv；results/10_promoter/Fig24_promoter_subclasses.pdf",
+        "limitation": "subclass 名称和闭合性依赖版本化 category_map；描述性频率不自动构成富集、真实 TF 结合或因果调控证据",
     },
     "10.12": {
         "evidence": "pdf_md_complete 路径把 promoter hit 与目标家族 HOG membership 一对一连接，输出完整零值网格、基因数、启动子长度分母、每基因与每 kb 命中率及 QC",
@@ -87,6 +107,19 @@ COVERAGE_OVERRIDES = {
 }
 
 MATRIX_OVERRIDES = {
+    "6.1": {
+        "required_inputs": "OrthoFinder Species_Tree/SpeciesTree_rooted.txt；目标家族 family_presence_absence.tsv；与两者精确闭合的冻结 species_id 列表。",
+        "pipeline_entry": "模块 pan_family；读取 OrthoFinder rooted species tree，并对目标家族 OGG 0/1 矩阵计算 Jaccard 距离与 average linkage。",
+        "canonical_outputs": "results/06_pan_family/orthofinder_species_tree.nwk；results/06_pan_family/orthofinder_species_tree.pdf；results/06_pan_family/ogg_presence_absence_clustering.pdf；results/06_pan_family/ogg_presence_absence_distances.tsv；results/06_pan_family/ogg_presence_absence_linkage.tsv；results/06_pan_family/ogg_tree_provenance.tsv；results/06_pan_family/ogg_tree_contract.tsv",
+        "how_to_read": "先读 ogg_tree_contract.tsv 确认对象：物种树回答物种关系；聚类图只回答目标家族 OGG 组成相似性。随后核对物种树叶标签闭合、Jaccard 距离和聚类分支，绝不把两图互换命名。",
+        "qc_checks": "species tree 叶标签必须与配置物种精确闭合；OGG 矩阵只能为 0/1；HOG_ID 唯一；距离有限；两类对象均有来源哈希、方法和解释边界。",
+        "supported_claims": "可分别展示 OrthoFinder 模型下的物种关系，以及冻结目标家族 OGG 组成的描述性相似聚类。",
+        "unsupported_claims": "不能把 Jaccard 聚类称为系统发育树，也不能把 species tree 当成单个 HOG gene tree；不能由任一图直接推断功能、分化时间或因果。",
+        "analysis_unit": "对象一：species-tree tip；对象二：species×target-family OGG presence vector",
+        "join_keys": "species tree tip = configured species_id；presence matrix species columns = configured species_id",
+        "runtime_gate": "OrthoFinder rooted species tree 必须唯一存在且叶标签精确闭合；presence 矩阵必须二元、HOG_ID 唯一、Jaccard 距离可计算。",
+        "extension_requirements": "正式研究需冻结 OrthoFinder 版本、HOG node、物种集合、树来源哈希和 presence 矩阵清单；单个 HOG 基因树应另建独立产物。",
+    },
     "4.4": {
         "pipeline_entry": "模块 phylogeny；设置 domain_logo.enabled=true 并提供经过审计的 domain_alignment。",
         "canonical_outputs": "results/03_phylogeny/Fig09_core_domain_logo.pdf；results/03_phylogeny/Fig09_core_domain_logo.png；results/03_phylogeny/family_domain_segments.tsv；results/03_phylogeny/domain_logo.xlsx",
@@ -104,6 +137,37 @@ MATRIX_OVERRIDES = {
         "canonical_outputs": "results/09_kaks/kaks_by_subfamily_group.tsv；results/09_kaks/kaks_cluster_inference_tests.tsv；results/09_kaks/Fig06_kaks_by_subfamily_group.pdf",
         "runtime_gate": "至少需要可计算 pair、完整二维归属和每个比较组足够的独立 cluster 单位；不足时保留 QC 而不伪造 P 值。",
         "extension_requirements": "正式研究可追加物种/系统发育混合模型，但不得把 raw pair 数当独立重复数。",
+    },
+    "10.1": {
+        "required_inputs": "promoter_elements 明细；经人工审查的 element→major_class category_map；完整目标家族 promoter 坐标分母。PlantCARE 外部表须先通过来源与字段合同。",
+        "pipeline_entry": "模块 promoter；从同一逐命中表生成四大类汇总和 Fig23 圆环图，图注同时给出 motif-hit 与基因覆盖分母。",
+        "canonical_outputs": "results/10_promoter/promoter_major_class_summary.tsv；results/10_promoter/Fig23_promoter_four_major_classes.pdf；results/10_promoter/Fig23_promoter_four_major_classes.png",
+        "how_to_read": "先核对 Unclassified 与完整基因/启动子长度分母；圆环扇区读 motif-hit 组成，标签中的 genes_with_hit/gene_denominator 读基因覆盖，hits_per_kb 读长度标准化负担，三者分开解释。",
+        "qc_checks": "major_class 分类唯一且闭合；motif-hit 总数守恒；gene_denominator 等于冻结目标家族 promoter 数；promoter_bp_denominator 可追溯；PDF/600 dpi PNG 均存在。",
+        "supported_claims": "可描述指定数据库、阈值和分类映射下四大类 motif 命中组成、基因覆盖和每 kb 命中率。",
+        "unsupported_claims": "不能由圆环比例推断信号通路激活、TF 真实结合、表达效应、富集或因果调控。",
+        "analysis_unit": "motif hit；并列报告 gene/promoter 与 promoter bp 分母",
+        "join_keys": "element→category_map.major_class；stable_id→promoter coordinate denominator",
+        "runtime_gate": "category_map、stable_id、类别闭合、命中总数守恒和两个分母均通过审计；否则关闭失败。",
+        "extension_requirements": "正式数据需冻结 FIMO motif database 或 PlantCARE 导出版本、来源 URL、访问日期、阈值、去重规则和 category_map。",
+    },
+    "10.2": {
+        "required_inputs": "promoter_elements 的 stable_id、major_class 与完整 promoter coordinate denominator。",
+        "pipeline_entry": "模块 promoter；从 major_class×gene 零值完整网格汇总命中负担、基因覆盖率和每 kb 频率。",
+        "canonical_outputs": "results/10_promoter/promoter_major_class_summary.tsv；results/10_promoter/promoter_elements_per_gene.tsv；results/10_promoter/Fig23_promoter_four_major_classes.pdf",
+        "how_to_read": "同时看 motif_hit_count、genes_with_hit/gene_denominator 和 hits_per_kb；若三者方向不一致，应优先排查少数高重复 promoter 或长度差异。",
+        "qc_checks": "stable_id 唯一连接；零命中基因保留在分母；Unclassified 不被静默删除；数据库、阈值与去重规则有 provenance。",
+        "runtime_gate": "所有目标 promoter 都进入分母，外部命中 stable_id 不得越界；缺失或重复键时关闭失败。",
+        "extension_requirements": "如需组间推断，另行预注册独立单位、背景集合、效应量和多重检验；本结果仅为描述性。",
+    },
+    "10.3": {
+        "required_inputs": "promoter_elements 的 element/subclass/stable_id；版本化 category_map；完整 promoter coordinate denominator。",
+        "pipeline_entry": "模块 promoter；按 subclass 汇总 motif hit、命中基因覆盖和每 kb 频率，并生成 Fig24 的负担与覆盖双面板。",
+        "canonical_outputs": "results/10_promoter/promoter_subclass_summary.tsv；results/10_promoter/Fig24_promoter_subclasses.pdf；results/10_promoter/Fig24_promoter_subclasses.png",
+        "how_to_read": "先比较命中负担，再看命中基因覆盖；命中集中在少数基因时不能用总 hit 数概括整个家族。",
+        "qc_checks": "subclass 缺失进入 Unclassified；gene_denominator 与 promoter_bp_denominator 完整；命中数与逐命中表守恒。",
+        "runtime_gate": "category_map 与逐命中表键可闭合，零命中分母被保留，统计量均为有限值。",
+        "extension_requirements": "正式解释需冻结数据库版本，并避免把 motif 名称直接翻译成已验证生物功能。",
     },
     "10.12": {
         "pipeline_entry": "模块 promoter；pdf_md_complete 路径自动依赖 pan_family 并生成 HOG 层汇总。",
@@ -154,6 +218,14 @@ MATRIX_OVERRIDES = {
 }
 
 CARD_REPLACEMENTS = {
+    "6.1": {
+        "正交组相关树形展示（对象需先定义）": "物种系统树与正交组有无聚类（两类对象分开）",
+        "物种系统树与 OGG 有无聚类（两类对象分开）": "物种系统树与正交组有无聚类（两类对象分开）",
+        "这一条首先要说明想画的是物种关系、某个正交组的基因树，还是有无矩阵的聚类树。三种图回答的问题不同，名称不能混用。": "流程会生成两类明确分开的对象：OrthoFinder 物种系统树，以及目标家族 OGG 有无矩阵的相似性聚类；后者不是系统发育树。",
+        "PanFamFlow 能提供基础数据，但该条目的连接、分母、统计或专用图还要按下方合同补齐。完成这些步骤前，只能作有限的描述。": "PanFamFlow 在 pan_family 模块中复制并绘制 OrthoFinder rooted species tree，同时从目标家族 OGG 0/1 矩阵计算 Jaccard 距离和 average-linkage 聚类，并输出来源、距离、linkage 与命名边界合同。",
+        "当前只能教学性解释不同树的含义。": "可分别解释冻结物种集合的系统关系和目标家族 OGG 组成相似性；两者均有直接源表与 provenance。",
+        "本地最小示例已验证可连接的基础产物，但本条目尚无专用 canonical 结果：orthology 模块保留 OrthoFinder 结果目录和 HOG 节点。基础产物：": "clean toy 会直接验证两类 canonical 产物、叶标签闭合和非系统发育命名合同。规范产物：",
+    },
     "4.4": {
         "当前没有核心结构域裁剪、氨基酸对齐和 sequence logo 规则": "流程读取经审计的核心结构域对齐，计算逐位点残基频率、信息量、覆盖与缺口状态，并生成可追溯 Logo",
         "当前未支持；必须先建立可审计的结构域裁剪与对齐合同。": "设置 domain_logo.enabled=true；结构域边界、stable_id、对齐长度和缺口 QC 必须通过。",
@@ -259,7 +331,7 @@ def main() -> None:
         row.update(COVERAGE_OVERRIDES.get(row["source_id"], {}))
         coverage.append(row)
     if Counter(row["state"] for row in coverage) != Counter(
-        {"IMPLEMENTED": 52, "CONDITIONALLY_AVAILABLE": 6}
+        {"IMPLEMENTED": 53, "CONDITIONALLY_AVAILABLE": 5}
     ):
         raise RuntimeError("Unexpected capability-state distribution.")
     write_tsv(COVERAGE_PATH, coverage_fields, coverage)

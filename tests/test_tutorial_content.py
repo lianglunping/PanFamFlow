@@ -163,8 +163,8 @@ def test_status_distribution_and_allowed_states():
     counts = Counter(row["state"] for row in rows)
     assert counts == Counter(
         {
-            "IMPLEMENTED": 52,
-            "CONDITIONALLY_AVAILABLE": 6,
+            "IMPLEMENTED": 53,
+            "CONDITIONALLY_AVAILABLE": 5,
         }
     )
     assert {row["state"] for row in rows} == {
@@ -344,7 +344,7 @@ def test_resolved_runtime_contracts_and_plot_truth_are_visible():
 
 def test_selected_capability_states_match_current_local_audit():
     rows = {row["source_id"]: row for row in read_matrix()}
-    assert rows["6.1"]["state"] == "CONDITIONALLY_AVAILABLE"
+    assert rows["6.1"]["state"] == "IMPLEMENTED"
     assert rows["6.2"]["state"] == "IMPLEMENTED"
     assert rows["6.4"]["state"] == "IMPLEMENTED"
     assert rows["6.5"]["state"] == "IMPLEMENTED"
