@@ -1,34 +1,34 @@
 template_figure	template_requirement	equivalence_status	current_evidence	material_gap	related_coverage
-Fig01	全部家族基因系统发育树	MATCHED_CORE	results/03_phylogeny/family_tree_tip_annotations.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	4.2
-Fig02	每个分支/亚家族拷贝数分布	MATCHED_CORE	results/02_family/family_copy_number_by_species_subfamily.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	4.3
-Fig03	代表材料与外部物种的多物种家族树	CONDITIONAL_MATCH	results/03_phylogeny/comparative_panel_selection.tsv	规范执行路径、源表与 PDF/PNG 合同已实现但默认关闭；仍需合规输入和 B10 原生运行验收，工程测试不能替代生物学验证	4.2
-Fig04	亚家族 Ka、Ks、Ka/Ks 比较	MATCHED_CORE	results/09_kaks/kaks_by_subfamily.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	9.6
-Fig05	群体 Ka、Ks、Ka/Ks 比较	MATCHED_CORE	results/09_kaks/kaks_by_group.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	9.7
-Fig06	亚家族×群体 Ka、Ks、Ka/Ks 比较	MATCHED_CORE	results/09_kaks/kaks_by_subfamily_group.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	9.8
-Fig07	亚家族基因结构比较	MATCHED_CORE	results/04_gene_structure/gene_structure_by_subfamily.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	5.1-5.3
-Fig08	群体基因结构比较	MATCHED_CORE	results/04_gene_structure/gene_structure_by_group.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	5.4-5.6
-Fig09	核心结构域氨基酸序列 Logo	CONDITIONAL_MATCH	results/03_phylogeny/family_domain_segments.tsv	规范执行路径、源表与 PDF/PNG 合同已实现但默认关闭；仍需合规输入和 B10 原生运行验收，工程测试不能替代生物学验证	4.4
-Fig10	以 OGG 和基因为双分母的泛基因类型饼图	MATCHED_CORE	results/06_pan_family/pan_family_class_summary.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	6.4
-Fig11	每个 OGG 的泛基因类型与基因数量	MATCHED_CORE	results/06_pan_family/pan_family_hog_gene_counts.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	6.2-6.4
-Fig12	各材料泛基因类型基因数量	MATCHED_CORE	results/06_pan_family/pan_family_species_class_summary.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	6.6
-Fig13	各材料泛基因类型基因比例	MATCHED_CORE	results/06_pan_family/pan_family_species_class_summary.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	6.7
-Fig14	核心/软核心/非必需基因 Ka、Ks、Ka/Ks 比较	MATCHED_CORE	results/09_kaks/kaks_by_pan_class.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	9.9
-Fig15	染色体位置并叠加核心/非核心或亚家族	MATCHED_CORE	results/07_chromosome/chromosome_distribution_annotated.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	7.1-7.2
-Fig16	所有材料复制类型汇总	MATCHED_CORE	results/08_duplication/duplication_mode_overall.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	8.1
-Fig17	代表物种染色体内共线性 Circos 并标注 WGD/串联重复	CONDITIONAL_MATCH	results/08_duplication/synteny_blocks_intra.tsv	规范执行路径、源表与 PDF/PNG 合同已实现但默认关闭；仍需合规输入和 B10 原生运行验收，工程测试不能替代生物学验证	8.6
-Fig18	各材料复制类型数量与比例	MATCHED_CORE	results/08_duplication/duplication_stratified_summary.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	8.2
-Fig19	各亚家族复制类型数量与比例	MATCHED_CORE	results/08_duplication/duplication_stratified_summary.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	8.3
-Fig20	各泛基因类型的复制类型数量与比例	MATCHED_CORE	results/08_duplication/duplication_stratified_summary.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	8.4
-Fig21-22	多物种间全基因组共线性	CONDITIONAL_MATCH	results/08_duplication/synteny_blocks_inter.tsv；results/08_duplication/synteny_pair_summary.tsv	规范执行路径、源表与 PDF/PNG 合同已实现但默认关闭；仍需合规输入和 B10 原生运行验收，工程测试不能替代生物学验证	8.6
-Fig23	启动子四大类总体分布	MATCHED_CORE	results/10_promoter/promoter_major_class_summary.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	10.1
-Fig24	启动子元件子类别数量分布	MATCHED_CORE	results/10_promoter/promoter_subclass_summary.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	10.2-10.3
-Fig25	各亚家族启动子元件热图	MATCHED_CORE	results/10_promoter/promoter_heatmap_subfamily.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	10.6-10.7
-Fig26	各群体×亚家族启动子元件热图	MATCHED_CORE	results/10_promoter/promoter_heatmap_group_subfamily.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	10.15
-Fig27	各材料启动子元件热图	MATCHED_CORE	results/10_promoter/promoter_heatmap_species.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	10.8-10.9
-Fig28	代表材料逐基因 Top-N 启动子元件分布	MATCHED_CORE	results/10_promoter/representative_gene_element_matrix.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	10.13-10.14
-Fig29	全部材料家族基因表达分布	MATCHED_CORE	results/11_expression/expression_long.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	11.2
-Fig30	泛基因类型整体表达比较	MATCHED_CORE	results/11_expression/expression_by_pan_class.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	11.1
-Fig31	泛基因类型分组织表达比较	MATCHED_CORE	results/11_expression/expression_by_pan_class_tissue.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	11.6
-Fig32	群体×亚家族表达比较	MATCHED_CORE	results/11_expression/expression_by_group_subfamily.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	11.7
-Fig33	全部家族基因表达热图	MATCHED_CORE	results/11_expression/expression_scaled.tsv	规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，工程完成不能写成生物学结论	11.2
-Fig34	非生物/生物胁迫表达热图与比较	CONDITIONAL_MATCH	results/11_expression/deseq2_contrast_results.tsv	规范执行路径、源表与 PDF/PNG 合同已实现但默认关闭；仍需合规输入和 B10 原生运行验收，工程测试不能替代生物学验证	11.3-11.5
+Fig01	全部家族基因系统发育树	MATCHED_CORE	results/03_phylogeny/family_tree_tip_annotations.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	4.2
+Fig02	每个分支/亚家族拷贝数分布	MATCHED_CORE	results/02_family/family_copy_number_by_species_subfamily.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	4.3
+Fig03	代表材料与外部物种的多物种家族树	CONDITIONAL_MATCH	results/03_phylogeny/comparative_panel_selection.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；该可选路径默认关闭，真实项目仍需合规输入和项目级生物学验收	4.2
+Fig04	亚家族 Ka、Ks、Ka/Ks 比较	MATCHED_CORE	results/09_kaks/kaks_by_subfamily.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	9.6
+Fig05	群体 Ka、Ks、Ka/Ks 比较	MATCHED_CORE	results/09_kaks/kaks_by_group.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	9.7
+Fig06	亚家族×群体 Ka、Ks、Ka/Ks 比较	MATCHED_CORE	results/09_kaks/kaks_by_subfamily_group.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	9.8
+Fig07	亚家族基因结构比较	MATCHED_CORE	results/04_gene_structure/gene_structure_by_subfamily.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	5.1-5.3
+Fig08	群体基因结构比较	MATCHED_CORE	results/04_gene_structure/gene_structure_by_group.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	5.4-5.6
+Fig09	核心结构域氨基酸序列 Logo	CONDITIONAL_MATCH	results/03_phylogeny/family_domain_segments.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；该可选路径默认关闭，真实项目仍需合规输入和项目级生物学验收	4.4
+Fig10	以 OGG 和基因为双分母的泛基因类型饼图	MATCHED_CORE	results/06_pan_family/pan_family_class_summary.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	6.4
+Fig11	每个 OGG 的泛基因类型与基因数量	MATCHED_CORE	results/06_pan_family/pan_family_hog_gene_counts.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	6.2-6.4
+Fig12	各材料泛基因类型基因数量	MATCHED_CORE	results/06_pan_family/pan_family_species_class_summary.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	6.6
+Fig13	各材料泛基因类型基因比例	MATCHED_CORE	results/06_pan_family/pan_family_species_class_summary.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	6.7
+Fig14	核心/软核心/非必需基因 Ka、Ks、Ka/Ks 比较	MATCHED_CORE	results/09_kaks/kaks_by_pan_class.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	9.9
+Fig15	染色体位置并叠加核心/非核心或亚家族	MATCHED_CORE	results/07_chromosome/chromosome_distribution_annotated.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	7.1-7.2
+Fig16	所有材料复制类型汇总	MATCHED_CORE	results/08_duplication/duplication_mode_overall.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	8.1
+Fig17	代表物种染色体内共线性 Circos 并标注 WGD/串联重复	CONDITIONAL_MATCH	results/08_duplication/synteny_blocks_intra.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；该可选路径默认关闭，真实项目仍需合规输入和项目级生物学验收	8.6
+Fig18	各材料复制类型数量与比例	MATCHED_CORE	results/08_duplication/duplication_stratified_summary.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	8.2
+Fig19	各亚家族复制类型数量与比例	MATCHED_CORE	results/08_duplication/duplication_stratified_summary.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	8.3
+Fig20	各泛基因类型的复制类型数量与比例	MATCHED_CORE	results/08_duplication/duplication_stratified_summary.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	8.4
+Fig21-22	多物种间全基因组共线性	CONDITIONAL_MATCH	results/08_duplication/synteny_blocks_inter.tsv；results/08_duplication/synteny_pair_summary.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；该可选路径默认关闭，真实项目仍需合规输入和项目级生物学验收	8.6
+Fig23	启动子四大类总体分布	MATCHED_CORE	results/10_promoter/promoter_major_class_summary.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	10.1
+Fig24	启动子元件子类别数量分布	MATCHED_CORE	results/10_promoter/promoter_subclass_summary.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	10.2-10.3
+Fig25	各亚家族启动子元件热图	MATCHED_CORE	results/10_promoter/promoter_heatmap_subfamily.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	10.6-10.7
+Fig26	各群体×亚家族启动子元件热图	MATCHED_CORE	results/10_promoter/promoter_heatmap_group_subfamily.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	10.15
+Fig27	各材料启动子元件热图	MATCHED_CORE	results/10_promoter/promoter_heatmap_species.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	10.8-10.9
+Fig28	代表材料逐基因 Top-N 启动子元件分布	MATCHED_CORE	results/10_promoter/representative_gene_element_matrix.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	10.13-10.14
+Fig29	全部材料家族基因表达分布	MATCHED_CORE	results/11_expression/expression_long.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	11.2
+Fig30	泛基因类型整体表达比较	MATCHED_CORE	results/11_expression/expression_by_pan_class.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	11.1
+Fig31	泛基因类型分组织表达比较	MATCHED_CORE	results/11_expression/expression_by_pan_class_tissue.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	11.6
+Fig32	群体×亚家族表达比较	MATCHED_CORE	results/11_expression/expression_by_group_subfamily.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	11.7
+Fig33	全部家族基因表达热图	MATCHED_CORE	results/11_expression/expression_scaled.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；真实项目仍需自己的输入质量与生物学验收	11.2
+Fig34	非生物/生物胁迫表达热图与比较	CONDITIONAL_MATCH	results/11_expression/deseq2_contrast_results.tsv	规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；该可选路径默认关闭，真实项目仍需合规输入和项目级生物学验收	11.3-11.5

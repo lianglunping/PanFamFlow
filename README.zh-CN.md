@@ -1,6 +1,6 @@
 # PanFamFlow — 泛基因家族分析流程
 
-[English](README.md) | **简体中文** | [中文交互式教程](docs/index.html) | [58 项覆盖审计](docs/ANALYSIS_COVERAGE.zh-CN.md) | [项目网站](https://lianglunping.github.io/PanFamFlow/index.html?rev=pages-entry-fix-20260819) | [在线教程](https://lianglunping.github.io/PanFamFlow/tutorial/)
+[English](README.md) | **简体中文** | [中文交互式教程](docs/index.html) | [58 项覆盖审计](docs/ANALYSIS_COVERAGE.zh-CN.md) | [项目网站](https://lianglunping.github.io/PanFamFlow/) | [在线教程](https://lianglunping.github.io/PanFamFlow/tutorial/)
 
 [![Version](https://img.shields.io/badge/version-0.1.2--alpha-orange)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/Python-3.11--3.13-blue)](pyproject.toml)

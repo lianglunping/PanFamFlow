@@ -1,15 +1,15 @@
 batch_id	depends_on	objective	primary_outputs	status	completion_gate
 B0	NONE	Freeze the observed baseline, dependency identities and linux-64 lock strategy.	docs/DEPENDENCY_FREEZE.tsv;env-locks/linux-64	PASS	Every source constraint maps to a real linux-64 lock or immutable container digest without changing analysis behavior.
 B1	B0	Add opt-in schema 1.1 fields while preserving schema 1.0 normalized behavior and targets.	config model;JSON Schema;config_fields.tsv	PASS	Schema 1.0 fingerprints/targets remain unchanged and all heavy paths default off.
-B2	B1	Provide shared provenance, ID, status, table, figure and traceability contracts.	common writers;manifests;schema tables	IN_PROGRESS	All modules use controlled enums and missing artifacts cannot be reported as generated.
-B3	B2	Complete family, phylogeny, comparative panel and core-domain Logo artifacts.	Fig01;Fig02;Fig03;Fig09	IN_PROGRESS	Accepted-member keys, tree tips, external provenance and Logo QC reconcile.
-B4A	B2	Complete gene-structure metrics and species-unit inference.	Fig07;Fig08	IN_PROGRESS	No negative introns; n, median, effect size and BH-FDR obey independent-unit rules.
-B4B	B2	Complete orthology, pan-family dual denominators and chromosome overlay.	Fig10-Fig15	IN_PROGRESS	HOG/gene denominators close and absence claims remain evidence-limited.
-B4C	B2	Complete promoter category, rate, scaled and representative-gene views.	Fig23-Fig28	IN_PROGRESS	Raw/rate/scaled companions and promoter coordinate QC are complete.
-B4D	B2;B4B	Complete descriptive expression views without inferential DE.	Fig29-Fig33	IN_PROGRESS	Raw/log/scaled states are separated and cross-species absolute TPM is blocked.
-B5	B2	Complete unique duplication-mode summaries and pair registry.	Fig16;Fig18-Fig20	IN_PROGRESS	Each accepted gene has one explicit mode state and denominators reconcile.
-B6	B2;B3;B4B;B5	Complete two-dimensional Ka/Ks strata and dependency-aware inference.	Fig04-Fig06;Fig14	IN_PROGRESS	Cluster-level units, sensitivity, effect sizes and BH-FDR satisfy the statistics contract.
-B7	B2;B4B;B5	Add the default-off whole-genome synteny and Circos path.	Fig17;Fig21;Fig22	IN_PROGRESS	Genome-wide blocks, family highlights, backend provenance and renderer artifacts reconcile.
-B8	B2;B4B;B4D	Add the default-off raw-count differential-expression path.	Fig34;DE tables;QC	IN_PROGRESS	Integer counts, registered designs/contrasts, replicate QC, DESeq2 session and BH-FDR pass.
-B9	B3;B4A;B4B;B4C;B4D;B5;B6;B7;B8	Integrate report, tutorial, traceability matrices and Pages.	34-figure report;58 tutorial anchors;Pages	PENDING	Every status and link is truthful, beginner-readable and backed by source tables/tests.
-B10	B9	Run clean toy, native-toolchain, no-work rerun, local recovery and all 14 acceptance gates.	final manifests;logs;deployment candidate	PENDING	All required gates pass on one exact revision with immutable inputs.
+B2	B1	Provide shared provenance, ID, status, table, figure and traceability contracts.	common writers;manifests;schema tables	PASS	All modules use controlled enums and missing artifacts cannot be reported as generated.
+B3	B2	Complete family, phylogeny, comparative panel and core-domain Logo artifacts.	Fig01;Fig02;Fig03;Fig09	PASS	Accepted-member keys, tree tips, external provenance and Logo QC reconcile.
+B4A	B2	Complete gene-structure metrics and species-unit inference.	Fig07;Fig08	PASS	No negative introns; n, median, effect size and BH-FDR obey independent-unit rules.
+B4B	B2	Complete orthology, pan-family dual denominators and chromosome overlay.	Fig10-Fig15	PASS	HOG/gene denominators close and absence claims remain evidence-limited.
+B4C	B2	Complete promoter category, rate, scaled and representative-gene views.	Fig23-Fig28	PASS	Raw/rate/scaled companions and promoter coordinate QC are complete.
+B4D	B2;B4B	Complete descriptive expression views without inferential DE.	Fig29-Fig33	PASS	Raw/log/scaled states are separated and cross-species absolute TPM is blocked.
+B5	B2	Complete unique duplication-mode summaries and pair registry.	Fig16;Fig18-Fig20	PASS	Each accepted gene has one explicit mode state and denominators reconcile.
+B6	B2;B3;B4B;B5	Complete two-dimensional Ka/Ks strata and dependency-aware inference.	Fig04-Fig06;Fig14	PASS	Cluster-level units, sensitivity, effect sizes and BH-FDR satisfy the statistics contract.
+B7	B2;B4B;B5	Add the default-off whole-genome synteny and Circos path.	Fig17;Fig21;Fig22	PASS	Genome-wide blocks, family highlights, backend provenance and renderer artifacts reconcile.
+B8	B2;B4B;B4D	Add the default-off raw-count differential-expression path.	Fig34;DE tables;QC	PASS	Integer counts, registered designs/contrasts, replicate QC, DESeq2 session and BH-FDR pass.
+B9	B3;B4A;B4B;B4C;B4D;B5;B6;B7;B8	Integrate report, tutorial, traceability matrices and Pages.	34-figure report;58 tutorial anchors;Pages	PASS	Every status and link is truthful, beginner-readable and backed by source tables/tests.
+B10	B9	Run clean toy, native-toolchain, no-work rerun, local recovery and all 14 acceptance gates.	final manifests;logs;deployment candidate	PASS	All required gates pass on one exact revision with immutable inputs.

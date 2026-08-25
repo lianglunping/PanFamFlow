@@ -29,6 +29,11 @@ STATE_LABELS = {
 }
 
 COVERAGE_OVERRIDES = {
+    "7.2": {
+        "evidence": "chromosome_panclass_overlay 按 stable_id 连接染色体坐标、HOG/pan-class 与 subfamily，输出逐物种分面图和连接审计",
+        "output": "results/07_chromosome/chromosome_distribution_annotated.tsv；results/07_chromosome/Fig15_chromosome_panclass_subfamily.pdf",
+        "limitation": "不同物种保持独立物理坐标轴；定位模式是描述性结果，不能直接推断染色体富集、适应性或机制",
+    },
     "6.1": {
         "evidence": "pan_family 同时输出 OrthoFinder rooted species tree 与基于目标家族 OGG 0/1 矩阵的 Jaccard-average-linkage 聚类，并用合同表禁止混称",
         "output": "results/06_pan_family/orthofinder_species_tree.pdf；results/06_pan_family/ogg_presence_absence_clustering.pdf；results/06_pan_family/ogg_tree_contract.tsv",
@@ -107,6 +112,14 @@ COVERAGE_OVERRIDES = {
 }
 
 MATRIX_OVERRIDES = {
+    "7.2": {
+        "pipeline_entry": "模块 chromosome；按 stable_id 连接 family membership、pan-family class 与 subfamily，生成逐物种染色体叠加表和 Fig15。",
+        "canonical_outputs": "results/07_chromosome/chromosome_distribution_annotated.tsv；results/07_chromosome/Fig15_chromosome_panclass_subfamily.pdf；results/07_chromosome/Fig15_chromosome_panclass_subfamily.png",
+        "how_to_read": "先逐物种核对坐标连接率、Unassigned 和每类成员数，再看同一物种内各 pan class/subfamily 的染色体定位；不同物种的 Mb 坐标轴不能直接合并比较。",
+        "supported_claims": "可描述冻结目标家族成员在各物种染色体上的位置，以及 pan class/subfamily 的物种内定位模式。",
+        "runtime_gate": "chromosome stable_id 必须与 family membership 唯一闭合；缺失坐标与 Unassigned 分类必须显式保留；物种间使用独立坐标轴。",
+        "extension_requirements": "若要检验富集，需另行定义 callable/背景区域、染色体长度分母、独立单位和多重校正；当前图只作描述。",
+    },
     "6.1": {
         "required_inputs": "OrthoFinder Species_Tree/SpeciesTree_rooted.txt；目标家族 family_presence_absence.tsv；与两者精确闭合的冻结 species_id 列表。",
         "pipeline_entry": "模块 pan_family；读取 OrthoFinder rooted species tree，并对目标家族 OGG 0/1 矩阵计算 Jaccard 距离与 average linkage。",
@@ -135,6 +148,9 @@ MATRIX_OVERRIDES = {
     "9.8": {
         "pipeline_entry": "模块 kaks；二维 subfamily×group 汇总与 cluster-level inference 随规范 Ka/Ks 路径生成。",
         "canonical_outputs": "results/09_kaks/kaks_by_subfamily_group.tsv；results/09_kaks/kaks_cluster_inference_tests.tsv；results/09_kaks/Fig06_kaks_by_subfamily_group.pdf",
+        "how_to_read": "先核对二维单元的 raw pair 数、独立 cluster 数和 Mixed pair 状态，再读 cluster 中位数、效应量、整体/两两检验与 BH-FDR；不能把 raw pair 数当生物学重复。",
+        "supported_claims": "在注册 cluster 独立单位与二维归属完整时，可描述并检验特定 subfamily×group 分层的 Ka、Ks 和 Ka/Ks 差异。",
+        "unsupported_claims": "不能由单因素分层图或 raw pair 数推出交互效应，也不能把物种/系统发育混杂写成群体因果。",
         "runtime_gate": "至少需要可计算 pair、完整二维归属和每个比较组足够的独立 cluster 单位；不足时保留 QC 而不伪造 P 值。",
         "extension_requirements": "正式研究可追加物种/系统发育混合模型，但不得把 raw pair 数当独立重复数。",
     },
@@ -181,6 +197,14 @@ MATRIX_OVERRIDES = {
         "runtime_gate": "代表物种、subfamily 和 stable_id 必须可解析；并列时按 stable_id 确定，不能人工挑选漂亮结果。",
         "extension_requirements": "正式数据需在报告中说明代表物种选择理由，并同时提供全体基因源表。",
     },
+    "11.1": {
+        "pipeline_entry": "模块 expression；按 stable_id→HOG_ID→pan_family_class 连接表达长表与泛基因家族分类，输出物种内可比的分层结果和 Fig30。",
+        "canonical_outputs": "results/11_expression/expression_by_pan_class.tsv；results/11_expression/Fig30_expression_by_pan_class.pdf；results/11_expression/Fig30_expression_by_pan_class.png",
+        "how_to_read": "先看每类 n_gene、n_HOG、n_species、样本数和适用状态，再在物种内比较 detected fraction、表达秩或 breadth；原始 TPM 不跨物种直接比较。",
+        "supported_claims": "可在合规缺失 mask 和物种内可比尺度下描述 pan-family class 与表达检测率、秩或广度的关联。",
+        "runtime_gate": "stable_id→HOG_ID→pan class 必须可审计闭合；NOT_APPLICABLE 与 MISSING_IN_INPUT 分开；跨物种绝对 TPM 比较关闭失败。",
+        "extension_requirements": "正式推断需预注册独立单位、组织/条件对应、批次、物种效应和多重校正；描述关联不证明类别导致表达。",
+    },
     "11.3": {
         "pipeline_entry": "模块 expression；设置 differential_expression.enabled=true，提供 raw integer counts、sample metadata、design 和 contrast 注册表。",
         "required_inputs": "逐数据集原始整数计数、sample metadata、design formula 和 contrast 注册表；流程生成 log2FoldChange、P 值、padj（BH-FDR）、方向和方法字段。若导入外部 DE 表，必须另行证明其满足同等输入和质量合同。",
@@ -206,12 +230,16 @@ MATRIX_OVERRIDES = {
     "11.6": {
         "pipeline_entry": "模块 expression；sample metadata 提供 tissue 后，描述性组织×pan-class 输出随主表达路径生成。",
         "canonical_outputs": "results/11_expression/expression_by_pan_class_tissue.tsv；results/11_expression/Fig31_expression_by_pan_class_tissue.pdf",
+        "how_to_read": "先在物种内核对组织、重复、样本数和适用状态，再比较 tissue×pan-class 的描述性表达尺度；不可比组织与缺失输入不能用零填补。",
+        "supported_claims": "可描述已登记可比组织中不同 pan-family class 的物种内表达模式及其样本支持度。",
         "runtime_gate": "需要 tissue、species_id 和 pan-class 连接；不可比较的跨物种样本标为 NOT_APPLICABLE。",
         "extension_requirements": "若进行推断，需预注册组织对应、独立重复、批次和物种效应模型。",
     },
     "11.7": {
         "pipeline_entry": "模块 expression；sample metadata 的 group 与 family subfamily 元数据生成二维描述表和 Fig32。",
         "canonical_outputs": "results/11_expression/expression_by_group_subfamily.tsv；results/11_expression/Fig32_expression_by_group_subfamily.pdf",
+        "how_to_read": "先区分基因、样本和物种层级，核对每个 group×subfamily 单元的样本数、缺失和适用状态，再在可比条件内阅读描述模式。",
+        "supported_claims": "可描述合规样本元数据下 group×subfamily 的表达模式、样本支持度和空单元状态。",
         "runtime_gate": "需要非缺失 group/subfamily 和可比表达单位；空单元保留状态，不以零值填补缺失。",
         "extension_requirements": "若进行交互推断，需足够独立重复、批次控制和预注册模型。",
     },
@@ -225,6 +253,7 @@ CARD_REPLACEMENTS = {
         "PanFamFlow 能提供基础数据，但该条目的连接、分母、统计或专用图还要按下方合同补齐。完成这些步骤前，只能作有限的描述。": "PanFamFlow 在 pan_family 模块中复制并绘制 OrthoFinder rooted species tree，同时从目标家族 OGG 0/1 矩阵计算 Jaccard 距离和 average-linkage 聚类，并输出来源、距离、linkage 与命名边界合同。",
         "当前只能教学性解释不同树的含义。": "可分别解释冻结物种集合的系统关系和目标家族 OGG 组成相似性；两者均有直接源表与 provenance。",
         "本地最小示例已验证可连接的基础产物，但本条目尚无专用 canonical 结果：orthology 模块保留 OrthoFinder 结果目录和 HOG 节点。基础产物：": "clean toy 会直接验证两类 canonical 产物、叶标签闭合和非系统发育命名合同。规范产物：",
+        "物种树、HOG 聚类树与目标家族基因树概念不同，且未输出原资料中名称含 OGG 的同款图": "物种树是系统发育对象；OGG 有无聚类只是目标家族组成相似性，不是系统树、单个 HOG 基因树或分化时间证据",
     },
     "4.4": {
         "当前没有核心结构域裁剪、氨基酸对齐和 sequence logo 规则": "流程读取经审计的核心结构域对齐，计算逐位点残基频率、信息量、覆盖与缺口状态，并生成可追溯 Logo",
@@ -238,6 +267,10 @@ CARD_REPLACEMENTS = {
         "不能声称已经完成共线性/Circos，不能从定位图或 duplication pair 推断共线块。": "不能把单个相似命中、染色体定位或 duplication pair 写成共线块，也不能把工程示例当成真实物种结论。",
         "无。": "synteny.enabled=true；每个物种对必须具备可追溯的坐标、蛋白和 block/anchor 证据。",
         "本地 toy 未生成该分析，与当前能力矩阵的 CONDITIONALLY_AVAILABLE 一致；不得用邻近基础表冒充。边界：仅在 synteny.enabled=true 且全基因组坐标、蛋白与成块证据通过审计时运行；相似命中或 duplication pair 不能替代共线块": "examples/toy_complete 使用预计算但经过严格审计的有序多锚点块，验证 Fig17、Fig21 和 Fig22 的产物合同；原生 JCVI 后端仍需在冻结 JCVI/DIAMOND 环境中单独保存命令、版本和 anchor provenance。",
+    },
+    "10.2": {
+        "results/10_promoter/promoter_major_class_summary.tsv；results/10_promoter/promoter_major_class_summary.tsv；": "results/10_promoter/promoter_major_class_summary.tsv；",
+        "results/10_promoter/Fig23_promoter_four_major_classes.pdf；results/10_promoter/Fig23_promoter_four_major_classes.pdf": "results/10_promoter/Fig23_promoter_four_major_classes.pdf",
     },
     "9.8": {
         "当前仅分别生成 subfamily 和 group 的配对分层，没有交互层级的推断合同": "流程生成 subfamily×group 二维配对层，并以注册 cluster 的中位数作为独立单位执行受限推断",
@@ -368,13 +401,13 @@ def main() -> None:
         )
         if figure in OPTIONAL_FIGURES:
             row["material_gap"] = (
-                "规范执行路径、源表与 PDF/PNG 合同已实现但默认关闭；仍需合规输入和 B10 "
-                "原生运行验收，工程测试不能替代生物学验证"
+                "规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；"
+                "该可选路径默认关闭，真实项目仍需合规输入和项目级生物学验收"
             )
         else:
             row["material_gap"] = (
-                "规范执行路径、源表与 PDF/PNG 合同已实现；仍需真实数据和 B10 原生运行验收，"
-                "工程完成不能写成生物学结论"
+                "规范执行路径、源表与 PDF/PNG 合同已实现，clean toy 与原生工具链工程验收已通过；"
+                "真实项目仍需自己的输入质量与生物学验收"
             )
     write_tsv(FIGURE_EQUIVALENCE_PATH, equivalence_fields, equivalence)
 
@@ -409,8 +442,15 @@ def main() -> None:
         fragment = fragment.replace(old_label, new_label)
         for field in (
             "title",
+            "required_inputs",
             "pipeline_entry",
             "canonical_outputs",
+            "how_to_read",
+            "qc_checks",
+            "supported_claims",
+            "unsupported_claims",
+            "analysis_unit",
+            "join_keys",
             "runtime_gate",
             "evidence_basis",
             "extension_requirements",
@@ -426,6 +466,12 @@ def main() -> None:
             fragment = replace_text(fragment, old_audit.get(field, ""), new_audit.get(field, ""))
         for old_text, new_text in CARD_REPLACEMENTS.get(source_id, {}).items():
             fragment = replace_text(fragment, old_text, new_text)
+        if new_state == "IMPLEMENTED":
+            fragment = replace_text(
+                fragment,
+                "本地最小示例已验证可连接的基础产物，但本条目尚无专用 canonical 结果：",
+                "clean toy 已验证本条目的规范执行路径与可追溯结果：",
+            )
         search_blob = " ".join(
             str(new_row.get(field, ""))
             for field in (
@@ -501,6 +547,27 @@ def main() -> None:
     page = page.replace(
         "PDF 的 Fig01–Fig34 有 11 条审计记录达到核心计算匹配、15 条部分可达、6 条未实现、1 条需要外部正式表达分析。原 51 项遗漏的 7 类图件现已全部纳入 58 项清单，但“已登记”仍不等于“已实现”。",
         "PDF 的 Fig01–Fig34 共有 33 条逐图审计记录（Fig21–22 合并），其中 28 条具备默认规范路径，5 条具备默认关闭的可选规范路径。全部仍需 B10 原生工具链和真实数据验收；工程实现不等于生物学验证。",
+    )
+    page = page.replace(
+        "PDF 的 Fig01–Fig34 共有 33 条逐图审计记录（Fig21–22 合并），其中 28 条具备默认规范路径，5 条具备默认关闭的可选规范路径。全部仍需 B10 原生工具链和真实数据验收；工程实现不等于生物学验证。",
+        "PDF 的 Fig01–Fig34 共有 33 条逐图审计记录（Fig21–22 合并），其中 28 条具备默认规范路径，5 条具备默认关闭的可选规范路径。clean toy、昆鹏原生工具链、无工作复跑、局部恢复和 14/14 工程验收已通过；真实项目仍需自己的输入质量与生物学验收。",
+    )
+    page = page.replace("本地验证日期 2026-08-21", "本地验证日期 2026-08-26")
+    page = page.replace(
+        "核心结构域 sequence Logo 尚无裁剪、同源位点 QC 和规范输出。",
+        "核心结构域 sequence Logo 已有默认关闭的可选路径，可输出域片段、同源位点频率、信息量、QC 和规范图；只有结构域边界与对齐输入通过门禁时才运行。",
+    )
+    page = page.replace(
+        "这一证据只覆盖预计算入口，原生 JCVI 后端还必须在冻结 JCVI/DIAMOND 环境中单独执行并保存命令、版本和 anchor provenance。",
+        "clean toy 覆盖预计算入口；独立昆鹏 jsub 198362 已覆盖冻结 JCVI/DIAMOND 环境中的原生 JCVI 后端并保存命令、版本和 anchor provenance。两类工程证据都不替代真实物种的生物学验收。",
+    )
+    page = page.replace(
+        "clean toy 覆盖预计算入口；独立昆鹏 jsub 198362 已覆盖冻结 JCVI/DIAMOND 环境中的原生后端并保存命令、版本和 anchor provenance。两类工程证据都不替代真实物种的生物学验收。",
+        "clean toy 覆盖预计算入口；独立昆鹏 jsub 198362 已覆盖冻结 JCVI/DIAMOND 环境中的原生 JCVI 后端并保存命令、版本和 anchor provenance。两类工程证据都不替代真实物种的生物学验收。",
+    )
+    page = page.replace(
+        "证据来自本地 <code>examples/toy/</code> 真实运行；未生成的 DAG SVG、外部 DE 或失败样例保持明确的 NOT_CAPTURED / NOT_PROVIDED 状态，不以推测内容填充。",
+        "证据来自 clean toy、昆鹏原生工具链和公共 RNA-seq 重计算；DAG SVG 与未复制的失败样例仍保持明确的 NOT_CAPTURED 状态，不以推测内容填充。正式 DE 工程路径已有 raw-count 源表、模型 QC、6 个 contrast 和 session 证据。",
     )
     page = page.replace(
         "当前仍缺少全基因组共线块与 Circos 执行路径。",
