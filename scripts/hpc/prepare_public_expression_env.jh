@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+#JSUB -J panfamflow_public_env
+#JSUB -q normal
+#JSUB -n 4
+#JSUB -o logs/hpc/public_expression_env.%J.out
+#JSUB -e logs/hpc/public_expression_env.%J.err
+
+set -euo pipefail
+cd "$JH_SUB_CWD"
+
+module purge || true
+module load anaconda3
+
+micromamba_bin="${HOME}/mmenv/bin/micromamba"
+mamba_root="$JH_SUB_CWD/work/verified-mamba-root-resume7"
+lock="$JH_SUB_CWD/env-locks/linux-64/expression_de.explicit.txt"
+lock_sha="9095148bccecdaea6ad4f0094c21903a7eb8a008ea298610706746caf64d6388"
+public_root="$JH_SUB_CWD/work/public-expression-resume7"
+target="$public_root/expression-de-env"
+receipt="$public_root/expression_de_environment_receipt.tsv"
+
+test -x "$micromamba_bin"
+test -d "$mamba_root/pkgs"
+printf '%s  %s\n' "$lock_sha" "$lock" | sha256sum --check --strict
+mkdir -p "$public_root" logs/hpc
+
+if test -s "$receipt"; then
+  grep -Fxq $'status\tPASS' "$receipt"
+  test -s "$target/conda-meta/history"
+  printf 'PUBLIC_EXPRESSION_ENV VERIFIED_EXISTING\n'
+  exit 0
+fi
+if ! test -s "$target/conda-meta/history"; then
+  test ! -e "$target"
+  MAMBA_ROOT_PREFIX="$mamba_root" "$micromamba_bin" create \
+    --yes \
+    --offline \
+    --prefix "$target" \
+    --file "$lock"
+fi
+
+test -s "$target/conda-meta/history"
+for tool in python fastp hisat2 hisat2-build samtools featureCounts; do
+  test -x "$target/bin/$tool"
+done
+fastp_version="$("$target/bin/fastp" --version 2>&1 | head -n 1)"
+hisat2_version="$("$target/bin/hisat2" --version | head -n 1)"
+samtools_version="$("$target/bin/samtools" --version | head -n 1)"
+featurecounts_version="$("$target/bin/featureCounts" -v 2>&1 | awk 'NF {print; exit}')"
+python_version="$("$target/bin/python" --version 2>&1)"
+grep -q '0.26.0' <<<"$fastp_version"
+grep -q '2.2.1' <<<"$hisat2_version"
+grep -q '1.24' <<<"$samtools_version"
+grep -q 'v2.1.1' <<<"$featurecounts_version"
+grep -q '3.12.13' <<<"$python_version"
+{
+  printf 'field\tvalue\n'
+  printf 'status\tPASS\n'
+  printf 'environment\t%s\n' "$target"
+  printf 'lock_sha256\t%s\n' "$lock_sha"
+  printf 'offline_install\tTRUE\n'
+  printf 'fastp_version\t%s\n' "$fastp_version"
+  printf 'hisat2_version\t%s\n' "$hisat2_version"
+  printf 'samtools_version\t%s\n' "$samtools_version"
+  printf 'featurecounts_version\t%s\n' "$featurecounts_version"
+  printf 'python_version\t%s\n' "$python_version"
+} >"$receipt"
+printf 'PUBLIC_EXPRESSION_ENV PASS\ttarget=%s\n' "$target"

@@ -9,7 +9,7 @@
 
 原始文档不随代码仓库公开；本文件只记录需求摘要、实现决策和解释边界。
 
-两份来源材料的原文字清单及 PDF 逐图核对得到的 58 个主题已经逐项审计；其中 7 项用于补齐原 51 项目录遗漏。机器可读判定见 [`ANALYSIS_COVERAGE.tsv`](ANALYSIS_COVERAGE.tsv)，中文口径见 [`ANALYSIS_COVERAGE.zh-CN.md`](ANALYSIS_COVERAGE.zh-CN.md)。当前分布为 21 项 `IMPLEMENTED`、29 项 `CONDITIONALLY_AVAILABLE`、2 项 `EXTERNAL_IMPORT`、6 项 `NOT_SUPPORTED`；下表是模块级摘要，不能替代逐项状态。
+两份来源材料的原文字清单及 PDF 逐图核对得到的 58 个主题已经逐项审计；其中 7 项用于补齐原 51 项目录遗漏。机器可读判定见 [`ANALYSIS_COVERAGE.tsv`](ANALYSIS_COVERAGE.tsv)，中文口径见 [`ANALYSIS_COVERAGE.zh-CN.md`](ANALYSIS_COVERAGE.zh-CN.md)。当前代码能力分布为 52 项 `IMPLEMENTED`、6 项 `CONDITIONALLY_AVAILABLE`；条件项已有执行路径，但需显式打开 Logo、共线性或 raw-count DE，并满足相应输入门禁。下表是模块级摘要，不能替代逐项状态或真实数据验收。
 
 ## 2. 来源要求到实现的映射
 
@@ -27,7 +27,7 @@
 | MCScanX / DupGen_finder 复制分类 | DupGen_finder-unique 主路线；预计算导入 | 已实现 alpha；MCScanX 独立 backend 待补 |
 | ParaAT/KaKs_Calculator | MAFFT + PAL2NAL + KaKs_Calculator | 已实现 pairwise 路线；高 Ks 标记潜在饱和 |
 | 2 kb promoter + PlantCARE | strand-aware promoter；FIMO；PlantCARE 表格导入 | 自动 FIMO 已实现；PlantCARE 网页自动化未实现 |
-| fastp/HISAT2/StringTie | FASTQ 路线或矩阵导入 | TPM 已实现；DESeq2 contrasts 待补 |
+| fastp/HISAT2/StringTie 与 raw-count DESeq2 | FASTQ/矩阵描述路线；默认关闭的正式 DE 子路径 | TPM 仅作描述；raw integer counts、重复、design/contrast 审计通过后逐数据集执行 DESeq2 contrasts 与 BH-FDR |
 | 结果图表与主表 | TSV/XLSX、PDF/PNG、master table、HTML report | 数据层和代表性图已实现；不声称模板 58 项全部完成，逐项状态以 coverage audit 为准 |
 
 ## 3. 对综合方案文档的工程化落实

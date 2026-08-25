@@ -46,9 +46,9 @@ PanFamFlow was developed from two project source documents:
 
 Those materials define a target-family workflow involving HMMER/BLASTP, IQ-TREE, Core/Soft-core/Shell/Cloud classification, MCScanX/DupGen_finder, Ka/Ks, 2 kb promoters, PlantCARE/FIMO, and RNA-seq. PanFamFlow adds canonical-transcript control, stable IDs, rejected-candidate auditing, explicit HOG-node selection, input SHA256 tracking, smart resume, and an integrated master table. See [docs/DESIGN_BASIS.md](docs/DESIGN_BASIS.md) for the requirement-to-implementation mapping.
 
-The source text originally named 51 items; a figure-by-figure PDF audit added seven independently required topics that the textual inventory had omitted. The authoritative inventory therefore contains 58 items. PanFamFlow does **not** claim that all 58 are automated: the audited current distribution is 21 `IMPLEMENTED`, 29 `CONDITIONALLY_AVAILABLE`, 2 `EXTERNAL_IMPORT`, and 6 `NOT_SUPPORTED`. See the [human-readable audit](docs/ANALYSIS_COVERAGE.zh-CN.md) and [machine-readable table](docs/ANALYSIS_COVERAGE.tsv) before interpreting scope.
+The source text originally named 51 items; a figure-by-figure PDF audit added seven independently required topics that the textual inventory had omitted. The authoritative inventory therefore contains 58 items. PanFamFlow does **not** claim that every item has been biologically validated on arbitrary real data: the current code-capability audit records 52 `IMPLEMENTED` and 6 `CONDITIONALLY_AVAILABLE` items. Conditional items have an executable path but require explicit Logo, synteny, or raw-count DE inputs and gates. See the [human-readable audit](docs/ANALYSIS_COVERAGE.zh-CN.md) and [machine-readable table](docs/ANALYSIS_COVERAGE.tsv) before interpreting scope.
 
-Those 58 entries describe topic-level capability, not PDF-figure completion. The stricter Fig01–Fig34 comparison currently classifies 11 audit entries as `MATCHED_CORE`, 15 as `PARTIAL`, 6 as `NOT_IMPLEMENTED`, and 1 as `EXTERNAL_REQUIRED`; see the [template-equivalence audit](docs/TEMPLATE_EQUIVALENCE_AUDIT.zh-CN.md) and [figure matrix](docs/TEMPLATE_FIGURE_EQUIVALENCE.tsv).
+Those 58 entries describe topic-level capability, not PDF-figure completion. The stricter Fig01–Fig34 comparison contains 33 audit rows because Fig21–Fig22 share one composite row; 28 are `MATCHED_CORE` and 5 are `CONDITIONAL_MATCH`. Each row records its canonical source table and PDF/PNG contract, but engineering coverage is not a claim that a real biological analysis has passed. See the [template-equivalence audit](docs/TEMPLATE_EQUIVALENCE_AUDIT.zh-CN.md) and [figure matrix](docs/TEMPLATE_FIGURE_EQUIVALENCE.tsv).
 
 ## Main features
 
@@ -335,7 +335,7 @@ See [docs/OUTPUT_SCHEMA.md](docs/OUTPUT_SCHEMA.md) for field definitions.
 5. Pairwise `Ka/Ks > 1` is a candidate signal and does not replace codeml or HyPhy models.
 6. Physical coordinates from different species are not placed directly on one coordinate axis; use species facets or synteny projection.
 7. Cross-species TPM values are not used for direct absolute-expression claims; prefer within-species standardisation and response direction.
-8. v0.1.2-alpha does not yet automate DESeq2 contrasts, codeml, genome-level rescue of apparent absence, or every composite figure in the source template.
+8. The optional raw-count route now automates registered DESeq2 contrasts and BH-FDR when its input gates pass; v0.1.2-alpha still does not automate codeml/HyPhy, genome-level rescue of apparent absence, or every possible composite layout.
 
 See [docs/AUDIT.md](docs/AUDIT.md) for the independent-style audit and [docs/ROADMAP.md](docs/ROADMAP.md) for planned extensions.
 

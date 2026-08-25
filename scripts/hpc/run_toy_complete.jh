@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+#JSUB -J panfamflow_toy_complete
+#JSUB -q normal
+#JSUB -n 8
+#JSUB -o logs/hpc/toy_complete.%J.out
+#JSUB -e logs/hpc/toy_complete.%J.err
+
+set -euo pipefail
+cd "$JH_SUB_CWD"
+
+module purge || true
+module load anaconda3
+module load singularity
+
+engine="$JH_SUB_CWD/work/verified-engine-linux-64-198231"
+micromamba_bin="${HOME}/mmenv/bin/micromamba"
+mamba_root="$JH_SUB_CWD/work/verified-mamba-root-resume7"
+package_manifest="$mamba_root/pkgs/package_archive_manifest.tsv"
+toy_project_root="$JH_SUB_CWD/examples/toy_complete"
+toy_cache_root="$toy_project_root/.snakemake"
+run_token="${JH_JOB_ID:-${LSB_JOBID:-${JOB_ID:-$$}}}"
+listing="$JH_SUB_CWD/work/toy-complete-environments.${run_token}.tsv"
+receipt="$JH_SUB_CWD/work/toy-complete-environments.${run_token}.receipt.tsv"
+expected_packages=729
+test -x "$engine/bin/snakemake"
+test -x "$engine/bin/python"
+test -x "$micromamba_bin"
+test -s "$package_manifest"
+test "$(awk 'END {print NR - 1}' "$package_manifest")" -eq "$expected_packages"
+test ! -e "$toy_cache_root"
+mkdir -p "$JH_SUB_CWD/work"
+export PANFAMFLOW_CONDA_BASE_PATH="$JH_SUB_CWD/scripts/hpc/conda_compat"
+export PATH="$JH_SUB_CWD/scripts/hpc/conda_compat/bin:$engine/bin:$PATH"
+export PYTHONPATH="$JH_SUB_CWD/src${PYTHONPATH:+:$PYTHONPATH}"
+
+python scripts/hpc/dry_run_toy_complete.py --list-conda-envs >"$listing"
+python scripts/hpc/install_locked_rule_envs.py \
+  "$listing" \
+  "$toy_project_root" \
+  "$JH_SUB_CWD/env-locks/linux-64" \
+  "$micromamba_bin" \
+  "$mamba_root" >"$receipt"
+
+expected_environments=$(awk -F '\t' \
+  '$1 ~ /\.ya?ml$/ {seen[$1] = 1} END {print length(seen)}' "$listing")
+completed_environments=$(find "$toy_cache_root/conda" \
+  -mindepth 3 -maxdepth 3 -path '*/conda-meta/history' -type f | wc -l)
+test "$expected_environments" -eq 12
+test "$completed_environments" -eq "$expected_environments"
+
+python scripts/hpc/run_toy_complete.py \
+  --conda-base-path "$JH_SUB_CWD/scripts/hpc/conda_compat" \
+  --apptainer-prefix "$JH_SUB_CWD/.snakemake/singularity"

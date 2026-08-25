@@ -1,0 +1,25 @@
+# This file is sourced by Snakemake as: source activate <environment-prefix>.
+# It provides prefix activation for offline micromamba-built environments
+# without modifying the separately verified Snakemake engine environment.
+
+target_prefix="${1:-}"
+if [[ -z "${target_prefix}" || ! -d "${target_prefix}" ]]; then
+  printf 'Invalid environment prefix: %s\n' "${target_prefix}" >&2
+  return 2
+fi
+
+export CONDA_PREFIX="${target_prefix}"
+export CONDA_DEFAULT_ENV="$(basename "${target_prefix}")"
+export CONDA_PROMPT_MODIFIER=""
+export CONDA_SHLVL="${CONDA_SHLVL:-1}"
+export PATH="${target_prefix}/bin:${PATH}"
+
+if [[ -d "${target_prefix}/etc/conda/activate.d" ]]; then
+  for activation_script in "${target_prefix}/etc/conda/activate.d/"*.sh; do
+    [[ -e "${activation_script}" ]] || continue
+    # shellcheck disable=SC1090
+    source "${activation_script}"
+  done
+fi
+
+unset target_prefix activation_script

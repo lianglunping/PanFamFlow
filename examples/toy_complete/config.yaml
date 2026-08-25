@@ -1,0 +1,213 @@
+schema_version: "1.1"
+project:
+  analysis_scope: target_pan_gene_family
+  name: toy_complete_gene_family
+  root: .
+  seed: 20260821
+  results_dir: results
+  work_dir: work
+  logs_dir: logs
+run:
+  modules: [qc, normalize, family, phylogeny, gene_structure, orthology, pan_family, chromosome, duplication, kaks, promoter, expression, report]
+  cores: 8
+  jobs: 8
+  engine_runner: current
+  engine_env: null
+  use_conda: true
+  resume_mode: smart
+  keep_going: true
+  rerun_incomplete: true
+  latency_wait: 120
+  retries: 1
+  rerun_triggers: [mtime, input, params, code, software-env]
+  printshellcmds: true
+  show_failed_logs: true
+  profile: null
+  extra_snakemake_args: []
+inputs:
+  species:
+    - id: SpA
+      name: Synthetic_species_A
+      genome: data/SpA/genome.fa
+      gff3: data/SpA/annotation.gff3
+      protein: null
+      cds: null
+      group: Group_1
+      subfamily: Synthetic_clade
+      representative: true
+      outgroup: SpB
+      busco_lineage: embryophyta_odb12
+    - id: SpB
+      name: Synthetic_species_B
+      genome: data/SpB/genome.fa
+      gff3: data/SpB/annotation.gff3
+      protein: null
+      cds: null
+      group: Group_1
+      subfamily: Synthetic_clade
+      representative: false
+      outgroup: SpC
+      busco_lineage: embryophyta_odb12
+    - id: SpC
+      name: Synthetic_species_C
+      genome: data/SpC/genome.fa
+      gff3: data/SpC/annotation.gff3
+      protein: null
+      cds: null
+      group: Group_2
+      subfamily: Synthetic_clade
+      representative: false
+      outgroup: SpD
+      busco_lineage: embryophyta_odb12
+    - id: SpD
+      name: Synthetic_species_D
+      genome: data/SpD/genome.fa
+      gff3: data/SpD/annotation.gff3
+      protein: null
+      cds: null
+      group: Group_2
+      subfamily: Synthetic_clade
+      representative: false
+      outgroup: SpA
+      busco_lineage: embryophyta_odb12
+  rnaseq_samples: []
+  expression_matrix: references/expression.tsv
+  sample_metadata: references/sample_metadata.tsv
+qc:
+  calculate_sha256: true
+  busco:
+    enabled: false
+    mode: genome
+    threads: 2
+    offline: false
+    download_path: null
+    extra_args: []
+canonical_transcript:
+  method: longest_cds
+  backend: portable_gff3
+  sequence_source: gffread
+  stable_id_separator: "__"
+family:
+  name: TOY_COMPLETE
+  combine_evidence: union
+  calculate_protein_properties: true
+  hmm:
+    enabled: false
+    hmm: null
+    evalue: 1.0e-5
+    domain_evalue: 1.0e-3
+    cut_ga: false
+  blast:
+    enabled: false
+    reference_proteins: null
+    evalue: 1.0e-5
+    min_identity: 30.0
+    min_query_coverage: 50.0
+    max_target_seqs: 100
+  subfamily_assignments: references/subfamily_assignments.tsv
+  domain_validation_table: null
+  domain_alignment: references/family_domain_alignment.fa
+  subcellular_localization_table: null
+  precomputed_members: references/family_members.tsv
+phylogeny:
+  mafft_mode: auto
+  trim_mode: smart-gap
+  model: MFP
+  ultrafast_bootstrap: 1000
+  sh_alrt: 1000
+  min_sequences: 4
+orthofinder:
+  hog_node: auto
+  search_threads: 8
+  analysis_threads: 2
+  extra_args: []
+pan_family:
+  core_min: 0.99
+  soft_core_min: 0.75
+  shell_min: 0.25
+  rarefaction_iterations: 100
+  max_exact_combinations: 1000
+gene_structure:
+  metrics: [gene_length, protein_length, cds_length, exon_count, intron_count, total_intron_length]
+  inference_unit: species_median
+  min_group_units: 2
+  alpha: 0.05
+chromosome:
+  representative_only: false
+  density_window_bp: 5000
+duplication:
+  backend: precomputed
+  targets: null
+  precomputed_table: references/duplication.tsv
+  dupgen_executable: DupGen_finder-unique.pl
+  diamond_evalue: 1.0e-10
+  max_target_seqs: 5
+  proximal_max_gene_distance: 10
+  extra_args: []
+kaks:
+  pair_source: both
+  reference_species: SpA
+  method: MA
+  max_pairs_per_group: 4
+  saturation_ks: 2.0
+  workers: 4
+promoter:
+  backend: precomputed_plantcare
+  upstream_bp: 1000
+  downstream_bp: 0
+  motif_database: null
+  category_map: null
+  precomputed_table: references/promoter.tsv
+  fimo_threshold: 1.0e-4
+  top_n_elements: 10
+expression:
+  mode: imported_matrix
+  min_tpm_detected: 1.0
+  heatmap_transform: log2_tpm1_zscore
+  fastp_extra_args: []
+  hisat2_extra_args: []
+  stringtie_extra_args: []
+deliverables:
+  profile: pdf_md_complete
+comparative_panel:
+  enabled: true
+  external_species_table: references/external_species.tsv
+  selection_strategy: explicit
+  include_in_pan_denominator: false
+domain_logo:
+  enabled: true
+  source: precomputed_alignment
+  precomputed_alignment: references/family_domain_alignment.fa
+  min_domain_coverage: 0.50
+  min_column_occupancy: 0.50
+synteny:
+  enabled: true
+  backend: precomputed
+  species_pairs_table: references/synteny_pairs.tsv
+  precomputed_blocks: references/synteny_anchors.tsv
+  representative_species: SpA
+  min_anchors_per_block: 5
+  cscore: 0.95
+  tandem_nmax: 10
+differential_expression:
+  enabled: true
+  source: precomputed_counts
+  input_scale: raw_counts
+  counts_table: references/raw_counts.tsv
+  design_table: references/de_design.tsv
+  contrasts_table: references/de_contrasts.tsv
+  min_replicates: 2
+  alpha: 0.05
+  lfc_threshold: 1.0
+  min_total_count: 10
+  feature_type: exon
+  feature_attribute: Parent
+  container_image: docker://ghcr.io/lianglunping/panfamflow-expression-de@sha256:57252522c5af7ebfe6fcec649896065316771c8679cc36c2a3094b9e755eeb29
+plot:
+  pdf: true
+  png: true
+  png_dpi: 600
+  language: English
+report:
+  title: PanFamFlow complete synthetic engineering fixture
+  include_existing_results: true

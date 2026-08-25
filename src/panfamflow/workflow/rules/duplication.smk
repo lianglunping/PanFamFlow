@@ -21,6 +21,9 @@ rule duplication_classification:
         structure_pairwise_tests=join_path(RESULTS, "08_duplication", "duplication_structure_pairwise_tests.tsv"),
         structure_statistics_qc=join_path(RESULTS, "08_duplication", "duplication_structure_statistics_qc.tsv"),
         stratified_summary=join_path(RESULTS, "08_duplication", "duplication_stratified_summary.tsv"),
+        overall_summary=join_path(
+            RESULTS, "08_duplication", "duplication_mode_overall.tsv"
+        ),
         xlsx=join_path(RESULTS, "08_duplication", "duplication.xlsx"),
         plot_pdf=join_path(RESULTS, "08_duplication", "duplication_mode_counts.pdf"),
         plot_png=join_path(RESULTS, "08_duplication", "duplication_mode_counts.png"),
@@ -28,6 +31,14 @@ rule duplication_classification:
         structure_plot_png=join_path(RESULTS, "08_duplication", "duplication_structure_comparisons.png"),
         stratified_plot_pdf=join_path(RESULTS, "08_duplication", "duplication_stratified_distributions.pdf"),
         stratified_plot_png=join_path(RESULTS, "08_duplication", "duplication_stratified_distributions.png"),
+        fig16_pdf=join_path(RESULTS, "08_duplication", "Fig16_duplication_overall.pdf"),
+        fig16_png=join_path(RESULTS, "08_duplication", "Fig16_duplication_overall.png"),
+        fig18_pdf=join_path(RESULTS, "08_duplication", "Fig18_duplication_by_species.pdf"),
+        fig18_png=join_path(RESULTS, "08_duplication", "Fig18_duplication_by_species.png"),
+        fig19_pdf=join_path(RESULTS, "08_duplication", "Fig19_duplication_by_subfamily.pdf"),
+        fig19_png=join_path(RESULTS, "08_duplication", "Fig19_duplication_by_subfamily.png"),
+        fig20_pdf=join_path(RESULTS, "08_duplication", "Fig20_duplication_by_pan_class.pdf"),
+        fig20_png=join_path(RESULTS, "08_duplication", "Fig20_duplication_by_pan_class.png"),
     params:
         backend=DUPLICATION_BACKEND,
         targets=DUPLICATION_TARGETS,
@@ -59,3 +70,173 @@ rule duplication_classification:
         "../envs/duplication.yaml"
     script:
         "../scripts/run_duplication.py"
+
+
+if SYNTENY_CONFIG.get("enabled", False):
+
+    def synteny_pair_record(wildcards):
+        return SYNTENY_PAIR_RECORDS[wildcards.pair_id]
+
+
+    rule synteny_pair:
+        input:
+            map_1=lambda wildcards: join_path(
+                RESULTS,
+                "01_normalized",
+                f"{synteny_pair_record(wildcards)['species_1']}.gene_transcript_map.tsv",
+            ),
+            map_2=lambda wildcards: join_path(
+                RESULTS,
+                "01_normalized",
+                f"{synteny_pair_record(wildcards)['species_2']}.gene_transcript_map.tsv",
+            ),
+            proteins_1=lambda wildcards: join_path(
+                RESULTS,
+                "01_normalized",
+                f"{synteny_pair_record(wildcards)['species_1']}.proteins.fa",
+            ),
+            proteins_2=lambda wildcards: join_path(
+                RESULTS,
+                "01_normalized",
+                f"{synteny_pair_record(wildcards)['species_2']}.proteins.fa",
+            ),
+            precomputed=lambda wildcards: (
+                str(SYNTENY_CONFIG["precomputed_blocks"])
+                if SYNTENY_CONFIG.get("backend") == "precomputed"
+                else []
+            ),
+        output:
+            anchors=join_path(
+                RESULTS, "08_duplication", "synteny_pairs", "{pair_id}", "anchors.tsv"
+            ),
+            blocks=join_path(
+                RESULTS, "08_duplication", "synteny_pairs", "{pair_id}", "blocks.tsv"
+            ),
+            summary=join_path(
+                RESULTS, "08_duplication", "synteny_pairs", "{pair_id}", "summary.tsv"
+            ),
+            provenance=join_path(
+                RESULTS, "08_duplication", "synteny_pairs", "{pair_id}", "provenance.json"
+            ),
+        params:
+            pair_id=lambda wildcards: wildcards.pair_id,
+            species_1=lambda wildcards: synteny_pair_record(wildcards)["species_1"],
+            species_2=lambda wildcards: synteny_pair_record(wildcards)["species_2"],
+            backend=SYNTENY_CONFIG.get("backend", "jcvi"),
+            min_anchors_per_block=SYNTENY_CONFIG.get("min_anchors_per_block", 5),
+            cscore=SYNTENY_CONFIG.get("cscore", 0.95),
+            tandem_nmax=SYNTENY_CONFIG.get("tandem_nmax", 10),
+            work_dir=lambda wildcards: join_path(
+                WORK, "08_duplication", "synteny_pairs", wildcards.pair_id
+            ),
+        threads:
+            min(32, int(RUN.get("cores", 16)))
+        log:
+            stdout=join_path(LOGS, "08_duplication", "synteny", "{pair_id}.stdout.log"),
+            stderr=join_path(LOGS, "08_duplication", "synteny", "{pair_id}.stderr.log"),
+        conda:
+            "../envs/synteny.yaml"
+        script:
+            "../scripts/run_synteny.py"
+
+
+    rule render_synteny_figures:
+        input:
+            anchors=expand(
+                join_path(
+                    RESULTS, "08_duplication", "synteny_pairs", "{pair_id}", "anchors.tsv"
+                ),
+                pair_id=SYNTENY_PAIR_IDS,
+            ),
+            blocks=expand(
+                join_path(
+                    RESULTS, "08_duplication", "synteny_pairs", "{pair_id}", "blocks.tsv"
+                ),
+                pair_id=SYNTENY_PAIR_IDS,
+            ),
+            summaries=expand(
+                join_path(
+                    RESULTS, "08_duplication", "synteny_pairs", "{pair_id}", "summary.tsv"
+                ),
+                pair_id=SYNTENY_PAIR_IDS,
+            ),
+            provenances=expand(
+                join_path(
+                    RESULTS,
+                    "08_duplication",
+                    "synteny_pairs",
+                    "{pair_id}",
+                    "provenance.json",
+                ),
+                pair_id=SYNTENY_PAIR_IDS,
+            ),
+            members=MODULE_TARGETS["family"],
+            duplication_modes=MODULE_TARGETS["duplication"],
+            maps=NORMALIZED_MAPS,
+            genomes=[record["genome"] for record in SPECIES_RECORDS],
+        output:
+            anchors=join_path(RESULTS, "08_duplication", "synteny_anchors.tsv"),
+            anchors_xlsx=join_path(RESULTS, "08_duplication", "synteny_anchors.xlsx"),
+            blocks=join_path(RESULTS, "08_duplication", "synteny_blocks.tsv"),
+            blocks_xlsx=join_path(RESULTS, "08_duplication", "synteny_blocks.xlsx"),
+            anchors_intra=join_path(RESULTS, "08_duplication", "synteny_anchors_intra.tsv"),
+            anchors_intra_xlsx=join_path(
+                RESULTS, "08_duplication", "synteny_anchors_intra.xlsx"
+            ),
+            blocks_intra=join_path(RESULTS, "08_duplication", "synteny_blocks_intra.tsv"),
+            blocks_intra_xlsx=join_path(
+                RESULTS, "08_duplication", "synteny_blocks_intra.xlsx"
+            ),
+            family_links=join_path(
+                RESULTS, "08_duplication", "family_duplication_links.tsv"
+            ),
+            family_links_xlsx=join_path(
+                RESULTS, "08_duplication", "family_duplication_links.xlsx"
+            ),
+            anchors_inter=join_path(RESULTS, "08_duplication", "synteny_anchors_inter.tsv"),
+            anchors_inter_xlsx=join_path(
+                RESULTS, "08_duplication", "synteny_anchors_inter.xlsx"
+            ),
+            blocks_inter=join_path(RESULTS, "08_duplication", "synteny_blocks_inter.tsv"),
+            blocks_inter_xlsx=join_path(
+                RESULTS, "08_duplication", "synteny_blocks_inter.xlsx"
+            ),
+            pair_summary=join_path(
+                RESULTS, "08_duplication", "synteny_pair_summary.tsv"
+            ),
+            pair_summary_xlsx=join_path(
+                RESULTS, "08_duplication", "synteny_pair_summary.xlsx"
+            ),
+            layout=join_path(
+                RESULTS, "08_duplication", "synteny_layout_provenance.tsv"
+            ),
+            layout_xlsx=join_path(
+                RESULTS, "08_duplication", "synteny_layout_provenance.xlsx"
+            ),
+            fig17_pdf=join_path(
+                RESULTS, "08_duplication", "Fig17_representative_intragenome_circos.pdf"
+            ),
+            fig17_png=join_path(
+                RESULTS, "08_duplication", "Fig17_representative_intragenome_circos.png"
+            ),
+            fig21_pdf=join_path(
+                RESULTS, "08_duplication", "Fig21_inter_species_pairwise_synteny.pdf"
+            ),
+            fig21_png=join_path(
+                RESULTS, "08_duplication", "Fig21_inter_species_pairwise_synteny.png"
+            ),
+            fig22_pdf=join_path(
+                RESULTS, "08_duplication", "Fig22_inter_species_synteny_overview.pdf"
+            ),
+            fig22_png=join_path(
+                RESULTS, "08_duplication", "Fig22_inter_species_synteny_overview.png"
+            ),
+        params:
+            pair_records=SYNTENY_PAIR_RECORDS,
+            species_ids=SPECIES,
+            representative_species=SYNTENY_CONFIG.get("representative_species"),
+            png_dpi=PNG_DPI,
+        conda:
+            "../envs/synteny.yaml"
+        script:
+            "../scripts/render_synteny_figures.py"

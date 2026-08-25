@@ -12,6 +12,7 @@ from panfamflow.runner import (
 )
 
 TOY_CONFIG = Path(__file__).parents[1] / "examples" / "toy" / "config.yaml"
+TOY_COMPLETE_CONFIG = Path(__file__).parents[1] / "examples" / "toy_complete" / "config.yaml"
 
 
 def test_build_snakemake_command_is_list_based() -> None:
@@ -41,6 +42,40 @@ def test_smart_resume_flags_are_enabled_by_default() -> None:
         ]
         assert "--printshellcmds" in command
         assert "--show-failed-logs" in command
+
+
+def test_formal_de_enables_conda_and_apptainer_deployment() -> None:
+    config = load_config(TOY_COMPLETE_CONFIG)
+    command, stack = build_snakemake_command(
+        config,
+        TOY_COMPLETE_CONFIG,
+        ("expression",),
+        dry_run=True,
+    )
+    with stack:
+        index = command.index("--software-deployment-method")
+        assert command[index + 1 : index + 3] == ["conda", "apptainer"]
+
+
+def test_build_snakemake_command_accepts_explicit_deployment_cache_prefixes(
+    tmp_path: Path,
+) -> None:
+    config = load_config(TOY_COMPLETE_CONFIG)
+    conda_prefix = tmp_path / "conda-cache"
+    conda_base_path = tmp_path / "conda-compat"
+    apptainer_prefix = tmp_path / "sif-cache"
+    command, stack = build_snakemake_command(
+        config,
+        TOY_COMPLETE_CONFIG,
+        ("expression",),
+        conda_prefix=conda_prefix,
+        conda_base_path=conda_base_path,
+        apptainer_prefix=apptainer_prefix,
+    )
+    with stack:
+        assert command[command.index("--conda-prefix") + 1] == str(conda_prefix.resolve())
+        assert command[command.index("--conda-base-path") + 1] == str(conda_base_path.resolve())
+        assert command[command.index("--apptainer-prefix") + 1] == str(apptainer_prefix.resolve())
 
 
 def test_resume_mode_off_can_be_overridden_explicitly() -> None:

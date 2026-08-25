@@ -77,6 +77,50 @@ def _clean_group_values(table: pd.DataFrame, group_field: str) -> pd.DataFrame:
     return clean
 
 
+def build_species_median_source(
+    table: pd.DataFrame,
+    *,
+    group_field: str,
+    metrics: Sequence[str],
+) -> pd.DataFrame:
+    """Return the exact species-median units used by structure figures and tests."""
+
+    clean = _clean_group_values(table, group_field)
+    rows: list[pd.DataFrame] = []
+    for metric in metrics:
+        if metric not in clean.columns:
+            raise ValueError(f"Unknown gene-structure metric: {metric}")
+        metric_rows = clean.copy()
+        metric_rows[metric] = pd.to_numeric(metric_rows[metric], errors="coerce")
+        metric_rows = metric_rows.loc[metric_rows[metric].notna()].copy()
+        units = (
+            metric_rows.groupby(["species_id", group_field], as_index=False, observed=True)
+            .agg(unit_value=(metric, "median"), n_genes=("stable_id", "nunique"))
+            .rename(columns={group_field: "group_value"})
+        )
+        units.insert(1, "group_field", group_field)
+        units.insert(3, "metric", metric)
+        units["inference_unit"] = "SPECIES_MEDIAN"
+        rows.append(units)
+    if not rows:
+        return pd.DataFrame(
+            columns=[
+                "species_id",
+                "group_field",
+                "group_value",
+                "metric",
+                "unit_value",
+                "n_genes",
+                "inference_unit",
+            ]
+        )
+    return (
+        pd.concat(rows, ignore_index=True)
+        .sort_values(["metric", "group_value", "species_id"])
+        .reset_index(drop=True)
+    )
+
+
 def compare_grouped_metrics(
     table: pd.DataFrame,
     *,
@@ -340,6 +384,8 @@ def plot_grouped_metrics(
         axis.set_axis_off()
     figure.suptitle("Target-family gene-structure comparisons", fontsize=14)
     figure.tight_layout(rect=(0, 0, 1, 0.98))
+    if Path(pdf_path).with_suffix("") != Path(png_path).with_suffix(""):
+        raise ValueError("Gene-structure PDF and PNG outputs must share one canonical stem.")
     figure.savefig(pdf_path, bbox_inches="tight")
     figure.savefig(png_path, dpi=png_dpi, bbox_inches="tight")
     plt.close(figure)

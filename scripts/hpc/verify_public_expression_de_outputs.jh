@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+#JSUB -J panfamflow_public_de_verify
+#JSUB -q normal
+#JSUB -n 4
+#JSUB -o logs/hpc/public_de_verify.%J.out
+#JSUB -e logs/hpc/public_de_verify.%J.err
+
+set -euo pipefail
+cd "$JH_SUB_CWD"
+
+public_root="$JH_SUB_CWD/work/public-expression-resume7"
+counts_root="$public_root/counts"
+model_root="$public_root/de/model"
+verification_root="$public_root/verification/public-de-resume7"
+featurecounts_output="$counts_root/featureCounts.tsv"
+featurecounts_summary="$featurecounts_output.summary"
+raw_counts="$counts_root/raw_counts.tsv"
+fit_qc="$model_root/deseq2_fit_qc.tsv"
+all_results="$model_root/deseq2_all_results.tsv"
+de_session="$model_root/deseq2_session_info.txt"
+session="$public_root/requantification_session_versions.tsv"
+corrected_session="$verification_root/requantification_session_versions.corrected.tsv"
+receipt="$verification_root/public_de_validation_receipt.tsv"
+
+mkdir -p "$verification_root" logs/hpc
+test -s "$featurecounts_output"
+test -s "$featurecounts_summary"
+test -s "$raw_counts"
+test -s "$fit_qc"
+test -s "$all_results"
+test -s "$de_session"
+test -s "$session"
+test "$(find "$counts_root" "$model_root" -type f -name '*.partial' | wc -l)" -eq 0
+
+featurecounts_version="$(sed -n '1s/^# Program:featureCounts \(v[^;]*\);.*$/\1/p' "$featurecounts_output")"
+test "$featurecounts_version" = "v2.1.1"
+sample_count="$(awk -F '\t' 'NR == 1 {print NF - 1}' "$raw_counts")"
+gene_count="$(awk 'END {print NR - 1}' "$raw_counts")"
+dataset_count="$(awk -F '\t' 'NR > 1 {seen[$1] = 1} END {print length(seen)}' "$all_results")"
+contrast_count="$(awk -F '\t' 'NR > 1 {seen[$2] = 1} END {print length(seen)}' "$all_results")"
+result_rows="$(awk 'END {print NR - 1}' "$all_results")"
+test "$sample_count" -eq 24
+test "$gene_count" -eq 38993
+test "$dataset_count" -eq 2
+test "$contrast_count" -eq 6
+test "$result_rows" -eq 159882
+test "$(awk 'END {print NR - 1}' "$fit_qc")" -eq 2
+awk -F '\t' 'NR > 1 && ($1 != "GSE101734" && $1 != "GSE81906") {exit 1}' "$fit_qc"
+awk -F '\t' 'NR > 1 && $NF != "TRUE" {exit 1}' "$fit_qc"
+grep -Fxq 'DESeq2_version=1.52.0' "$de_session"
+grep -Fxq 'R_version=4.6.1' "$de_session"
+
+original_session_sha="$(sha256sum "$session" | awk '{print $1}')"
+original_backup="$verification_root/requantification_session_versions.pre-repair.$original_session_sha.tsv"
+if ! test -e "$original_backup"; then
+  cp -p "$session" "$original_backup"
+fi
+test "$(sha256sum "$original_backup" | awk '{print $1}')" = "$original_session_sha"
+
+{
+  printf 'field\tvalue\n'
+  printf 'status\tPASS\n'
+  printf 'featurecounts_version\t%s\n' "$featurecounts_version"
+  printf 'sample_count\t%s\n' "$sample_count"
+  printf 'gene_count\t%s\n' "$gene_count"
+  printf 'dataset_count\t%s\n' "$dataset_count"
+  printf 'contrast_count\t%s\n' "$contrast_count"
+  printf 'design_formula\t~ genotype + condition + genotype:condition\n'
+  printf 'fit_scope\tONE_DATASET_ONE_MODEL\n'
+  printf 'count_unit\tPAIRED_FRAGMENTS_ON_GENE_EXON_UNION\n'
+} >"$corrected_session.partial"
+mv "$corrected_session.partial" "$corrected_session"
+cp "$corrected_session" "$session.partial"
+mv "$session.partial" "$session"
+cmp -s "$corrected_session" "$session"
+corrected_session_sha="$(sha256sum "$session" | awk '{print $1}')"
+
+{
+  printf 'field\tvalue\n'
+  printf 'status\tPASS\n'
+  printf 'compute_host\t%s\n' "$(hostname)"
+  printf 'source_job_id\t198370\n'
+  printf 'sample_count\t%s\n' "$sample_count"
+  printf 'gene_count\t%s\n' "$gene_count"
+  printf 'dataset_count\t%s\n' "$dataset_count"
+  printf 'contrast_count\t%s\n' "$contrast_count"
+  printf 'result_rows\t%s\n' "$result_rows"
+  printf 'featurecounts_version\t%s\n' "$featurecounts_version"
+  printf 'r_version\t4.6.1\n'
+  printf 'deseq2_version\t1.52.0\n'
+  printf 'original_session_sha256\t%s\n' "$original_session_sha"
+  printf 'corrected_session_sha256\t%s\n' "$corrected_session_sha"
+  printf 'featurecounts_sha256\t%s\n' "$(sha256sum "$featurecounts_output" | awk '{print $1}')"
+  printf 'raw_counts_sha256\t%s\n' "$(sha256sum "$raw_counts" | awk '{print $1}')"
+  printf 'fit_qc_sha256\t%s\n' "$(sha256sum "$fit_qc" | awk '{print $1}')"
+  printf 'all_results_sha256\t%s\n' "$(sha256sum "$all_results" | awk '{print $1}')"
+  printf 'de_session_sha256\t%s\n' "$(sha256sum "$de_session" | awk '{print $1}')"
+} >"$receipt.partial"
+mv "$receipt.partial" "$receipt"
+
+printf 'PUBLIC_DE_VALIDATION PASS\treceipt=%s\n' "$receipt"

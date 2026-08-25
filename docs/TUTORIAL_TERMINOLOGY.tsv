@@ -30,9 +30,9 @@ contrast	条件比较	contrast	STANDARD_TERM	统计模型中预先指定的两�
 fdr	错误发现率	FDR	STANDARD_TERM	在多重检验中控制预期假阳性比例的方法。	统计比较需同时报告校正后的显著性，而不是只看原始 P 值。	FALSE	chapter-5
 effect-size	效应量	effect size	STANDARD_TERM	表示差异有多大的量，而不仅是是否显著。	应与样本量和校正后的 P 值共同解释。	FALSE	chapter-5
 z-score	标准化分数	z-score / Scale	STANDARD_TERM	把每个变量转换为相对均值的标准差单位，用于比较模式而非绝对量。	标准化显示必须同时保留原始计数，并说明按行还是按列计算。	FALSE	analysis-10-5
-global-summary	全条件汇总	Global	STANDARD_TERM	把多个预先定义的条件比较放在同一成员矩阵中查看重叠和方向。	当前差异表达跨条件汇总未实现，不能由表达热图替代。	FALSE	analysis-11-3
-abiotic-stress	非生物胁迫	Abiotic stress	STANDARD_TERM	盐、旱、冷、热等非生物环境造成的处理条件。	PanFamFlow 只接收带设计和统计证据的外部差异结果。	FALSE	analysis-11-4
-biotic-stress	生物胁迫	Biotic stress	STANDARD_TERM	病原、虫害等生物因素造成的处理条件。	PanFamFlow 只接收带设计和统计证据的外部差异结果。	FALSE	analysis-11-5
+global-summary	全条件汇总	Global	STANDARD_TERM	把多个预先定义的条件比较放在同一成员矩阵中查看重叠和方向。	可选 raw-count DESeq2 路径生成跨条件 DEG 成员矩阵；表达热图仍不能替代正式 DE。	FALSE	analysis-11-3
+abiotic-stress	非生物胁迫	Abiotic stress	STANDARD_TERM	盐、旱、冷、热等非生物环境造成的处理条件。	PanFamFlow 可在 raw counts、重复、design 与 contrast 审计通过后逐数据集运行正式 DE。	FALSE	analysis-11-4
+biotic-stress	生物胁迫	Biotic stress	STANDARD_TERM	病原、虫害等生物因素造成的处理条件。	PanFamFlow 可在 raw counts、重复、design 与 contrast 审计通过后逐数据集运行正式 DE。	FALSE	analysis-11-5
 panfamflow	PanFamFlow 工作流	PanFamFlow	SOFTWARE_OR_FORMAT	用于目标泛基因家族比较的可配置工作流。	从已组装基因组和匹配注释开始，不构建图泛基因组或全基因组结构变异。	FALSE	overview
 snakemake	流程调度软件	Snakemake	SOFTWARE_OR_FORMAT	根据输入、规则和依赖关系安排分析任务的软件。	负责模块依赖、断点续跑和结果失效判断。	FALSE	start
 orthofinder	正交关系推断软件	OrthoFinder	SOFTWARE_OR_FORMAT	从多个物种蛋白组推断正交组、HOG 和物种树相关结果的软件。	流程读取其公开结果目录，并要求正式分析冻结目标节点。	FALSE	chapter-6
@@ -45,7 +45,7 @@ dupgen-finder	复制类型分类软件	DupGen_finder	SOFTWARE_OR_FORMAT	结合�
 mcscanx-wgdi	全基因组共线性工具	MCScanX / WGDI	SOFTWARE_OR_FORMAT	利用多个有序锚点识别共线区段的工具。	当前 Circos 共线性条目需要这类外部结果。	FALSE	analysis-8-6
 kaks-calculator	成对替换率计算软件	KaKs_Calculator	SOFTWARE_OR_FORMAT	根据密码子比对估计 Ka、Ks 和 Ka/Ks。	流程为每个受约束基因对保留成功或失败记录。	FALSE	chapter-9
 fimo	基序扫描软件	FIMO	SOFTWARE_OR_FORMAT	在序列中寻找与已知基序模型匹配位置的软件。	用于扫描目标家族启动子，并保留分数和显著性字段。	FALSE	chapter-10
-deseq2	计数型差异表达软件	DESeq2	SOFTWARE_OR_FORMAT	基于原始整数计数和设计矩阵进行差异表达推断的软件。	当前教程只规定外部结果合同，不在 TPM 热图路线中自动运行。	FALSE	chapter-11
+deseq2	计数型差异表达软件	DESeq2	SOFTWARE_OR_FORMAT	基于原始整数计数和设计矩阵进行差异表达推断的软件。	默认关闭的 raw-count 子路径在重复、design 和 contrast 门禁通过后逐数据集运行；TPM 热图路线不会触发正式 DE。	FALSE	chapter-11
 fasta	序列文件格式	FASTA	SOFTWARE_OR_FORMAT	用标题行和序列行保存基因组、蛋白或编码序列的文本格式。	每个物种至少需要基因组 FASTA；其他序列可由注释派生。	FALSE	start
 gff3	基因注释文件格式	GFF3	SOFTWARE_OR_FORMAT	用九列记录基因、转录本和外显子等坐标关系的格式。	必须与基因组 FASTA 来自同一版本。	FALSE	start
 tsv	制表符分隔表格	TSV	SOFTWARE_OR_FORMAT	使用制表符分隔字段、适合程序读取和版本审计的纯文本表格。	多数规范结果同时提供 TSV，便于审计和再分析。	FALSE	output-reader

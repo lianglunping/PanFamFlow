@@ -50,7 +50,7 @@ inputs:
       busco_lineage: embryophyta_odb12
   rnaseq_samples: []
   expression_matrix: references/expression.tsv
-  sample_metadata: null
+  sample_metadata: references/sample_metadata.tsv
 qc:
   calculate_sha256: true
   busco:
@@ -84,6 +84,7 @@ family:
     max_target_seqs: 100
   subfamily_assignments: references/subfamily_assignments.tsv
   domain_validation_table: null
+  domain_alignment: references/family_domain_alignment.fa
   subcellular_localization_table: null
   precomputed_members: references/family_members.tsv
 phylogeny:

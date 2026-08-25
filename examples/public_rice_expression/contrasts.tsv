@@ -1,0 +1,7 @@
+dataset_id	contrast_id	design_formula	factor	numerator	denominator	contrast_type	context_factor	context_numerator	context_denominator	minimum_replicates	stress_category	is_primary	interpretation
+GSE101734	9311_Salt_vs_Control	~ genotype + condition + genotype:condition	condition	Salt	Control	simple_effect	genotype	9311		3	Abiotic	true	Salt response in 9311 after the declared factorial model.
+GSE101734	9L136_Salt_vs_Control	~ genotype + condition + genotype:condition	condition	Salt	Control	simple_effect	genotype	9L136		3	Abiotic	true	Salt response in 9L136 after the declared factorial model.
+GSE101734	Salt_response_interaction	~ genotype + condition + genotype:condition	condition	Salt	Control	interaction	genotype	9L136	9311	3	Abiotic	true	Difference in salt response between genotypes; not a simple main effect.
+GSE81906	PB1_Infected_vs_Mock	~ genotype + condition + genotype:condition	condition	Magnaporthe_oryzae	Mock	simple_effect	genotype	PB1		3	Biotic	true	Blast response in PB1 at 24 h.
+GSE81906	PB1_Pi9_Infected_vs_Mock	~ genotype + condition + genotype:condition	condition	Magnaporthe_oryzae	Mock	simple_effect	genotype	PB1_Pi9		3	Biotic	true	Blast response in PB1+Pi9 at 24 h.
+GSE81906	Pi9_infection_response_interaction	~ genotype + condition + genotype:condition	condition	Magnaporthe_oryzae	Mock	interaction	genotype	PB1_Pi9	PB1	3	Biotic	true	Difference in infection response attributable to genotype context; it does not alone prove a Pi9 mechanism.

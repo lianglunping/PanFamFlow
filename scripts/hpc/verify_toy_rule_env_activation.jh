@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+#JSUB -J panfamflow_toy_env_activation
+#JSUB -q normal
+#JSUB -n 1
+#JSUB -o logs/hpc/toy_env_activation.%J.out
+#JSUB -e logs/hpc/toy_env_activation.%J.err
+
+set -euo pipefail
+cd "$JH_SUB_CWD"
+
+activation="$JH_SUB_CWD/scripts/hpc/conda_compat/bin/activate"
+listing=$(ls -1t work/toy-complete-environments.*.tsv | grep -v '\.receipt\.tsv$' | head -1)
+toy_project_root="$JH_SUB_CWD/examples/toy_complete"
+test -s "$activation"
+test -s "$listing"
+
+environment_prefix() {
+  local environment_name="$1"
+  local location
+  location=$(awk -F '\t' -v suffix="/envs/${environment_name}.yaml" \
+    '$1 ~ suffix "$" {print $3}' "$listing")
+  test -n "$location"
+  printf '%s/%s\n' "$toy_project_root" "$location"
+}
+
+verify_python_environment() {
+  local environment_name="$1"
+  local prefix
+  prefix=$(environment_prefix "$environment_name")
+  (
+    # shellcheck disable=SC1090
+    source "$activation" "$prefix"
+    test "$(readlink -f "$(command -v python)")" = "$(readlink -f "$prefix/bin/python")"
+    python -c 'import openpyxl, pandas; print(openpyxl.__version__, pandas.__version__)'
+  )
+}
+
+verify_python_environment qc
+verify_python_environment expression
+
+synteny_prefix=$(environment_prefix synteny)
+(
+  # shellcheck disable=SC1090
+  source "$activation" "$synteny_prefix"
+  test "$(readlink -f "$(command -v python)")" = "$(readlink -f "$synteny_prefix/bin/python")"
+  python -c 'import importlib.metadata as m, jcvi; print(m.version("jcvi"))'
+  diamond version
+)
+
+printf 'TOY_RULE_ENV_ACTIVATION\tPASS\n'

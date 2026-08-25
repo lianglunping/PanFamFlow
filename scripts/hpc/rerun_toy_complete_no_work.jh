@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+#JSUB -J panfamflow_toy_no_work
+#JSUB -q normal
+#JSUB -n 8
+#JSUB -o logs/hpc/toy_no_work.%J.out
+#JSUB -e logs/hpc/toy_no_work.%J.err
+
+set -euo pipefail
+cd "$JH_SUB_CWD"
+
+module purge || true
+module load anaconda3
+module load singularity
+
+engine="$JH_SUB_CWD/work/verified-engine-linux-64-198231"
+toy_project_root="$JH_SUB_CWD/examples/toy_complete"
+result_manifest="$toy_project_root/results/report/result_manifest.tsv"
+run_token="${JH_JOB_ID:-${LSB_JOBID:-${JOB_ID:-$$}}}"
+no_work_log="$JH_SUB_CWD/work/toy-no-work.${run_token}.log"
+receipt="$JH_SUB_CWD/work/toy-no-work.${run_token}.receipt.tsv"
+test -x "$engine/bin/python"
+test -s "$result_manifest"
+test -s "$JH_SUB_CWD/.snakemake/singularity/88970d61641c50285db96eb4521eb8ba.simg"
+test "$(find "$toy_project_root/.snakemake/conda" \
+  -mindepth 3 -maxdepth 3 -path '*/conda-meta/history' -type f | wc -l)" -eq 12
+
+export PANFAMFLOW_CONDA_BASE_PATH="$JH_SUB_CWD/scripts/hpc/conda_compat"
+export PATH="$JH_SUB_CWD/scripts/hpc/conda_compat/bin:$engine/bin:$PATH"
+export PYTHONPATH="$JH_SUB_CWD/src${PYTHONPATH:+:$PYTHONPATH}"
+before_manifest_sha256=$(sha256sum "$result_manifest" | awk '{print $1}')
+
+set +e
+python scripts/hpc/run_toy_complete.py \
+  --conda-base-path "$JH_SUB_CWD/scripts/hpc/conda_compat" \
+  --apptainer-prefix "$JH_SUB_CWD/.snakemake/singularity" 2>&1 | tee "$no_work_log"
+run_status=${PIPESTATUS[0]}
+set -e
+test "$run_status" -eq 0
+grep -Fq "Nothing to be done" "$no_work_log"
+
+after_manifest_sha256=$(sha256sum "$result_manifest" | awk '{print $1}')
+test "$before_manifest_sha256" = "$after_manifest_sha256"
+{
+  printf 'field\tvalue\n'
+  printf 'status\tPASS\n'
+  printf 'before_manifest_sha256\t%s\n' "$before_manifest_sha256"
+  printf 'after_manifest_sha256\t%s\n' "$after_manifest_sha256"
+  printf 'log\t%s\n' "$no_work_log"
+} >"$receipt"
+printf 'NO_WORK_RERUN\tPASS\tmanifest_sha256=%s\n' "$after_manifest_sha256"

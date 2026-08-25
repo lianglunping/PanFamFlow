@@ -1,5 +1,5 @@
-stable_id	Control_1	Stress_1
-SpA__GeneA1	2.0	8.0
-SpA__GeneA2	4.0	12.0
-SpB__GeneB1	3.0	1.0
-SpB__GeneB2	6.0	0.5
+stable_id	SpA_CK_1	SpA_CK_2	SpA_CK_3	SpA_Salt_1	SpA_Salt_2	SpA_Salt_3	SpB_Mock_1	SpB_Mock_2	SpB_Mock_3	SpB_Blast_1	SpB_Blast_2	SpB_Blast_3
+SpA__GeneA1	10	12	11	30	28	32	NA	NA	NA	NA	NA	NA
+SpA__GeneA2	5	4	6	5	6	4	NA	NA	NA	NA	NA	NA
+SpB__GeneB1	NA	NA	NA	NA	NA	NA	8	9	7	24	27	25
+SpB__GeneB2	NA	NA	NA	NA	NA	NA	15	14	16	13	14	12

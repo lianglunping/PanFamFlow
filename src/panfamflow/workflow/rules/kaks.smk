@@ -20,10 +20,25 @@ rule calculate_kaks:
         tsv=ensure(MODULE_TARGETS["kaks"], non_empty=True),
         xlsx=ensure(join_path(RESULTS, "09_kaks", "kaks_pairs.xlsx"), non_empty=True),
         stratified_summary=ensure(join_path(RESULTS, "09_kaks", "kaks_stratified_summary.tsv"), non_empty=True),
+        subfamily_source=join_path(RESULTS, "09_kaks", "kaks_by_subfamily.tsv"),
+        group_source=join_path(RESULTS, "09_kaks", "kaks_by_group.tsv"),
+        subfamily_group_source=join_path(
+            RESULTS, "09_kaks", "kaks_by_subfamily_group.tsv"
+        ),
+        pan_class_source=join_path(RESULTS, "09_kaks", "kaks_by_pan_class.tsv"),
+        inference_tests=join_path(RESULTS, "09_kaks", "kaks_cluster_inference_tests.tsv"),
         plot_pdf=join_path(RESULTS, "09_kaks", "kaks_distribution.pdf"),
         plot_png=join_path(RESULTS, "09_kaks", "kaks_distribution.png"),
         stratified_plot_pdf=join_path(RESULTS, "09_kaks", "kaks_stratified_distributions.pdf"),
         stratified_plot_png=join_path(RESULTS, "09_kaks", "kaks_stratified_distributions.png"),
+        fig04_pdf=join_path(RESULTS, "09_kaks", "Fig04_kaks_by_subfamily.pdf"),
+        fig04_png=join_path(RESULTS, "09_kaks", "Fig04_kaks_by_subfamily.png"),
+        fig05_pdf=join_path(RESULTS, "09_kaks", "Fig05_kaks_by_group.pdf"),
+        fig05_png=join_path(RESULTS, "09_kaks", "Fig05_kaks_by_group.png"),
+        fig06_pdf=join_path(RESULTS, "09_kaks", "Fig06_kaks_by_subfamily_group.pdf"),
+        fig06_png=join_path(RESULTS, "09_kaks", "Fig06_kaks_by_subfamily_group.png"),
+        fig14_pdf=join_path(RESULTS, "09_kaks", "Fig14_kaks_by_pan_class.pdf"),
+        fig14_png=join_path(RESULTS, "09_kaks", "Fig14_kaks_by_pan_class.png"),
     params:
         pair_source=KAKS_PAIR_SOURCE,
         reference_species=KAKS_REFERENCE_SPECIES,
@@ -34,6 +49,8 @@ rule calculate_kaks:
         workers=int(config.get("kaks", {}).get("workers", 4)),
         work_dir=join_path(WORK, "09_kaks", "pairs"),
         png_dpi=PNG_DPI,
+        inference_min_cluster_units=2,
+        inference_alpha=0.05,
     threads:
         min(int(config.get("kaks", {}).get("workers", 4)), int(RUN.get("cores", 16)))
     resources:

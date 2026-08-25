@@ -92,6 +92,7 @@ FAMILY_OPTIONAL_INPUTS = [
         config["family"].get("precomputed_members"),
         config["family"].get("subfamily_assignments"),
         config["family"].get("domain_validation_table"),
+        config["family"].get("domain_alignment"),
         config["family"].get("subcellular_localization_table"),
     )
     if path
@@ -111,11 +112,21 @@ rule combine_family_evidence:
         rejected=join_path(RESULTS, "02_family", "family_candidates_rejected.tsv"),
         xlsx=join_path(RESULTS, "02_family", "family_members.xlsx"),
         distribution=join_path(RESULTS, "02_family", "family_distribution.tsv"),
+        contract_distribution=join_path(RESULTS, "02_family", "family_copy_number_by_species_subfamily.tsv"),
         distribution_plot_pdf=join_path(RESULTS, "02_family", "family_distribution.pdf"),
         distribution_plot_png=join_path(RESULTS, "02_family", "family_distribution.png"),
+        figure02_pdf=join_path(RESULTS, "02_family", "Fig02_subfamily_copy_number.pdf"),
+        figure02_png=join_path(RESULTS, "02_family", "Fig02_subfamily_copy_number.png"),
         proteins=join_path(RESULTS, "02_family", "family_proteins.fa"),
         cds=join_path(RESULTS, "02_family", "family_cds.fa"),
         domains=join_path(RESULTS, "02_family", "family_domains.fa"),
+        domain_alignment=join_path(RESULTS, "02_family", "family_domains.aligned.fa"),
+        domain_logo_table=join_path(RESULTS, "02_family", "family_domain_logo.tsv"),
+        domain_segments=join_path(RESULTS, "03_phylogeny", "family_domain_segments.tsv"),
+        domain_logo_status=join_path(RESULTS, "02_family", "family_domain_logo_status.tsv"),
+        domain_logo_xlsx=join_path(RESULTS, "02_family", "family_domain_logo.xlsx"),
+        domain_logo_pdf=join_path(RESULTS, "03_phylogeny", "Fig09_core_domain_logo.pdf"),
+        domain_logo_png=join_path(RESULTS, "03_phylogeny", "Fig09_core_domain_logo.png"),
     params:
         family_name=config["family"]["name"],
         species_ids=SPECIES,
@@ -132,6 +143,7 @@ rule combine_family_evidence:
         precomputed_members=config["family"].get("precomputed_members"),
         subfamily_assignments=config["family"].get("subfamily_assignments"),
         domain_validation_table=config["family"].get("domain_validation_table"),
+        domain_alignment=config["family"].get("domain_alignment"),
         subcellular_localization_table=config["family"].get("subcellular_localization_table"),
     conda:
         "../envs/family.yaml"

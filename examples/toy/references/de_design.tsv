@@ -1,0 +1,5 @@
+dataset_id	sample_id	species_id	condition	biological_replicate	batch	stress_category	evidence_grade	accession	reference_version	file_verification_status
+DS_TOY	SpA_control_1	SpA	control	1	B1	abiotic	TOY_ENGINEERING_ONLY	TOY	toy-v1	CHECKSUM_VERIFIED
+DS_TOY	SpA_control_2	SpA	control	2	B2	abiotic	TOY_ENGINEERING_ONLY	TOY	toy-v1	CHECKSUM_VERIFIED
+DS_TOY	SpA_stress_1	SpA	stress	1	B1	abiotic	TOY_ENGINEERING_ONLY	TOY	toy-v1	CHECKSUM_VERIFIED
+DS_TOY	SpA_stress_2	SpA	stress	2	B2	abiotic	TOY_ENGINEERING_ONLY	TOY	toy-v1	CHECKSUM_VERIFIED

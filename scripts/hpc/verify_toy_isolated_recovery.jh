@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+#JSUB -J panfamflow_toy_isolated_recovery
+#JSUB -q normal
+#JSUB -n 8
+#JSUB -o logs/hpc/toy_isolated_recovery.%J.out
+#JSUB -e logs/hpc/toy_isolated_recovery.%J.err
+
+set -euo pipefail
+cd "$JH_SUB_CWD"
+
+module purge || true
+module load anaconda3
+module load singularity
+
+engine="$JH_SUB_CWD/work/verified-engine-linux-64-198231"
+toy_project_root="$JH_SUB_CWD/examples/toy_complete"
+result_manifest="$toy_project_root/results/report/result_manifest.tsv"
+run_token="${JH_JOB_ID:-${LSB_JOBID:-${JOB_ID:-$$}}}"
+recovery_root="$JH_SUB_CWD/work/toy-isolated-recovery.${run_token}"
+receipt="$recovery_root/receipt.tsv"
+current_target=""
+current_backup=""
+
+test -x "$engine/bin/python"
+test -s "$result_manifest"
+test -s "$JH_SUB_CWD/.snakemake/singularity/88970d61641c50285db96eb4521eb8ba.simg"
+test "$(find "$toy_project_root/.snakemake/conda" \
+  -mindepth 3 -maxdepth 3 -path '*/conda-meta/history' -type f | wc -l)" -eq 12
+test ! -e "$recovery_root"
+mkdir -p "$recovery_root"
+
+export PANFAMFLOW_CONDA_BASE_PATH="$JH_SUB_CWD/scripts/hpc/conda_compat"
+export PATH="$JH_SUB_CWD/scripts/hpc/conda_compat/bin:$engine/bin:$PATH"
+export PYTHONPATH="$JH_SUB_CWD/src${PYTHONPATH:+:$PYTHONPATH}"
+
+restore_failed_target() {
+  local exit_code=$?
+  local backup_sha256
+  local restored_sha256
+  if [[ -n "$current_target" && -s "$current_backup" ]]; then
+    backup_sha256=$(sha256sum "$current_backup" | awk '{print $1}')
+    if ! cp -p "$current_backup" "$current_target"; then
+      exit_code=97
+    else
+      restored_sha256=$(sha256sum "$current_target" | awk '{print $1}')
+      test "$restored_sha256" = "$backup_sha256" || exit_code=97
+    fi
+  fi
+  return "$exit_code"
+}
+trap restore_failed_target EXIT
+
+printf 'case_id\ttarget\tallowed_rules\tobserved_rules\tbefore_sha256\tafter_sha256\tstatus\n' >"$receipt"
+
+run_case() {
+  local case_id="$1"
+  local target_relative="$2"
+  local allowed_rules="$3"
+  local required_rule="$4"
+  local target="$toy_project_root/$target_relative"
+  local case_root="$recovery_root/$case_id"
+  local log="$case_root/run.log"
+  local observed_rules
+  local before_sha256
+  local after_sha256
+
+  mkdir -p "$case_root"
+  current_target="$target"
+  current_backup="$case_root/$(basename "$target").before"
+  test -s "$current_target"
+  before_sha256=$(sha256sum "$current_target" | awk '{print $1}')
+  cp -p "$current_target" "$current_backup"
+  mv "$current_target" "$case_root/$(basename "$target").missing"
+  test ! -e "$current_target"
+
+  python scripts/hpc/run_toy_complete.py \
+    --conda-base-path "$JH_SUB_CWD/scripts/hpc/conda_compat" \
+    --apptainer-prefix "$JH_SUB_CWD/.snakemake/singularity" \
+    --target "$target_relative" 2>&1 | tee "$log"
+
+  test -s "$current_target"
+  test -s "$result_manifest"
+  observed_rules=$(sed -n -E 's/^(local)?rule ([A-Za-z0-9_]+):$/\2/p' "$log" | sort -u | paste -sd, -)
+  test -n "$observed_rules"
+  grep -Fxq "$required_rule" < <(tr ',' '\n' <<<"$observed_rules")
+  grep -Fxq "integrated_report" < <(tr ',' '\n' <<<"$observed_rules")
+  while IFS= read -r observed_rule; do
+    grep -Fxq "$observed_rule" < <(tr ',' '\n' <<<"$allowed_rules")
+  done < <(tr ',' '\n' <<<"$observed_rules")
+  ! grep -Eq '^(input_audit|normalize_canonical|find_family_members|orthofinder|scan_promoters_fimo|run_deseq2|audit_differential_expression_inputs)$' \
+    < <(tr ',' '\n' <<<"$observed_rules")
+  after_sha256=$(sha256sum "$current_target" | awk '{print $1}')
+  printf '%s\t%s\t%s\t%s\t%s\t%s\tPASS\n' \
+    "$case_id" "$target_relative" "$allowed_rules" "$observed_rules" \
+    "$before_sha256" "$after_sha256" >>"$receipt"
+  printf 'ISOLATED_RECOVERY\tPASS\tcase=%s\trules=%s\n' "$case_id" "$observed_rules"
+  current_target=""
+  current_backup=""
+}
+
+run_case \
+  promoter_summary \
+  results/10_promoter/promoter_element_distributions.tsv \
+  parse_promoter_elements,formal_table_xlsx_companion,integrated_report \
+  parse_promoter_elements
+run_case \
+  promoter_single_png \
+  results/10_promoter/Fig26_promoter_by_group_subfamily.png \
+  parse_promoter_elements,formal_table_xlsx_companion,integrated_report \
+  parse_promoter_elements
+run_case \
+  expression_vst \
+  results/11_expression/expression_vst.tsv \
+  integrate_differential_expression,integrated_report \
+  integrate_differential_expression
+
+trap - EXIT
+test "$(awk 'END {print NR - 1}' "$receipt")" -eq 3
+printf 'ISOLATED_RECOVERY\tPASS\tcases=3\treceipt=%s\n' "$receipt"

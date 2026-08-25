@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+#JSUB -J panfamflow_factorial_smoke
+#JSUB -q normal
+#JSUB -n 1
+#JSUB -o logs/hpc/public_factorial_smoke.%J.out
+#JSUB -e logs/hpc/public_factorial_smoke.%J.err
+
+set -euo pipefail
+cd "$JH_SUB_CWD"
+
+module purge || true
+module load singularity
+
+engine="$JH_SUB_CWD/work/verified-engine-linux-64-198231"
+expression_env="$JH_SUB_CWD/work/public-expression-resume7/expression-de-env"
+environment_receipt="$JH_SUB_CWD/work/public-expression-resume7/expression_de_environment_receipt.tsv"
+canonical_sif="$JH_SUB_CWD/.snakemake/singularity/88970d61641c50285db96eb4521eb8ba.simg"
+build_versions="$JH_SUB_CWD/work/verified-container-build-resume7-attempt2/expression_session_versions.txt"
+smoke_root="$JH_SUB_CWD/work/public-factorial-smoke-resume7"
+counts="$smoke_root/counts/raw_counts.tsv"
+fit_qc="$smoke_root/de/model/deseq2_fit_qc.tsv"
+results="$smoke_root/de/model/deseq2_all_results.tsv"
+session="$smoke_root/de/model/deseq2_session_info.txt"
+receipt="$smoke_root/factorial_smoke_receipt.tsv"
+
+test -x "$engine/bin/python"
+test -x "$engine/bin/snakemake"
+test -x "$expression_env/bin/python"
+grep -Fxq $'status\tPASS' "$environment_receipt"
+test -s "$canonical_sif"
+grep -Fxq 'R_version=4.6.1' "$build_versions"
+grep -Fxq 'DESeq2_version=1.52.0' "$build_versions"
+mkdir -p "$smoke_root/counts" logs/hpc
+export PYTHONPATH="$expression_env/lib/python3.12/site-packages${PYTHONPATH:+:$PYTHONPATH}"
+
+"$engine/bin/python" scripts/hpc/generate_public_factorial_smoke_counts.py \
+  examples/public_rice_expression/de_design.tsv \
+  "$counts" \
+  --seed 20260823 \
+  --gene-count 48
+
+"$engine/bin/snakemake" \
+  --snakefile scripts/hpc/public_expression_de.Snakefile \
+  --directory "$JH_SUB_CWD" \
+  --cores 1 \
+  --software-deployment-method apptainer \
+  --apptainer-prefix "$JH_SUB_CWD/.snakemake/singularity" \
+  --config "public_root=$smoke_root" \
+  --rerun-incomplete \
+  --printshellcmds
+
+test "$(awk 'END {print NR - 1}' "$fit_qc")" -eq 2
+awk -F '\t' '
+  NR == 1 {
+    for (i = 1; i <= NF; i++) {
+      if ($i == "design_rank") design_rank = i
+      if ($i == "design_columns") design_columns = i
+      if ($i == "fit_status") fit_status = i
+    }
+    next
+  }
+  $design_rank != 4 || $design_columns != 4 || $fit_status != "PASS" {exit 1}
+' "$fit_qc"
+grep -q '^GSE101734[[:space:]]' "$fit_qc"
+grep -q '^GSE81906[[:space:]]' "$fit_qc"
+contrast_count="$(awk -F '\t' 'NR > 1 {contrasts[$2] = 1} END {print length(contrasts)}' "$results")"
+test "$contrast_count" -eq 6
+grep -Fxq 'DESeq2_version=1.52.0' "$session"
+grep -Fxq 'R_version=4.6.1' "$session"
+{
+  printf 'field\tvalue\n'
+  printf 'status\tPASS\n'
+  printf 'seed\t20260823\n'
+  printf 'gene_count\t48\n'
+  printf 'dataset_count\t2\n'
+  printf 'contrast_count\t6\n'
+  printf 'design_rank\t4\n'
+  printf 'design_columns\t4\n'
+  printf 'scientific_scope\tENGINEERING_FIXTURE_NOT_BIOLOGICAL_EVIDENCE\n'
+} >"$receipt"
+printf 'PUBLIC_FACTORIAL_SMOKE PASS\treceipt=%s\n' "$receipt"

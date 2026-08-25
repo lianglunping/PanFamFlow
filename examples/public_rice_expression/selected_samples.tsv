@@ -1,0 +1,25 @@
+dataset_id	sample_id	run_ids	genotype	condition	tissue	stress_type	timepoint	replicate	library_layout	analysis_role
+GSE101734	GSM2714232	SRR5856927	9311	Control	root	Control	two-and-a-half-leaf stage	1	PAIRED	abiotic_DE
+GSE101734	GSM2714233	SRR5856928	9311	Control	root	Control	two-and-a-half-leaf stage	2	PAIRED	abiotic_DE
+GSE101734	GSM2714234	SRR5856929	9311	Control	root	Control	two-and-a-half-leaf stage	3	PAIRED	abiotic_DE
+GSE101734	GSM2714235	SRR5856930	9311	Salt	root	Abiotic	two-and-a-half-leaf stage	1	PAIRED	abiotic_DE
+GSE101734	GSM2714236	SRR5856931	9311	Salt	root	Abiotic	two-and-a-half-leaf stage	2	PAIRED	abiotic_DE
+GSE101734	GSM2714237	SRR5856932	9311	Salt	root	Abiotic	two-and-a-half-leaf stage	3	PAIRED	abiotic_DE
+GSE101734	GSM2714238	SRR5856933	9L136	Control	root	Control	two-and-a-half-leaf stage	1	PAIRED	abiotic_DE
+GSE101734	GSM2714239	SRR5856934	9L136	Control	root	Control	two-and-a-half-leaf stage	2	PAIRED	abiotic_DE
+GSE101734	GSM2714240	SRR5856935	9L136	Control	root	Control	two-and-a-half-leaf stage	3	PAIRED	abiotic_DE
+GSE101734	GSM2714241	SRR5856936	9L136	Salt	root	Abiotic	two-and-a-half-leaf stage	1	PAIRED	abiotic_DE
+GSE101734	GSM2714242	SRR5856937	9L136	Salt	root	Abiotic	two-and-a-half-leaf stage	2	PAIRED	abiotic_DE
+GSE101734	GSM2714243	SRR5856938	9L136	Salt	root	Abiotic	two-and-a-half-leaf stage	3	PAIRED	abiotic_DE
+GSE81906	GSM2177576	SRR3588113;SRR3588114	PB1	Mock	leaf	Control	24 h	1	PAIRED	biotic_DE
+GSE81906	GSM2177577	SRR3588115;SRR3588116	PB1	Mock	leaf	Control	24 h	2	PAIRED	biotic_DE
+GSE81906	GSM2177578	SRR3588117;SRR3588118	PB1	Mock	leaf	Control	24 h	3	PAIRED	biotic_DE
+GSE81906	GSM2177579	SRR3588119;SRR3588120	PB1	Magnaporthe_oryzae	leaf	Biotic	24 h	1	PAIRED	biotic_DE
+GSE81906	GSM2177580	SRR3588121;SRR3588122	PB1	Magnaporthe_oryzae	leaf	Biotic	24 h	2	PAIRED	biotic_DE
+GSE81906	GSM2177581	SRR3588123;SRR3588124	PB1	Magnaporthe_oryzae	leaf	Biotic	24 h	3	PAIRED	biotic_DE
+GSE81906	GSM2177582	SRR3588125;SRR3588126	PB1_Pi9	Mock	leaf	Control	24 h	1	PAIRED	biotic_DE
+GSE81906	GSM2177583	SRR3588127;SRR3588128	PB1_Pi9	Mock	leaf	Control	24 h	2	PAIRED	biotic_DE
+GSE81906	GSM2177584	SRR3588129;SRR3588130	PB1_Pi9	Mock	leaf	Control	24 h	3	PAIRED	biotic_DE
+GSE81906	GSM2177585	SRR3588131;SRR3588132	PB1_Pi9	Magnaporthe_oryzae	leaf	Biotic	24 h	1	PAIRED	biotic_DE
+GSE81906	GSM2177586	SRR3588133;SRR3588134	PB1_Pi9	Magnaporthe_oryzae	leaf	Biotic	24 h	2	PAIRED	biotic_DE
+GSE81906	GSM2177587	SRR3588135;SRR3588136	PB1_Pi9	Magnaporthe_oryzae	leaf	Biotic	24 h	3	PAIRED	biotic_DE

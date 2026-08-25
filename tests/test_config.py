@@ -126,6 +126,30 @@ def test_kaks_dynamic_dependency_expansion() -> None:
     assert resolved[-1] == "kaks"
 
 
+def test_complete_chromosome_overlay_expands_pan_family_dependency() -> None:
+    raw = yaml.safe_load(TOY_CONFIG.read_text(encoding="utf-8"))
+    raw["schema_version"] = "1.1"
+    raw["deliverables"] = {"profile": "pdf_md_complete"}
+    config = WorkflowConfig.model_validate(raw)
+
+    resolved = resolve_modules(["chromosome"], config)
+
+    assert "pan_family" in resolved
+    assert resolved[-1] == "chromosome"
+
+
+def test_complete_promoter_hog_summary_expands_pan_family_dependency() -> None:
+    raw = yaml.safe_load(TOY_CONFIG.read_text(encoding="utf-8"))
+    raw["schema_version"] = "1.1"
+    raw["deliverables"] = {"profile": "pdf_md_complete"}
+    config = WorkflowConfig.model_validate(raw)
+
+    resolved = resolve_modules(["promoter"], config)
+
+    assert "pan_family" in resolved
+    assert resolved[-1] == "promoter"
+
+
 def test_qc_path_validation_passes() -> None:
     config = load_config(TOY_CONFIG)
     issues = validate_input_paths(config, TOY_CONFIG, ["qc"])

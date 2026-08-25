@@ -151,6 +151,221 @@
       "title": "ChromosomeSettings",
       "type": "object"
     },
+    "ComparativePanelSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "external_species_table": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "External Species Table"
+        },
+        "selection_strategy": {
+          "default": "explicit",
+          "enum": [
+            "explicit",
+            "stratified_seeded"
+          ],
+          "title": "Selection Strategy",
+          "type": "string"
+        },
+        "include_in_pan_denominator": {
+          "const": false,
+          "default": false,
+          "title": "Include In Pan Denominator",
+          "type": "boolean"
+        }
+      },
+      "title": "ComparativePanelSettings",
+      "type": "object"
+    },
+    "DeliverablesSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "profile": {
+          "default": "legacy",
+          "enum": [
+            "legacy",
+            "pdf_md_complete"
+          ],
+          "title": "Profile",
+          "type": "string"
+        }
+      },
+      "title": "DeliverablesSettings",
+      "type": "object"
+    },
+    "DifferentialExpressionSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "source": {
+          "default": "featurecounts",
+          "enum": [
+            "featurecounts",
+            "precomputed_counts"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "input_scale": {
+          "default": "raw_counts",
+          "enum": [
+            "raw_counts",
+            "tpm",
+            "fpkm"
+          ],
+          "title": "Input Scale",
+          "type": "string"
+        },
+        "counts_table": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Counts Table"
+        },
+        "design_table": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Design Table"
+        },
+        "contrasts_table": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Contrasts Table"
+        },
+        "min_replicates": {
+          "default": 2,
+          "minimum": 2,
+          "title": "Min Replicates",
+          "type": "integer"
+        },
+        "alpha": {
+          "default": 0.05,
+          "exclusiveMaximum": 1,
+          "exclusiveMinimum": 0,
+          "title": "Alpha",
+          "type": "number"
+        },
+        "lfc_threshold": {
+          "default": 1.0,
+          "minimum": 0,
+          "title": "Lfc Threshold",
+          "type": "number"
+        },
+        "min_total_count": {
+          "default": 10,
+          "minimum": 0,
+          "title": "Min Total Count",
+          "type": "integer"
+        },
+        "feature_type": {
+          "default": "exon",
+          "title": "Feature Type",
+          "type": "string"
+        },
+        "feature_attribute": {
+          "default": "Parent",
+          "title": "Feature Attribute",
+          "type": "string"
+        },
+        "container_image": {
+          "default": "docker://ghcr.io/lianglunping/panfamflow-expression-de@sha256:57252522c5af7ebfe6fcec649896065316771c8679cc36c2a3094b9e755eeb29",
+          "title": "Container Image",
+          "type": "string"
+        }
+      },
+      "title": "DifferentialExpressionSettings",
+      "type": "object"
+    },
+    "DomainLogoSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "source": {
+          "default": "auto",
+          "enum": [
+            "auto",
+            "hmm_domain_hits",
+            "precomputed_alignment"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "precomputed_alignment": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Precomputed Alignment"
+        },
+        "min_domain_coverage": {
+          "default": 0.5,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Min Domain Coverage",
+          "type": "number"
+        },
+        "min_column_occupancy": {
+          "default": 0.5,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Min Column Occupancy",
+          "type": "number"
+        }
+      },
+      "title": "DomainLogoSettings",
+      "type": "object"
+    },
     "DuplicationSettings": {
       "additionalProperties": false,
       "properties": {
@@ -338,6 +553,19 @@
           ],
           "default": null,
           "title": "Domain Validation Table"
+        },
+        "domain_alignment": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Domain Alignment"
         },
         "subcellular_localization_table": {
           "anyOf": [
@@ -1247,13 +1475,98 @@
       ],
       "title": "SpeciesInput",
       "type": "object"
+    },
+    "SyntenySettings": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "backend": {
+          "default": "jcvi",
+          "enum": [
+            "jcvi",
+            "mcscanx",
+            "precomputed"
+          ],
+          "title": "Backend",
+          "type": "string"
+        },
+        "species_pairs_table": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Species Pairs Table"
+        },
+        "precomputed_blocks": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Precomputed Blocks"
+        },
+        "representative_species": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Representative Species"
+        },
+        "min_anchors_per_block": {
+          "default": 5,
+          "minimum": 3,
+          "title": "Min Anchors Per Block",
+          "type": "integer"
+        },
+        "cscore": {
+          "default": 0.95,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Cscore",
+          "type": "number"
+        },
+        "tandem_nmax": {
+          "default": 10,
+          "minimum": 0,
+          "title": "Tandem Nmax",
+          "type": "integer"
+        }
+      },
+      "title": "SyntenySettings",
+      "type": "object"
     }
   },
   "additionalProperties": false,
   "properties": {
     "schema_version": {
-      "const": "1.0",
       "default": "1.0",
+      "enum": [
+        "1.0",
+        "1.1"
+      ],
       "title": "Schema Version",
       "type": "string"
     },
@@ -1301,6 +1614,21 @@
     },
     "expression": {
       "$ref": "#/$defs/ExpressionSettings"
+    },
+    "deliverables": {
+      "$ref": "#/$defs/DeliverablesSettings"
+    },
+    "comparative_panel": {
+      "$ref": "#/$defs/ComparativePanelSettings"
+    },
+    "domain_logo": {
+      "$ref": "#/$defs/DomainLogoSettings"
+    },
+    "synteny": {
+      "$ref": "#/$defs/SyntenySettings"
+    },
+    "differential_expression": {
+      "$ref": "#/$defs/DifferentialExpressionSettings"
     },
     "plot": {
       "$ref": "#/$defs/PlotSettings"

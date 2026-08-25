@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+#JSUB -J panfamflow_public_align
+#JSUB -q normal
+#JSUB -n 16
+#JSUB -o logs/hpc/public_alignment.%J.out
+#JSUB -e logs/hpc/public_alignment.%J.err
+
+set -euo pipefail
+cd "$JH_SUB_CWD"
+
+engine="$JH_SUB_CWD/work/verified-engine-linux-64-198231"
+environment_receipt="$JH_SUB_CWD/work/public-expression-resume7/expression_de_environment_receipt.tsv"
+expression_env="$JH_SUB_CWD/work/public-expression-resume7/expression-de-env"
+public_root="$JH_SUB_CWD/work/public-expression-resume7"
+fastq_receipt="$public_root/fastq_verified_receipt.tsv"
+fastq_summary="$public_root/fastq_verification_summary.tsv"
+reference_receipt="$public_root/reference/reference_index_receipt.tsv"
+sample_sheet="$public_root/alignment_sample_sheet.tsv"
+index_prefix="$public_root/reference/hisat2-index/IRGSP-1.0.release63"
+alignment_receipt="$public_root/alignment_receipt.tsv"
+session="$public_root/alignment_session_versions.tsv"
+
+test -x "$engine/bin/python"
+test -x "$expression_env/bin/fastp"
+test -x "$expression_env/bin/hisat2"
+test -x "$expression_env/bin/samtools"
+grep -Fxq $'status\tPASS' "$environment_receipt"
+grep -Fxq $'status\tPASS' "$fastq_summary"
+grep -Fxq $'status\tPASS' "$reference_receipt"
+test "$(awk 'END {print NR - 1}' "$fastq_receipt")" -eq 96
+test "$(find "$(dirname "$index_prefix")" -maxdepth 1 -type f -name 'IRGSP-1.0.release63.*.ht2*' | wc -l)" -eq 8
+mkdir -p "$public_root" logs/hpc
+
+"$engine/bin/python" scripts/hpc/prepare_public_expression_inputs.py sample-sheet \
+  examples/public_rice_expression/selected_samples.tsv \
+  "$fastq_receipt" \
+  "$sample_sheet"
+test "$(awk 'END {print NR - 1}' "$sample_sheet")" -eq 24
+
+"$engine/bin/python" scripts/hpc/run_public_expression_alignment.py \
+  "$sample_sheet" \
+  "$expression_env" \
+  "$index_prefix" \
+  "$public_root" \
+  --threads 16
+
+test "$(awk 'END {print NR - 1}' "$alignment_receipt")" -eq 24
+awk -F '\t' 'NR > 1 && $11 != "PASS" {exit 1}' "$alignment_receipt"
+{
+  printf 'field\tvalue\n'
+  printf 'status\tPASS\n'
+  printf 'sample_count\t24\n'
+  printf 'fastp_version\t%s\n' "$("$expression_env/bin/fastp" --version 2>&1 | head -n 1)"
+  printf 'hisat2_version\t%s\n' "$("$expression_env/bin/hisat2" --version | head -n 1)"
+  printf 'samtools_version\t%s\n' "$("$expression_env/bin/samtools" --version | head -n 1)"
+  printf 'technical_run_policy\tMERGED_WITHIN_BIOLOGICAL_SAMPLE\n'
+  printf 'orphan_policy\tRECORDED_BUT_EXCLUDED_FROM_PAIRED_ALIGNMENT\n'
+} >"$session"
+printf 'PUBLIC_ALIGNMENT PASS\treceipt=%s\n' "$alignment_receipt"

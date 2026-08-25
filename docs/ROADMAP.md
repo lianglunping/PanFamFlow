@@ -9,13 +9,13 @@
 - 已增加 gzip 输入原子 staging 与真实三组水稻输入测试；继续扩展 GFF3 方言和异常 ID 回归。
 - 固化 OrthoFinder HOG node 审阅流程。
 - 对 DupGen_finder 输出格式做更多版本 fixture 测试。
+- 已增加默认关闭的 raw-count DESeq2 路径，包括重复/design/contrast 审计、逐数据集拟合、效应量、BH-FDR、PCA、DEG membership 和跨胁迫方向整合；真实公共数据验收仍是发布门槛。
 
 ## v0.2：分析扩展
 
 - MCScanX 独立 duplication/synteny backend。
 - family domain architecture 与 MEME sequence logo。
 - codeml branch/site/branch-site 模型。
-- DESeq2 contrasts、样本设计矩阵与多重检验。
 - expression 元数据分组、species-within normalization 和响应方向整合。
 - 重点 absence 的 TBLASTN/miniprot/共线性复核模块。
 - 同种材料的 syntenic pan-locus 构建，将 HOG occupancy 与材料级 locus PAV 分离。

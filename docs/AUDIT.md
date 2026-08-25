@@ -104,7 +104,7 @@ The following are not represented as completed features:
 
 - genome-level rescue of apparent absent family genes;
 - syntenic pan-locus construction for intraspecific accessions;
-- DESeq2/edgeR inferential expression analysis;
+- real-data acceptance of the implemented optional raw-count DESeq2 path (the engineering path and fail-closed gates exist; public biological validation is still pending);
 - codeml/HyPhy positive-selection models;
 - systematic matched-background motif enrichment;
 - full-scale OrthoFinder/IQ-TREE/KaKs interruption tests on real rice data.

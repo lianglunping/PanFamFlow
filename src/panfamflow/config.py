@@ -191,6 +191,7 @@ class FamilySettings(StrictModel):
     calculate_protein_properties: bool = True
     subfamily_assignments: Path | None = None
     domain_validation_table: Path | None = None
+    domain_alignment: Path | None = None
     subcellular_localization_table: Path | None = None
     precomputed_members: Path | None = None
 
@@ -324,6 +325,85 @@ class ExpressionSettings(StrictModel):
     stringtie_extra_args: list[str] = Field(default_factory=list)
 
 
+class DeliverablesSettings(StrictModel):
+    profile: Literal["legacy", "pdf_md_complete"] = "legacy"
+
+
+class ComparativePanelSettings(StrictModel):
+    enabled: bool = False
+    external_species_table: Path | None = None
+    selection_strategy: Literal["explicit", "stratified_seeded"] = "explicit"
+    include_in_pan_denominator: Literal[False] = False
+
+
+class DomainLogoSettings(StrictModel):
+    enabled: bool = False
+    source: Literal["auto", "hmm_domain_hits", "precomputed_alignment"] = "auto"
+    precomputed_alignment: Path | None = None
+    min_domain_coverage: float = Field(default=0.50, ge=0, le=1)
+    min_column_occupancy: float = Field(default=0.50, ge=0, le=1)
+
+
+class SyntenySettings(StrictModel):
+    enabled: bool = False
+    backend: Literal["jcvi", "mcscanx", "precomputed"] = "jcvi"
+    species_pairs_table: Path | None = None
+    precomputed_blocks: Path | None = None
+    representative_species: StrictId | None = None
+    min_anchors_per_block: int = Field(default=5, ge=3)
+    cscore: float = Field(default=0.95, gt=0, le=1)
+    tandem_nmax: int = Field(default=10, ge=0)
+
+    @model_validator(mode="after")
+    def validate_synteny_inputs(self) -> SyntenySettings:
+        if self.enabled and self.species_pairs_table is None:
+            raise ValueError("synteny.species_pairs_table is required when synteny is enabled.")
+        if self.enabled and self.representative_species is None:
+            raise ValueError("synteny.representative_species is required when synteny is enabled.")
+        if self.enabled and self.backend == "precomputed" and self.precomputed_blocks is None:
+            raise ValueError("synteny.precomputed_blocks is required for the precomputed backend.")
+        return self
+
+
+class DifferentialExpressionSettings(StrictModel):
+    enabled: bool = False
+    source: Literal["featurecounts", "precomputed_counts"] = "featurecounts"
+    input_scale: Literal["raw_counts", "tpm", "fpkm"] = "raw_counts"
+    counts_table: Path | None = None
+    design_table: Path | None = None
+    contrasts_table: Path | None = None
+    min_replicates: int = Field(default=2, ge=2)
+    alpha: float = Field(default=0.05, gt=0, lt=1)
+    lfc_threshold: float = Field(default=1.0, ge=0)
+    min_total_count: int = Field(default=10, ge=0)
+    feature_type: str = "exon"
+    feature_attribute: str = "Parent"
+    container_image: str = (
+        "docker://ghcr.io/lianglunping/panfamflow-expression-de@"
+        "sha256:57252522c5af7ebfe6fcec649896065316771c8679cc36c2a3094b9e755eeb29"
+    )
+
+    @model_validator(mode="after")
+    def validate_formal_de_inputs(self) -> DifferentialExpressionSettings:
+        if self.enabled and self.input_scale != "raw_counts":
+            raise ValueError(
+                "Formal differential expression requires raw integer counts, not TPM/FPKM."
+            )
+        if self.enabled and self.source == "precomputed_counts" and self.counts_table is None:
+            raise ValueError(
+                "differential_expression.counts_table is required for precomputed_counts."
+            )
+        if self.enabled and self.design_table is None:
+            raise ValueError("differential_expression.design_table is required when enabled.")
+        if self.enabled and self.contrasts_table is None:
+            raise ValueError("differential_expression.contrasts_table is required when enabled.")
+        if self.enabled and "@sha256:" not in self.container_image:
+            raise ValueError(
+                "differential_expression.container_image must use an immutable sha256 digest."
+            )
+        return self
+
+
 class PlotSettings(StrictModel):
     pdf: bool = True
     png: bool = True
@@ -374,7 +454,7 @@ class WorkflowConfig(StrictModel):
             data["run"] = migrated_run
         return data
 
-    schema_version: Literal["1.0"] = "1.0"
+    schema_version: Literal["1.0", "1.1"] = "1.0"
     project: ProjectSettings = Field(default_factory=ProjectSettings)
     run: RunSettings = Field(default_factory=RunSettings)
     inputs: InputsSettings
@@ -392,12 +472,39 @@ class WorkflowConfig(StrictModel):
     kaks: KaksSettings = Field(default_factory=KaksSettings)
     promoter: PromoterSettings = Field(default_factory=PromoterSettings)
     expression: ExpressionSettings = Field(default_factory=ExpressionSettings)
+    deliverables: DeliverablesSettings = Field(default_factory=DeliverablesSettings)
+    comparative_panel: ComparativePanelSettings = Field(default_factory=ComparativePanelSettings)
+    domain_logo: DomainLogoSettings = Field(default_factory=DomainLogoSettings)
+    synteny: SyntenySettings = Field(default_factory=SyntenySettings)
+    differential_expression: DifferentialExpressionSettings = Field(
+        default_factory=DifferentialExpressionSettings
+    )
     plot: PlotSettings = Field(default_factory=PlotSettings)
     report: ReportSettings = Field(default_factory=ReportSettings)
 
     @model_validator(mode="after")
     def validate_cross_references(self) -> WorkflowConfig:
         known = {species.id for species in self.inputs.species}
+        if self.comparative_panel.enabled and self.comparative_panel.external_species_table is None:
+            raise ValueError(
+                "comparative_panel.external_species_table is required when the panel is enabled."
+            )
+        if (
+            self.synteny.representative_species is not None
+            and self.synteny.representative_species not in known
+        ):
+            raise ValueError(
+                f"synteny.representative_species {self.synteny.representative_species!r} "
+                "is not in inputs.species."
+            )
+        if (
+            self.differential_expression.enabled
+            and self.differential_expression.source == "featurecounts"
+            and self.expression.mode != "fastq_stringtie"
+        ):
+            raise ValueError(
+                "featureCounts DE requires expression.mode=fastq_stringtie and registered FASTQ samples."
+            )
         if self.duplication.targets is not None:
             unknown = sorted(set(self.duplication.targets).difference(known))
             if unknown:
@@ -439,6 +546,15 @@ def analysis_config_payload(config: WorkflowConfig) -> dict[str, Any]:
     payload.pop("run", None)
     payload.pop("plot", None)
     payload.pop("report", None)
+    if config.schema_version == "1.0":
+        for field in (
+            "deliverables",
+            "comparative_panel",
+            "domain_logo",
+            "synteny",
+            "differential_expression",
+        ):
+            payload.pop(field, None)
     return payload
 
 
@@ -581,6 +697,7 @@ def validate_input_paths(
     for field, path in (
         ("family.subfamily_assignments", config.family.subfamily_assignments),
         ("family.domain_validation_table", config.family.domain_validation_table),
+        ("family.domain_alignment", config.family.domain_alignment),
         ("family.subcellular_localization_table", config.family.subcellular_localization_table),
     ):
         if "family" in selected and path is not None:
@@ -626,6 +743,11 @@ def validate_input_paths(
                             "Each DupGen_finder target requires a configured outgroup.",
                         )
                     )
+
+        if config.synteny.enabled:
+            require(config.synteny.species_pairs_table, "synteny.species_pairs_table")
+            if config.synteny.backend == "precomputed":
+                require(config.synteny.precomputed_blocks, "synteny.precomputed_blocks")
 
     if "promoter" in selected:
         if config.promoter.backend == "fimo":
@@ -675,6 +797,21 @@ def validate_input_paths(
                         "TPM quantification remains possible, but inferential differential "
                         "expression is not implemented by this v0.1 module.",
                     )
+                )
+
+        if config.differential_expression.enabled:
+            require(
+                config.differential_expression.design_table,
+                "differential_expression.design_table",
+            )
+            require(
+                config.differential_expression.contrasts_table,
+                "differential_expression.contrasts_table",
+            )
+            if config.differential_expression.source == "precomputed_counts":
+                require(
+                    config.differential_expression.counts_table,
+                    "differential_expression.counts_table",
                 )
 
     if config.run.profile is not None:

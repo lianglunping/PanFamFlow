@@ -3,9 +3,16 @@ from pathlib import Path as _ScriptPath
 
 sys.path.insert(0, str(_ScriptPath(snakemake.scriptdir)))
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from expression_summary_utils import (
+    attach_pan_classes,
+    build_descriptive_summaries,
+    save_descriptive_expression_outputs,
+    save_expression_heatmap,
+    scale_expression_matrix,
+    validate_sample_metadata,
+)
 from workflow_utils import read_delimited_table, resolve_column, save_table, save_workbook
 
 members = pd.read_csv(snakemake.input.members, sep="\t")
@@ -65,23 +72,66 @@ family_ids = set(members["stable_id"].astype(str))
 matrix = source.loc[
     source["stable_id"].astype(str).isin(family_ids), ["stable_id", *sample_columns]
 ]
-matrix = members[["stable_id", "species_id", "gene_id", "subfamily"]].merge(
-    matrix, on="stable_id", how="left", validate="one_to_one"
+member_columns = [
+    column
+    for column in ["stable_id", "species_id", "gene_id", "group", "subfamily"]
+    if column in members.columns
+]
+matrix = members[member_columns].merge(matrix, on="stable_id", how="left", validate="one_to_one")
+sample_metadata = validate_sample_metadata(
+    sample_columns, getattr(snakemake.params, "sample_metadata", None)
 )
-available_counts = matrix[sample_columns].notna().sum(axis=1)
-matrix["expression_data_status"] = np.select(
-    [available_counts.eq(0), available_counts.lt(len(sample_columns))],
-    ["MISSING", "PARTIAL_MISSING"],
-    default="AVAILABLE",
-)
+metadata_is_configured = sample_metadata["metadata_status"].eq("PASS").all()
+if metadata_is_configured:
+    sample_species = sample_metadata.set_index("sample_id")["sample_species_id"].to_dict()
+    for _, row in matrix.iterrows():
+        species_id = str(row["species_id"])
+        for sample_id in sample_columns:
+            value = row[sample_id]
+            if str(sample_species[sample_id]) != species_id and pd.notna(value):
+                raise ValueError(
+                    f"Expression value was supplied for non-applicable species/sample cell: "
+                    f"{row['stable_id']}, {sample_id}. Use an empty value, not zero."
+                )
+    status_values: list[str] = []
+    for _, row in matrix.iterrows():
+        applicable = [
+            sample_id
+            for sample_id in sample_columns
+            if str(sample_species[sample_id]) == str(row["species_id"])
+        ]
+        available = int(row[applicable].notna().sum()) if applicable else 0
+        status_values.append(
+            "NOT_APPLICABLE"
+            if not applicable
+            else "MISSING"
+            if available == 0
+            else "PARTIAL_MISSING"
+            if available < len(applicable)
+            else "AVAILABLE"
+        )
+    matrix["expression_data_status"] = status_values
+else:
+    available_counts = matrix[sample_columns].notna().sum(axis=1)
+    matrix["expression_data_status"] = np.select(
+        [available_counts.eq(0), available_counts.lt(len(sample_columns))],
+        ["MISSING", "PARTIAL_MISSING"],
+        default="AVAILABLE",
+    )
 long = matrix.melt(
-    id_vars=["stable_id", "species_id", "gene_id", "subfamily", "expression_data_status"],
+    id_vars=[*member_columns, "expression_data_status"],
     value_vars=sample_columns,
     var_name="sample_id",
     value_name="expression_value",
 )
-observed = long["expression_value"].notna()
-long["measurement_status"] = np.where(observed, "OBSERVED", "MISSING_IN_INPUT")
+long = long.merge(sample_metadata, on="sample_id", how="left", validate="many_to_one")
+applicable = long["sample_species_id"].isna() | long["species_id"].astype(str).eq(
+    long["sample_species_id"].astype(str)
+)
+observed = long["expression_value"].notna() & applicable
+long["measurement_status"] = np.select(
+    [~applicable, observed], ["NOT_APPLICABLE", "OBSERVED"], default="MISSING_IN_INPUT"
+)
 long["detected"] = pd.Series(pd.NA, index=long.index, dtype="boolean")
 long.loc[observed, "detected"] = (
     long.loc[observed, "expression_value"] >= float(snakemake.params.min_tpm_detected)
@@ -94,51 +144,35 @@ summary = long.groupby(["stable_id", "species_id", "gene_id"], as_index=False).a
     max_expression=("expression_value", "max"),
 )
 summary["expression_detected_samples"] = summary["expression_detected_samples"].astype("Int64")
+long = attach_pan_classes(
+    long,
+    getattr(snakemake.params, "pan_membership", None),
+    getattr(snakemake.params, "pan_classification", None),
+)
+gene_condition, stratified_summary = build_descriptive_summaries(long)
 save_table(matrix, snakemake.output.matrix)
 save_table(long, snakemake.output.long)
 save_table(summary, snakemake.output.summary)
 save_workbook({"matrix": matrix, "long": long, "summary": summary}, snakemake.output.xlsx)
-
-values = matrix[sample_columns].astype(float).to_numpy()
-transformed = np.log2(values + 1.0)
-if str(snakemake.params.heatmap_transform) == "log2_tpm1_zscore":
-    valid = np.isfinite(transformed)
-    counts = valid.sum(axis=1, keepdims=True)
-    means = np.divide(
-        np.nansum(transformed, axis=1, keepdims=True),
-        counts,
-        out=np.zeros((transformed.shape[0], 1), dtype=float),
-        where=counts > 0,
-    )
-    centered = transformed - means
-    variance = np.divide(
-        np.nansum(centered**2, axis=1, keepdims=True),
-        counts,
-        out=np.zeros((transformed.shape[0], 1), dtype=float),
-        where=counts > 0,
-    )
-    standard_deviations = np.sqrt(variance)
-    standard_deviations[(standard_deviations == 0) | ~np.isfinite(standard_deviations)] = 1.0
-    transformed = centered / standard_deviations
-    transformed[~valid] = np.nan
-fig_height = max(4.8, min(18.0, 0.18 * max(1, matrix.shape[0])))
-fig, axis = plt.subplots(figsize=(max(7.0, 0.35 * len(sample_columns)), fig_height))
-cmap = plt.get_cmap("viridis").with_extremes(bad="#d9d9d9")
-image = axis.imshow(
-    np.ma.masked_invalid(transformed),
-    aspect="auto",
-    interpolation="nearest",
-    cmap=cmap,
+save_descriptive_expression_outputs(
+    long,
+    gene_condition,
+    stratified_summary,
+    sample_metadata,
+    snakemake.output,
+    int(snakemake.params.png_dpi),
 )
-axis.set_xticks(range(len(sample_columns)), sample_columns, rotation=45, ha="right")
-if matrix.shape[0] <= 80:
-    axis.set_yticks(range(matrix.shape[0]), matrix["stable_id"].astype(str), fontsize=6)
-else:
-    axis.set_yticks([])
-axis.set_xlabel("Sample")
-axis.set_ylabel("Family gene")
-fig.colorbar(image, ax=axis, label=str(snakemake.params.heatmap_transform))
-fig.tight_layout()
-fig.savefig(snakemake.output.plot_pdf)
-fig.savefig(snakemake.output.plot_png, dpi=int(snakemake.params.png_dpi))
-plt.close(fig)
+
+scaled = scale_expression_matrix(
+    matrix,
+    sample_columns,
+    str(snakemake.params.heatmap_transform),
+)
+save_expression_heatmap(
+    scaled,
+    sample_columns,
+    table_tsv=snakemake.output.scaled,
+    plot_pdf=snakemake.output.plot_pdf,
+    plot_png=snakemake.output.plot_png,
+    png_dpi=int(snakemake.params.png_dpi),
+)

@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+#JSUB -J panfamflow_oci_resume7
+#JSUB -q normal
+#JSUB -n 1
+#JSUB -o logs/hpc/oci_reassembly_resume7.%J.out
+#JSUB -e logs/hpc/oci_reassembly_resume7.%J.err
+
+set -euo pipefail
+cd "$JH_SUB_CWD"
+
+staging_root="$JH_SUB_CWD/work/verified-container-staging"
+chunk_root="$staging_root/resume7-chunks"
+manifest="$chunk_root/chunks.sha256.tsv"
+archive="$staging_root/panfamflow-expression-de_57252522.attempt2.resume7.verified.oci.tar"
+job_token="${JH_JOB_ID:-${JH_JOBID:-$$}}"
+archive_partial="$staging_root/reassembly.${job_token}.partial"
+receipt="$staging_root/reassembly.${job_token}.receipt.tsv"
+expected_chunks=27
+expected_bytes=1792461824
+expected_sha256=9b0d65a671d0c29f20cda14d9642449a0debc342a4d40856db8c23fb964448fc
+
+mkdir -p "$staging_root" logs/hpc
+test -s "$manifest"
+test ! -e "$archive"
+test ! -e "$archive_partial"
+
+read -r header <"$manifest"
+test "$header" = $'ordinal\tfilename\tbytes\tsha256'
+test "$(awk 'END {print NR - 1}' "$manifest")" -eq "$expected_chunks"
+
+observed_chunks=0
+observed_bytes=0
+: >"$archive_partial"
+while IFS=$'\t' read -r ordinal filename chunk_bytes chunk_sha256; do
+  test "$ordinal" = "$(printf '%03d' "$observed_chunks")"
+  test "$filename" = "chunk-$ordinal"
+  test "$chunk_bytes" -gt 0
+  chunk_file="$chunk_root/$filename"
+  test -s "$chunk_file"
+  test "$(stat -c '%s' "$chunk_file")" -eq "$chunk_bytes"
+  printf '%s  %s\n' "$chunk_sha256" "$chunk_file" | sha256sum --check --strict
+  cat "$chunk_file" >>"$archive_partial"
+  observed_chunks=$((observed_chunks + 1))
+  observed_bytes=$((observed_bytes + chunk_bytes))
+done < <(tail -n +2 "$manifest")
+
+test "$observed_chunks" -eq "$expected_chunks"
+test "$observed_bytes" -eq "$expected_bytes"
+test "$(stat -c '%s' "$archive_partial")" -eq "$expected_bytes"
+printf '%s  %s\n' "$expected_sha256" "$archive_partial" | sha256sum --check --strict
+mv "$archive_partial" "$archive"
+
+{
+  printf 'field\tvalue\n'
+  printf 'status\tPASS\n'
+  printf 'chunk_count\t%s\n' "$observed_chunks"
+  printf 'archive_bytes\t%s\n' "$observed_bytes"
+  printf 'archive_sha256\t%s\n' "$expected_sha256"
+  printf 'archive_path\t%s\n' "$archive"
+} >"$receipt"
+printf 'REASSEMBLED\t%s\n' "$archive"
