@@ -9,7 +9,7 @@
 
 原始文档不随代码仓库公开；本文件只记录需求摘要、实现决策和解释边界。
 
-两份来源材料的原文字清单及 PDF 逐图核对得到的 58 个主题已经逐项审计；其中 7 项用于补齐原 51 项目录遗漏。机器可读判定见 [`ANALYSIS_COVERAGE.tsv`](ANALYSIS_COVERAGE.tsv)，中文口径见 [`ANALYSIS_COVERAGE.zh-CN.md`](ANALYSIS_COVERAGE.zh-CN.md)。当前代码能力分布为 52 项 `IMPLEMENTED`、6 项 `CONDITIONALLY_AVAILABLE`；条件项已有执行路径，但需显式打开 Logo、共线性或 raw-count DE，并满足相应输入门禁。下表是模块级摘要，不能替代逐项状态或真实数据验收。
+两份来源材料的原文字清单及 PDF 逐图核对得到的 58 个主题已经逐项审计；其中 7 项用于补齐原 51 项目录遗漏。机器可读判定见 [`ANALYSIS_COVERAGE.tsv`](ANALYSIS_COVERAGE.tsv)，中文口径见 [`ANALYSIS_COVERAGE.zh-CN.md`](ANALYSIS_COVERAGE.zh-CN.md)。当前代码能力分布为 53 项 `IMPLEMENTED`、5 项 `CONDITIONALLY_AVAILABLE`；条件项已有执行路径，但需显式打开 Logo、共线性或 raw-count DE，并满足相应输入门禁。下表是模块级摘要，不能替代逐项状态或真实数据验收。
 
 ## 2. 来源要求到实现的映射
 

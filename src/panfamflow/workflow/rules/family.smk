@@ -145,6 +145,9 @@ rule combine_family_evidence:
         domain_validation_table=config["family"].get("domain_validation_table"),
         domain_alignment=config["family"].get("domain_alignment"),
         subcellular_localization_table=config["family"].get("subcellular_localization_table"),
+        external_import_validation=config["family"].get(
+            "external_import_validation", "legacy"
+        ),
     conda:
         "../envs/family.yaml"
     script:

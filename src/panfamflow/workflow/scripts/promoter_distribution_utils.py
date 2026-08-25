@@ -63,6 +63,17 @@ HOG_DISTRIBUTION_COLUMNS = [
     "hits_per_kb",
 ]
 
+CATEGORY_SUMMARY_METRICS = [
+    "motif_hit_count",
+    "motif_hit_fraction",
+    "genes_with_hit",
+    "n_genes",
+    "gene_denominator",
+    "gene_prevalence",
+    "total_promoter_bp",
+    "hits_per_kb",
+]
+
 
 def _require_columns(frame: pd.DataFrame, columns: Sequence[str], label: str) -> None:
     missing = [column for column in columns if column not in frame.columns]
@@ -73,6 +84,59 @@ def _require_columns(frame: pd.DataFrame, columns: Sequence[str], label: str) ->
 def _normalize_labels(values: pd.Series) -> pd.Series:
     normalized = values.astype("string").str.strip()
     return normalized.mask(normalized.str.upper().isin(MISSING_LABELS), pd.NA)
+
+
+def summarize_promoter_categories(
+    elements: pd.DataFrame,
+    coordinates: pd.DataFrame,
+    group_columns: Sequence[str],
+) -> pd.DataFrame:
+    """Summarize motif burden against explicit gene and promoter-length denominators."""
+
+    _require_columns(elements, ("stable_id", "element", *group_columns), "promoter elements")
+    _require_columns(coordinates, ("stable_id", "promoter_length"), "promoter coordinates")
+    if coordinates["stable_id"].astype(str).duplicated().any():
+        raise ValueError("Promoter coordinates contain duplicate stable_id values.")
+    metadata = coordinates[["stable_id", "promoter_length"]].copy()
+    metadata["stable_id"] = metadata["stable_id"].astype(str)
+    metadata["promoter_length"] = pd.to_numeric(metadata["promoter_length"], errors="coerce")
+    if metadata["promoter_length"].isna().any():
+        raise ValueError("Promoter coordinates contain non-numeric promoter_length values.")
+    if (metadata["promoter_length"] < 0).any():
+        raise ValueError("Promoter coordinates contain negative promoter_length values.")
+
+    gene_denominator = int(metadata["stable_id"].nunique())
+    total_promoter_bp = float(metadata["promoter_length"].sum())
+    clean = elements.copy()
+    clean["stable_id"] = clean["stable_id"].astype(str)
+    unknown = sorted(set(clean["stable_id"]).difference(metadata["stable_id"]))
+    if unknown:
+        raise ValueError(
+            "Promoter elements contain stable IDs outside the coordinate denominator: "
+            + ", ".join(unknown[:10])
+        )
+    summary = (
+        clean.groupby(list(group_columns), dropna=False, as_index=False)
+        .agg(
+            motif_hit_count=("element", "size"),
+            genes_with_hit=("stable_id", "nunique"),
+        )
+        .reset_index(drop=True)
+    )
+    total_hits = int(summary["motif_hit_count"].sum())
+    summary["motif_hit_fraction"] = summary["motif_hit_count"] / total_hits if total_hits else 0.0
+    summary["n_genes"] = summary["genes_with_hit"]
+    summary["gene_denominator"] = gene_denominator
+    summary["gene_prevalence"] = (
+        summary["genes_with_hit"] / gene_denominator if gene_denominator else pd.NA
+    )
+    summary["total_promoter_bp"] = total_promoter_bp
+    summary["hits_per_kb"] = (
+        summary["motif_hit_count"] / (total_promoter_bp / 1000.0)
+        if total_promoter_bp > 0
+        else pd.NA
+    )
+    return summary[[*group_columns, *CATEGORY_SUMMARY_METRICS]]
 
 
 def _cell_id(frame: pd.DataFrame, dimensions: Sequence[str]) -> pd.Series:

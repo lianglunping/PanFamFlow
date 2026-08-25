@@ -51,6 +51,15 @@
 - `pan_family_subfamily_class_summary.tsv`：`subfamily × pan_family_class` 的零值完整 gene/HOG 数量与比例；
 - 相应 `*_dual_denominator.pdf/.png` 和 `*_class_distribution.pdf/.png` 图件。
 
+## `06_pan_family/ogg_tree_contract.tsv`
+
+该合同把两类树形对象分开：
+
+- `ORTHOFINDER_SPECIES_PHYLOGENY`：系统发育对象，源自唯一的 `Species_Tree/SpeciesTree_rooted.txt`；
+- `OGG_PRESENCE_ABSENCE_CLUSTERING`：非系统发育对象，源自目标家族 OGG 二元有无矩阵的 Jaccard 距离与 average linkage。
+
+配套 `ogg_tree_provenance.tsv` 保存源路径、SHA256、叶标签数、闭合状态、方法和解释边界；`ogg_presence_absence_distances.tsv` 保存每对物种的交集、并集和 Jaccard 距离；`ogg_presence_absence_linkage.tsv` 保存确定性聚类步骤。两类对象不得互换命名。
+
 ## `04_gene_structure/gene_structure_global_tests.tsv`
 
 - `comparison_scope`, `group_field`, `metric`
@@ -91,9 +100,11 @@
 
 - `promoter_element_summary.tsv`：按 stable gene、major class 和 element 汇总命中数；
 - `promoter_elements_per_gene.tsv`：按 stable gene 与 major class 汇总，供整合报告使用；
+- `promoter_major_class_summary.tsv` 与 `promoter_subclass_summary.tsv`：保存 `motif_hit_count`、`motif_hit_fraction`、`genes_with_hit`、`gene_denominator`、`gene_prevalence`、`total_promoter_bp` 和 `hits_per_kb`；
 - `promoter_element_distributions.tsv`：按 `SPECIES_SUBFAMILY`、`SUBFAMILY`、`SPECIES`、`GROUP` 和 `GROUP_SUBFAMILY` 五个层级输出零值完整网格、`motif_hit_count`、`genes_with_hit`、`n_genes`、`total_promoter_bp`、`hits_per_gene`、`hits_per_kb`、两个 z-score 及其状态；
 - `promoter_distribution_qc.tsv`：逐聚合层级记录所需注释、可用/排除基因数、单元与元件数、完整网格行数、零长度单元、标准化轴和 QC 状态；
-- `promoter_element_class_counts.pdf/.png`：主类别计数图；
+- `promoter_element_class_counts.pdf/.png` 与 `Fig23_promoter_four_major_classes.pdf/.png`：主类别 motif 命中组成圆环图，图例同时写出有命中的基因数/全部启动子基因数；
+- `Fig24_promoter_subclasses.pdf/.png`：子类别 motif 命中数与基因检出率双面板；两者均为描述性指标，不是富集检验；
 - `promoter_top_elements.pdf/.png`：配置 Top-N 的元件计数图；
 - `promoter_species_subfamily_zscore_heatmap.pdf/.png`、`promoter_subfamily_zscore_heatmap.pdf/.png`、`promoter_species_zscore_heatmap.pdf/.png`、`promoter_group_zscore_heatmap.pdf/.png`、`promoter_group_subfamily_zscore_heatmap.pdf/.png`：对每个元件跨相应单元的 `hits_per_kb` 计算总体 z-score（`ddof=0`）后绘制；灰色表示分母缺失，颜色不代表显著富集。
 

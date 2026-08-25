@@ -10,13 +10,141 @@ from types import SimpleNamespace
 import pandas as pd
 import pytest
 
+from panfamflow.workflow.scripts.external_evidence_utils import (
+    validate_external_evidence_table,
+)
+from panfamflow.workflow.scripts.ogg_tree_utils import (
+    build_presence_absence_distances,
+    validate_species_tree_tips,
+    write_ogg_tree_objects,
+)
 from panfamflow.workflow.scripts.promoter_distribution_utils import (
     build_promoter_distributions,
     build_promoter_hog_distributions,
+    summarize_promoter_categories,
 )
 
 SCRIPT_DIR = Path(__file__).parents[1] / "src" / "panfamflow" / "workflow" / "scripts"
 TOY_DIR = Path(__file__).parents[1] / "examples" / "toy"
+
+
+def test_ogg_tree_objects_keep_phylogeny_and_content_clustering_distinct(
+    tmp_path: Path,
+) -> None:
+    result_dir = tmp_path / "orthofinder"
+    tree_dir = result_dir / "Species_Tree"
+    tree_dir.mkdir(parents=True)
+    (tree_dir / "SpeciesTree_rooted.txt").write_text(
+        "((SpA:0.1,SpB:0.1):0.2,SpC:0.3);\n",
+        encoding="utf-8",
+    )
+    presence = pd.DataFrame(
+        {
+            "HOG_ID": ["HOG1", "HOG2", "HOG3"],
+            "SpA": [1, 1, 0],
+            "SpB": [1, 0, 0],
+            "SpC": [0, 0, 1],
+        }
+    )
+    outputs = {
+        "species_tree_newick": tmp_path / "species_tree.nwk",
+        "species_tree_pdf": tmp_path / "species_tree.pdf",
+        "species_tree_png": tmp_path / "species_tree.png",
+        "clustering_pdf": tmp_path / "clustering.pdf",
+        "clustering_png": tmp_path / "clustering.png",
+        "distances": tmp_path / "distances.tsv",
+        "linkage": tmp_path / "linkage.tsv",
+        "provenance": tmp_path / "provenance.tsv",
+        "contract": tmp_path / "contract.tsv",
+    }
+    result = write_ogg_tree_objects(
+        result_dir=result_dir,
+        presence=presence,
+        species_ids=["SpA", "SpB", "SpC"],
+        outputs=outputs,
+        png_dpi=72,
+    )
+    assert result["provenance"]["tip_closure_status"].eq("PASS").all()
+    contract = result["contract"].set_index("object_id")
+    assert bool(contract.loc["ORTHOFINDER_SPECIES_PHYLOGENY", "is_phylogenetic"])
+    assert not bool(contract.loc["OGG_PRESENCE_ABSENCE_CLUSTERING", "is_phylogenetic"])
+    assert (
+        contract.loc["OGG_PRESENCE_ABSENCE_CLUSTERING", "must_not_be_called"]
+        == "SPECIES_TREE_OR_PHYLOGENY"
+    )
+    assert result["distances"].shape[0] == 3
+    assert set(result["linkage"]["object_type"]) == {"NON_PHYLOGENETIC_CLUSTERING"}
+    for path in outputs.values():
+        assert Path(path).stat().st_size > 0
+
+
+def test_ogg_species_tree_tip_mismatch_fails_closed(tmp_path: Path) -> None:
+    tree = tmp_path / "SpeciesTree_rooted.txt"
+    tree.write_text("(SpA:0.1,Unexpected:0.2);\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="do not close"):
+        validate_species_tree_tips(tree, ["SpA", "SpB"])
+
+
+def test_ogg_presence_absence_distances_require_binary_values() -> None:
+    presence = pd.DataFrame({"HOG_ID": ["H1"], "SpA": [1], "SpB": [2]})
+    with pytest.raises(ValueError, match="binary"):
+        build_presence_absence_distances(presence, ["SpA", "SpB"])
+
+
+def test_promoter_category_summary_keeps_hit_gene_and_length_denominators() -> None:
+    coordinates = pd.DataFrame(
+        {
+            "stable_id": ["A", "B", "C"],
+            "promoter_length": [1000, 500, 500],
+        }
+    )
+    elements = pd.DataFrame(
+        {
+            "stable_id": ["A", "A", "B"],
+            "element": ["ABRE", "ABRE", "DRE"],
+            "major_class": ["Hormone", "Hormone", "Stress"],
+        }
+    )
+    summary = summarize_promoter_categories(elements, coordinates, ["major_class"])
+    hormone = summary.set_index("major_class").loc["Hormone"]
+    assert hormone["motif_hit_count"] == 2
+    assert hormone["genes_with_hit"] == 1
+    assert hormone["n_genes"] == 1
+    assert hormone["gene_denominator"] == 3
+    assert hormone["gene_prevalence"] == pytest.approx(1 / 3)
+    assert hormone["total_promoter_bp"] == 2000
+    assert hormone["hits_per_kb"] == pytest.approx(1.0)
+    assert summary["motif_hit_fraction"].sum() == pytest.approx(1.0)
+
+
+@pytest.mark.parametrize(
+    ("filename", "evidence_kind"),
+    [
+        ("cdd.tsv", "domain_validation"),
+        ("wolf_psort.tsv", "localization"),
+        ("plantcare.tsv", "plantcare"),
+    ],
+)
+def test_external_import_templates_pass_strict_provenance_contract(
+    filename: str,
+    evidence_kind: str,
+) -> None:
+    table = pd.read_csv(
+        Path(__file__).parents[1] / "examples" / "external_import_templates" / filename,
+        sep="\t",
+    )
+    result = validate_external_evidence_table(
+        table,
+        evidence_kind=evidence_kind,
+        strict=True,
+    )
+    assert result.equals(table)
+
+
+def test_strict_external_import_rejects_missing_provenance() -> None:
+    table = pd.DataFrame({"stable_id": ["SpA__GeneA1"], "localization": ["nucleus"]})
+    with pytest.raises(ValueError, match="missing provenance columns"):
+        validate_external_evidence_table(table, evidence_kind="localization", strict=True)
 
 
 def test_family_tree_annotations_reconcile_exactly_with_accepted_members(tmp_path: Path) -> None:
@@ -469,6 +597,14 @@ def test_promoter_rule_passes_stable_id_separator() -> None:
     assert "gff3s=NORMALIZED_GFFS" in extract_block
 
 
+def test_unselected_promoter_does_not_require_the_default_fimo_database() -> None:
+    rule = (
+        Path(__file__).parents[1] / "src" / "panfamflow" / "workflow" / "rules" / "promoter.smk"
+    ).read_text(encoding="utf-8")
+
+    assert 'if PROMOTER_BACKEND == "fimo" and "promoter" in SELECTED_MODULES:' in rule
+
+
 def test_orthofinder_resolves_work_directory_before_changing_cwd() -> None:
     script = (SCRIPT_DIR / "run_orthofinder.py").read_text(encoding="utf-8")
     assert "work_dir = Path(snakemake.params.work_dir).resolve()" in script
@@ -485,6 +621,11 @@ def test_pan_family_parser(tmp_path: Path) -> None:
     result_dir = tmp_path / "orthofinder"
     hog_dir = result_dir / "Phylogenetic_Hierarchical_Orthogroups"
     hog_dir.mkdir(parents=True)
+    species_tree_dir = result_dir / "Species_Tree"
+    species_tree_dir.mkdir()
+    (species_tree_dir / "SpeciesTree_rooted.txt").write_text(
+        "(SpA:0.1,SpB:0.1);\n", encoding="utf-8"
+    )
     (hog_dir / "N0.tsv").write_text(
         "HOG\tOG\tGene Tree Parent Clade\tSpA\tSpB\n"
         "N0.HOG0000001\tOG0000001\tN0\tSpA__GeneA1\tSpB__GeneB1\n"
@@ -528,6 +669,15 @@ def test_pan_family_parser(tmp_path: Path) -> None:
         fig12_png=str(tmp_path / "Fig12.png"),
         fig13_pdf=str(tmp_path / "Fig13.pdf"),
         fig13_png=str(tmp_path / "Fig13.png"),
+        species_tree_newick=str(tmp_path / "orthofinder_species_tree.nwk"),
+        species_tree_pdf=str(tmp_path / "orthofinder_species_tree.pdf"),
+        species_tree_png=str(tmp_path / "orthofinder_species_tree.png"),
+        ogg_clustering_pdf=str(tmp_path / "ogg_presence_absence_clustering.pdf"),
+        ogg_clustering_png=str(tmp_path / "ogg_presence_absence_clustering.png"),
+        ogg_distances=str(tmp_path / "ogg_presence_absence_distances.tsv"),
+        ogg_linkage=str(tmp_path / "ogg_presence_absence_linkage.tsv"),
+        ogg_tree_provenance=str(tmp_path / "ogg_tree_provenance.tsv"),
+        ogg_tree_contract=str(tmp_path / "ogg_tree_contract.tsv"),
     )
     fake = SimpleNamespace(
         scriptdir=str(SCRIPT_DIR),
@@ -562,6 +712,11 @@ def test_pan_family_parser_falls_back_to_public_orthogroups_in_auto_mode(
 ) -> None:
     result_dir = tmp_path / "orthofinder"
     (result_dir / "Phylogenetic_Hierarchical_Orthogroups").mkdir(parents=True)
+    species_tree_dir = result_dir / "Species_Tree"
+    species_tree_dir.mkdir()
+    (species_tree_dir / "SpeciesTree_rooted.txt").write_text(
+        "(SpA:0.1,SpB:0.1);\n", encoding="utf-8"
+    )
     orthogroup_dir = result_dir / "Orthogroups"
     orthogroup_dir.mkdir()
     (orthogroup_dir / "Orthogroups.tsv").write_text(
@@ -605,6 +760,15 @@ def test_pan_family_parser_falls_back_to_public_orthogroups_in_auto_mode(
         fig12_png=str(tmp_path / "Fig12.png"),
         fig13_pdf=str(tmp_path / "Fig13.pdf"),
         fig13_png=str(tmp_path / "Fig13.png"),
+        species_tree_newick=str(tmp_path / "orthofinder_species_tree.nwk"),
+        species_tree_pdf=str(tmp_path / "orthofinder_species_tree.pdf"),
+        species_tree_png=str(tmp_path / "orthofinder_species_tree.png"),
+        ogg_clustering_pdf=str(tmp_path / "ogg_presence_absence_clustering.pdf"),
+        ogg_clustering_png=str(tmp_path / "ogg_presence_absence_clustering.png"),
+        ogg_distances=str(tmp_path / "ogg_presence_absence_distances.tsv"),
+        ogg_linkage=str(tmp_path / "ogg_presence_absence_linkage.tsv"),
+        ogg_tree_provenance=str(tmp_path / "ogg_tree_provenance.tsv"),
+        ogg_tree_contract=str(tmp_path / "ogg_tree_contract.tsv"),
     )
     fake = SimpleNamespace(
         scriptdir=str(SCRIPT_DIR),

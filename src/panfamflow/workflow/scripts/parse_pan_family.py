@@ -12,6 +12,7 @@ from typing import Any
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from ogg_tree_utils import write_ogg_tree_objects
 from stratified_summary_utils import (
     PAN_CLASS_ORDER,
     build_pan_family_summaries,
@@ -278,6 +279,23 @@ save_table(class_summary, snakemake.output.class_summary)
 save_table(hog_gene_counts, snakemake.output.hog_gene_counts)
 save_table(species_class_summary, snakemake.output.species_class_summary)
 save_table(subfamily_class_summary, snakemake.output.subfamily_class_summary)
+ogg_tree_tables = write_ogg_tree_objects(
+    result_dir=result_dir,
+    presence=presence,
+    species_ids=species_ids,
+    outputs={
+        "species_tree_newick": snakemake.output.species_tree_newick,
+        "species_tree_pdf": snakemake.output.species_tree_pdf,
+        "species_tree_png": snakemake.output.species_tree_png,
+        "clustering_pdf": snakemake.output.ogg_clustering_pdf,
+        "clustering_png": snakemake.output.ogg_clustering_png,
+        "distances": snakemake.output.ogg_distances,
+        "linkage": snakemake.output.ogg_linkage,
+        "provenance": snakemake.output.ogg_tree_provenance,
+        "contract": snakemake.output.ogg_tree_contract,
+    },
+    png_dpi=int(snakemake.params.png_dpi),
+)
 save_workbook(
     {
         "pan_family_classification": classification,
@@ -290,6 +308,10 @@ save_workbook(
         "hog_gene_counts": hog_gene_counts,
         "species_class_summary": species_class_summary,
         "subfamily_class_summary": subfamily_class_summary,
+        "ogg_jaccard_distances": ogg_tree_tables["distances"],
+        "ogg_average_linkage": ogg_tree_tables["linkage"],
+        "ogg_tree_provenance": ogg_tree_tables["provenance"],
+        "ogg_tree_contract": ogg_tree_tables["contract"],
     },
     snakemake.output.xlsx,
 )

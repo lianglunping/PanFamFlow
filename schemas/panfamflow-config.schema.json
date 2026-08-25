@@ -580,6 +580,15 @@
           "default": null,
           "title": "Subcellular Localization Table"
         },
+        "external_import_validation": {
+          "default": "legacy",
+          "enum": [
+            "legacy",
+            "strict"
+          ],
+          "title": "External Import Validation",
+          "type": "string"
+        },
         "precomputed_members": {
           "anyOf": [
             {
@@ -1052,6 +1061,15 @@
           ],
           "default": null,
           "title": "Precomputed Table"
+        },
+        "external_import_validation": {
+          "default": "legacy",
+          "enum": [
+            "legacy",
+            "strict"
+          ],
+          "title": "External Import Validation",
+          "type": "string"
         },
         "fimo_threshold": {
           "default": 0.0001,

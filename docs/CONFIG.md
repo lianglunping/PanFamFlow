@@ -156,7 +156,7 @@ family:
 - `blast_only`：只使用 BLAST。
 - `precomputed_members` 非空时直接以外部成员表为准，仍校验 stable ID。
 
-外部表应优先包含 `stable_id`；也可包含 `species_id + gene_id`。
+外部表应优先包含 `stable_id`；也可包含 `species_id + gene_id`。CDD、WoLF PSORT 与 PlantCARE 新正式导入建议设置 `external_import_validation: strict`，并保存 `evidence_source`、`source_version`、`accessed_date` 和 `source_url`；模板和边界见 [`EXTERNAL_EVIDENCE_IMPORTS.zh-CN.md`](EXTERNAL_EVIDENCE_IMPORTS.zh-CN.md)。
 
 ## 7. 泛基因家族占有率阈值
 

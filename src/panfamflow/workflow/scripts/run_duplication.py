@@ -31,6 +31,23 @@ backend = str(snakemake.params.backend)
 mode_rows: list[dict[str, Any]] = []
 pair_rows: list[dict[str, Any]] = []
 
+
+def next_attempt_directory(root: Path) -> Path:
+    """Return a new immutable attempt directory without deleting prior evidence."""
+
+    root.mkdir(parents=True, exist_ok=True)
+    attempts = []
+    for candidate in root.glob("attempt-*"):
+        try:
+            attempts.append(int(candidate.name.split("-", 1)[1]))
+        except (IndexError, ValueError):
+            continue
+    attempt = max(attempts, default=0) + 1
+    destination = root / f"attempt-{attempt}"
+    destination.mkdir()
+    return destination
+
+
 if backend == "precomputed":
     table = read_delimited_table(snakemake.params.precomputed_table)
     stable_column = resolve_column(table, ["stable_id", "protein_id"], required=False)
@@ -119,9 +136,7 @@ else:
         outgroup_map = pd.read_csv(map_paths[outgroup], sep="\t")
         target_proteins = read_fasta(protein_paths[target])
         outgroup_proteins = read_fasta(protein_paths[outgroup])
-        run_dir = work_root / target
-        if run_dir.exists():
-            shutil.rmtree(run_dir)
+        run_dir = next_attempt_directory(work_root / target)
         data_dir = run_dir / "data"
         output_dir = run_dir / "output"
         data_dir.mkdir(parents=True)

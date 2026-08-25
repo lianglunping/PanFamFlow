@@ -135,6 +135,19 @@ def test_dupgen_installer_uses_a_full_immutable_source_commit() -> None:
     assert "rev-parse HEAD" in installer
 
 
+def test_native_dupgen_job_is_pinned_compute_bound_and_preserves_attempts() -> None:
+    job = (ROOT / "scripts" / "hpc" / "run_toy_native_dupgen.jh").read_text(encoding="utf-8")
+    runner = (
+        ROOT / "src" / "panfamflow" / "workflow" / "scripts" / "run_duplication.py"
+    ).read_text(encoding="utf-8")
+    assert "#JSUB -q normal" in job
+    assert "54b950216efe7700f84395d03565cf75cd745e14" in job
+    assert 'config["duplication"]["backend"] = "dupgen_finder_unique"' in job
+    assert "dupgen_commit" in job and "scheduler_host" in job
+    assert "next_attempt_directory" in runner
+    assert "shutil.rmtree(run_dir)" not in runner
+
+
 def test_r_runtime_recipes_pin_base_digest_and_package_versions() -> None:
     for relative, package, version in (
         ("containers/expression-de/Dockerfile", "DESeq2", "1.52.0"),
@@ -600,11 +613,15 @@ def test_traceability_validation_uses_frozen_table_contract_and_reuses_outputs()
     job = (ROOT / "scripts" / "hpc" / "verify_toy_traceability_provenance.jh").read_text(
         encoding="utf-8"
     )
+    validator = (ROOT / "scripts" / "hpc" / "verify_toy_traceability_provenance.py").read_text(
+        encoding="utf-8"
+    )
 
-    assert 'figure_contract_path = Path("docs/FIGURE_CONTRACT.tsv")' in job
-    assert 'figure_contract["source_table"].nunique()' in job
-    assert "len(table_manifest) != expected_table_pairs" in job
-    assert "len(table_manifest) < 34" not in job
+    assert "verify_toy_traceability_provenance.py" in job
+    assert 'figure_contract_path = Path("docs/FIGURE_CONTRACT.tsv")' in validator
+    assert 'figure_contract["source_table"].nunique()' in validator
+    assert "len(table_manifest) != expected_table_pairs" in validator
+    assert "len(table_manifest) < 34" not in validator
     assert "preexisting_artifact_count" in job
     assert 'test ! -e "$toy_project_root/$target"' not in job
 
@@ -613,15 +630,19 @@ def test_provenance_immutability_job_binds_inputs_contracts_seed_and_digest() ->
     job = (ROOT / "scripts" / "hpc" / "verify_toy_provenance_immutability.jh").read_text(
         encoding="utf-8"
     )
+    validator = (ROOT / "scripts" / "hpc" / "verify_toy_provenance_immutability.py").read_text(
+        encoding="utf-8"
+    )
 
-    assert "len(input_audit) != 11" in job
-    assert 'provenance["input_manifest_sha256"]' in job
-    assert 'provenance["figure_contract_sha256"]' in job
-    assert 'provenance["traceability_contract_sha256"]' in job
-    assert 'provenance["seed"] != 20260821' in job
-    assert 'provenance["selected_modules"] != expected_modules' in job
-    assert "ENGINEERING_COMPLETION_IS_NOT_BIOLOGICAL_VALIDATION" in job
-    assert "sha256:57252522c5af7ebfe6fcec649896065316771c8679cc36c2a3094b9e755eeb29" in job
+    assert "verify_toy_provenance_immutability.py" in job
+    assert "len(input_audit) != 11" in validator
+    assert 'provenance["input_manifest_sha256"]' in validator
+    assert 'provenance["figure_contract_sha256"]' in validator
+    assert 'provenance["traceability_contract_sha256"]' in validator
+    assert 'provenance["seed"] != 20260821' in validator
+    assert 'provenance["selected_modules"] != expected_modules' in validator
+    assert "ENGINEERING_COMPLETION_IS_NOT_BIOLOGICAL_VALIDATION" in validator
+    assert "sha256:57252522c5af7ebfe6fcec649896065316771c8679cc36c2a3094b9e755eeb29" in validator
 
 
 def test_public_hpc_scripts_do_not_expose_personal_filesystem_paths() -> None:

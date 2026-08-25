@@ -23,10 +23,12 @@ def test_report_provenance_binds_inputs_contracts_seed_modules_and_boundary() ->
 
 
 def test_compute_node_provenance_validator_is_fail_closed_and_digest_pinned() -> None:
-    validator = (ROOT / "scripts/hpc/verify_toy_provenance_immutability.jh").read_text(
+    job = (ROOT / "scripts/hpc/verify_toy_provenance_immutability.jh").read_text(encoding="utf-8")
+    validator = (ROOT / "scripts/hpc/verify_toy_provenance_immutability.py").read_text(
         encoding="utf-8"
     )
 
+    assert "verify_toy_provenance_immutability.py" in job
     assert 'provenance["seed"] != 20260821' in validator
     assert 'provenance["selected_modules"] != expected_modules' in validator
     assert (

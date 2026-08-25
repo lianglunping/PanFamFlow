@@ -193,6 +193,7 @@ class FamilySettings(StrictModel):
     domain_validation_table: Path | None = None
     domain_alignment: Path | None = None
     subcellular_localization_table: Path | None = None
+    external_import_validation: Literal["legacy", "strict"] = "legacy"
     precomputed_members: Path | None = None
 
     @model_validator(mode="after")
@@ -312,6 +313,7 @@ class PromoterSettings(StrictModel):
     motif_database: Path | None = None
     category_map: Path | None = None
     precomputed_table: Path | None = None
+    external_import_validation: Literal["legacy", "strict"] = "legacy"
     fimo_threshold: float = Field(default=1.0e-4, gt=0, le=1)
     top_n_elements: int = Field(default=20, ge=1)
 
@@ -546,6 +548,10 @@ def analysis_config_payload(config: WorkflowConfig) -> dict[str, Any]:
     payload.pop("run", None)
     payload.pop("plot", None)
     payload.pop("report", None)
+    for section_name in ("family", "promoter"):
+        section = payload.get(section_name)
+        if isinstance(section, dict):
+            section.pop("external_import_validation", None)
     if config.schema_version == "1.0":
         for field in (
             "deliverables",

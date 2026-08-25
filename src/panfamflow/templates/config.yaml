@@ -121,6 +121,8 @@ family:
   # coordinates are extracted and aligned with MAFFT if available.
   domain_alignment: null
   subcellular_localization_table: null
+  # CDD/WoLF PSORT imports: require source, version, access date and URL.
+  external_import_validation: strict
   # Set this to a member table to bypass HMM/BLAST discovery.
   precomputed_members: null
 
@@ -194,6 +196,8 @@ promoter:
   precomputed_table: null
   fimo_threshold: 1.0e-4
   top_n_elements: 20
+  # PlantCARE imports: require source, version, access date and URL.
+  external_import_validation: strict
 
 expression:
   mode: imported_matrix

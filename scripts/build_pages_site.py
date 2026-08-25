@@ -20,6 +20,7 @@ FORBIDDEN_TOP_LEVEL = {
 TUTORIAL_ASSETS = (
     "ANALYSIS_COVERAGE.tsv",
     "ANALYSIS_COVERAGE.zh-CN.md",
+    "EXTERNAL_EVIDENCE_IMPORTS.zh-CN.md",
     "TEMPLATE_EQUIVALENCE_AUDIT.zh-CN.md",
     "TEMPLATE_FIGURE_EQUIVALENCE.tsv",
     "TUTORIAL_CONTENT_MATRIX.tsv",
@@ -78,6 +79,7 @@ def build(source: Path, tutorial: Path, output: Path) -> None:
         "RESUME.md": "https://github.com/lianglunping/PanFamFlow/blob/main/docs/RESUME.md",
         "SCOPE.md": "https://github.com/lianglunping/PanFamFlow/blob/main/docs/SCOPE.md",
         "CONFIG.md": "https://github.com/lianglunping/PanFamFlow/blob/main/docs/CONFIG.md",
+        "EXTERNAL_EVIDENCE_IMPORTS.zh-CN.md": "EXTERNAL_EVIDENCE_IMPORTS.zh-CN.md",
     }
     for source_link, published_link in tutorial_links.items():
         tutorial_html = tutorial_html.replace(f'href="{source_link}"', f'href="{published_link}"')
