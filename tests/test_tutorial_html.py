@@ -132,8 +132,18 @@ def test_beginner_mode_has_one_clear_path_and_keeps_advanced_content_available()
     assert "切换到进阶模式" in text
     assert "切换到零基础模式" in text
     assert ".analysis-card.beginner-open:not(.hidden){display:block}" in text
-    assert ".chapter:not(.beginner-chapter-open)" in text
+    assert 'html[data-learning-mode="beginner"] .chapter{display:none}' in text
+    assert ".chapter.beginner-chapter-open{display:flex;flex-direction:column}" in text
+    assert 'html[data-learning-mode="beginner"] .analysis-question{display:none}' in text
     assert 'html[data-learning-mode="beginner"] .chapter-foundation{display:none!important}' in text
     assert "function setBeginnerChapterOpen(chapter, open)" in text
     assert "document.getElementById(decodeURIComponent(location.hash.slice(1)))" in text
-    assert "button.textContent=expanded?'收起本章':'开始本章'" in text
+    assert "button.textContent=expanded?'返回八章问题地图':'开始本章'" in text
+    assert (
+        "beginner:{concept:'先懂它',input:'准备什么',run:'怎么运行',interpret:'怎么看结果'}" in text
+    )
+    assert (
+        "advanced:{concept:'概念与问题',input:'输入与前提',run:'运行与输出',interpret:'解读与边界'}"
+        in text
+    )
+    assert "location.hash='chapter-map'" in text
