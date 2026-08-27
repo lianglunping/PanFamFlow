@@ -173,10 +173,11 @@ def test_template_equivalence_audit_records_closed_engineering_acceptance() -> N
     assert all(row["status"] == "PASS" for row in rows)
 
 
-def test_current_pr_quality_count_is_not_stale() -> None:
+def test_current_quality_count_is_not_stale() -> None:
     integration_qa = (ROOT / "docs/TUTORIAL_REPOSITORY_INTEGRATION_QA.zh-CN.md").read_text(
         encoding="utf-8"
     )
     assert "PR #11" in integration_qa
-    assert "277 passed" in integration_qa
+    assert "278 passed" in integration_qa
+    assert "277 passed" not in integration_qa
     assert "268 passed" not in integration_qa

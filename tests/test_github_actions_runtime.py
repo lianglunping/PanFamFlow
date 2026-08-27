@@ -5,6 +5,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 UPLOAD_ARTIFACT_V7 = "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1"
 CONFIGURE_PAGES_V6 = "actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0"
+UPLOAD_PAGES_ARTIFACT_V5 = (
+    "actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0"
+)
+DEPLOY_PAGES_V5 = "actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0"
 NODE20_UPLOAD_ARTIFACT = "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
 
 
@@ -21,4 +25,8 @@ def test_artifact_uploads_use_pinned_node24_release() -> None:
 def test_pages_configuration_uses_pinned_node24_release() -> None:
     text = (ROOT / ".github/workflows/pages.yml").read_text(encoding="utf-8")
     assert CONFIGURE_PAGES_V6 in text
+    assert UPLOAD_PAGES_ARTIFACT_V5 in text
+    assert DEPLOY_PAGES_V5 in text
     assert "actions/configure-pages@v5" not in text
+    assert "actions/upload-pages-artifact@v4" not in text
+    assert "actions/deploy-pages@v5" not in text
