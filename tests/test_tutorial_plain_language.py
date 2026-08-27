@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import csv
 import re
+import subprocess
+import sys
 from collections import Counter
 from html.parser import HTMLParser
 from pathlib import Path
@@ -15,6 +17,8 @@ from typing import ClassVar
 ROOT = Path(__file__).resolve().parents[1]
 HTML_PATH = ROOT / "docs" / "index.html"
 TERMINOLOGY_PATH = ROOT / "docs" / "TUTORIAL_TERMINOLOGY.tsv"
+BEGINNER_LANGUAGE_PATH = ROOT / "docs" / "TUTORIAL_BEGINNER_LANGUAGE.tsv"
+BEGINNER_SYNC_PATH = ROOT / "scripts" / "sync_tutorial_beginner_language.py"
 
 EXPECTED_IDS = (
     [f"4.{index}" for index in range(1, 5)]
@@ -51,6 +55,43 @@ TERMINOLOGY_FIELDS = [
     "is_internal",
     "first_use_anchor",
 ]
+
+BEGINNER_LANGUAGE_FIELDS = [
+    "source_id",
+    "beginner_title_zh",
+    "beginner_question_zh",
+    "beginner_input_zh",
+    "beginner_output_zh",
+    "beginner_read_zh",
+    "beginner_warning_zh",
+]
+
+BEGINNER_FORBIDDEN_JARGON = (
+    "系统发育",
+    "正交组",
+    "泛基因组",
+    "亚家族",
+    "共线性",
+    "选择压力",
+    "启动子",
+    "顺式作用元件",
+    "转录组",
+    "差异表达",
+    "热图",
+    "分母",
+    "命中",
+    "富集",
+    "校正",
+    "拟合",
+    "表达矩阵",
+    "正向选择",
+    "同义变化",
+    "独立基因簇",
+    "单位长度",
+    "随机重复",
+    "抽样",
+    "原始整数计数",
+)
 
 ALLOWED_TERM_CATEGORIES = {
     "STANDARD_TERM",
@@ -174,6 +215,173 @@ def read_terms() -> list[dict[str, str]]:
         reader = csv.DictReader(handle, delimiter="\t")
         assert reader.fieldnames == TERMINOLOGY_FIELDS
         return list(reader)
+
+
+def read_beginner_language() -> list[dict[str, str]]:
+    with BEGINNER_LANGUAGE_PATH.open(encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle, delimiter="\t")
+        assert reader.fieldnames == BEGINNER_LANGUAGE_FIELDS
+        return list(reader)
+
+
+def test_beginner_language_contract_has_58_plain_chinese_rows() -> None:
+    rows = read_beginner_language()
+    assert [row["source_id"] for row in rows] == EXPECTED_IDS
+    assert len({row["source_id"] for row in rows}) == 58
+
+    for row in rows:
+        for field in BEGINNER_LANGUAGE_FIELDS[1:]:
+            value = row[field].strip()
+            assert value, (row["source_id"], field)
+            assert re.search(r"[A-Za-z]", value) is None, (row["source_id"], field, value)
+            assert all(term not in value for term in BEGINNER_FORBIDDEN_JARGON), (
+                row["source_id"],
+                field,
+                value,
+            )
+        assert 6 <= len(row["beginner_title_zh"]) <= 28
+        assert row["beginner_question_zh"].endswith("？")
+        assert row["beginner_warning_zh"].endswith("。")
+
+
+def test_beginner_cards_show_only_the_plain_language_contract() -> None:
+    parser = parse_html()
+    rows = {row["source_id"]: row for row in read_beginner_language()}
+    cards = nodes_with_class(parser, "analysis-card")
+    assert len(cards) == 58
+
+    for card in cards:
+        source_id = card.attrs["data-source-id"]
+        beginner_titles = [node for node in card.descendants() if "beginner-title" in node.classes]
+        advanced_titles = [node for node in card.descendants() if "advanced-title" in node.classes]
+        guides = [node for node in card.descendants() if "beginner-guide" in node.classes]
+        conditions = [node for node in card.descendants() if "beginner-condition" in node.classes]
+        assert len(beginner_titles) == 1
+        assert len(advanced_titles) == 1
+        assert len(guides) == 1
+        assert len(conditions) == 1
+        assert beginner_titles[0].all_text().strip() == rows[source_id]["beginner_title_zh"]
+        guide_text = re.sub(r"\s+", " ", guides[0].all_text())
+        for field in BEGINNER_LANGUAGE_FIELDS[2:]:
+            assert rows[source_id][field] in guide_text
+        assert re.search(r"[A-Za-z]", guide_text) is None, (source_id, guide_text)
+        assert all(term not in guide_text for term in BEGINNER_FORBIDDEN_JARGON)
+
+        condition_text = conditions[0].all_text()
+        assert "继续前先确认" in condition_text
+        assert re.search(r"[A-Za-z]", condition_text) is None, (source_id, condition_text)
+        assert all(term not in condition_text for term in BEGINNER_FORBIDDEN_JARGON)
+
+    css = HTML_PATH.read_text(encoding="utf-8")
+    for hidden_selector in (
+        'html[data-learning-mode="beginner"] .analysis-takeaway',
+        'html[data-learning-mode="beginner"] .analysis-tabs',
+        'html[data-learning-mode="beginner"] .analysis-panels',
+        'html[data-learning-mode="beginner"] .analysis-head .source-id',
+        'html[data-learning-mode="beginner"] .analysis-head .state-badge',
+        'html[data-learning-mode="beginner"] .technical-note',
+    ):
+        assert hidden_selector in css
+
+
+def test_beginner_navigation_and_chapter_intros_avoid_unexplained_jargon() -> None:
+    parser = parse_html()
+
+    def is_inside_sidebar(node: Node) -> bool:
+        parent = node.parent
+        while parent is not None:
+            if parent.attrs.get("id") == "sidebar":
+                return True
+            parent = parent.parent
+        return False
+
+    plain_regions = (
+        nodes_with_class(parser, "chapter-map-card")
+        + nodes_with_class(parser, "beginner-chapter-intro")
+        + [node for node in parser.all_nodes if node.tag == "small" and is_inside_sidebar(node)]
+    )
+    assert len(nodes_with_class(parser, "chapter-map-card")) == 8
+    assert len(nodes_with_class(parser, "beginner-chapter-intro")) == 8
+
+    for node in plain_regions:
+        text = re.sub(r"\s+", " ", node.all_text()).strip()
+        assert text
+        assert re.search(r"[A-Za-z]", text) is None, text
+        assert all(term not in text for term in BEGINNER_FORBIDDEN_JARGON), text
+
+    html = HTML_PATH.read_text(encoding="utf-8")
+    for hidden_selector in (
+        'html[data-learning-mode="beginner"] #scientific-redlines',
+        'html[data-learning-mode="beginner"] .sidebar a[href="#scientific-redlines"]',
+        'html[data-learning-mode="beginner"] .top-actions .desktop-only',
+        'html[data-learning-mode="beginner"] #printPage',
+    ):
+        assert hidden_selector in html
+
+    beginner_footer = [
+        child
+        for node in parser.all_nodes
+        if node.tag == "footer"
+        for child in node.descendants()
+        if "beginner-title" in child.classes
+    ]
+    assert len(beginner_footer) == 1
+    footer_text = beginner_footer[0].all_text()
+    assert re.search(r"[A-Za-z]", footer_text) is None
+    assert all(term not in footer_text for term in BEGINNER_FORBIDDEN_JARGON)
+
+
+def test_beginner_global_guidance_avoids_unexplained_statistics_and_domain_terms() -> None:
+    parser = parse_html()
+    newbie_path = find_by_id(parser, "newbie-path")
+    example_readers = nodes_with_class(parser, "example-reader")
+
+    assert newbie_path is not None
+    assert len(example_readers) == 1
+    assert "P 值" not in newbie_path.all_text()
+    assert "结构域" not in example_readers[0].all_text()
+    assert "某一个数值" in newbie_path.all_text()
+    assert "关键片段完整" in example_readers[0].all_text()
+    assert "示例基因 A" not in example_readers[0].all_text()
+    assert "示例基因 B" not in example_readers[0].all_text()
+
+    start = find_by_id(parser, "start")
+    assert start is not None
+    beginner_notes = [node for node in start.descendants() if "beginner-note" in node.classes]
+    assert len(beginner_notes) == 1
+    assert "results/" not in beginner_notes[0].all_text()
+    assert "结果目录" in beginner_notes[0].all_text()
+
+
+def test_five_conditional_analyses_explain_their_extra_input_in_plain_chinese() -> None:
+    parser = parse_html()
+    cards = {
+        card.attrs["data-source-id"]: card for card in nodes_with_class(parser, "analysis-card")
+    }
+    expected = {
+        "4.4": "可靠截取核心蛋白片段",
+        "8.6": "完整染色体位置",
+        "11.3": "每个基因在每个样本中的原始计数",
+        "11.4": "环境处理与对照的原始计数",
+        "11.5": "病原处理与对照的原始计数",
+    }
+
+    for source_id, phrase in expected.items():
+        conditions = [
+            node for node in cards[source_id].descendants() if "beginner-condition" in node.classes
+        ]
+        assert len(conditions) == 1
+        assert phrase in conditions[0].all_text()
+
+
+def test_beginner_html_is_synchronized_from_its_tsv_contract() -> None:
+    subprocess.run(
+        [sys.executable, str(BEGINNER_SYNC_PATH), "--check"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
 
 
 def test_all_58_cards_have_beginner_takeaways() -> None:
