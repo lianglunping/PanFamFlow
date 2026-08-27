@@ -75,3 +75,10 @@ def test_build_accepts_disjoint_output(tmp_path: Path) -> None:
             output / "SITE_MANIFEST.tsv"
         ).read_text(encoding="utf-8")
     assert (output / "SITE_MANIFEST.tsv").is_file()
+
+
+def test_every_published_tutorial_asset_triggers_pages_deployment() -> None:
+    workflow = (SCRIPT_PATH.parents[1] / ".github/workflows/pages.yml").read_text(encoding="utf-8")
+
+    for name in MODULE.TUTORIAL_ASSETS:
+        assert f'"docs/{name}"' in workflow, name
