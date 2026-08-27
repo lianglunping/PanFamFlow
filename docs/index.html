@@ -69,22 +69,24 @@ html[data-learning-mode="beginner"] .sidebar a[href="#acceptance"]{display:none!
 html[data-learning-mode="beginner"] .hero{padding:clamp(26px,4vw,44px)}
 html[data-learning-mode="beginner"] .hero h1{font-size:clamp(2.15rem,4vw,3.75rem);max-width:900px}
 html[data-learning-mode="beginner"] .hero p{max-width:780px}
-html[data-learning-mode="beginner"] .chapter{display:flex;flex-direction:column}
+html[data-learning-mode="beginner"] .chapter{display:none}
+html[data-learning-mode="beginner"] .chapter.beginner-chapter-open{display:flex;flex-direction:column}
 html[data-learning-mode="beginner"] .chapter>*{order:3}
 html[data-learning-mode="beginner"] .chapter>.chapter-hero{order:0}
 html[data-learning-mode="beginner"] .chapter>.beginner-chapter-intro{order:1}
 html[data-learning-mode="beginner"] .chapter>.chapter-quick-nav{order:2}
 html[data-learning-mode="beginner"] .beginner-chapter-intro{display:block}
-html[data-learning-mode="beginner"] .chapter:not(.beginner-chapter-open)>:not(.chapter-hero):not(.beginner-chapter-intro){display:none!important}
 html[data-learning-mode="beginner"] .chapter-foundation{display:none!important}
 html[data-learning-mode="beginner"] .analysis-card{display:none}
 html[data-learning-mode="beginner"] .analysis-card.beginner-open:not(.hidden){display:block}
+html[data-learning-mode="beginner"] .analysis-question{display:none}
 html[data-learning-mode="beginner"] .chapter-quick-nav::before{content:"选择一个问题开始：";display:inline-flex;align-items:center;white-space:nowrap;font-weight:800;color:var(--muted);font-size:.84rem}
 html[data-learning-mode="beginner"] .analysis-tabs{overflow-x:auto;flex-wrap:nowrap}
 html[data-learning-mode="beginner"] .analysis-tab{white-space:nowrap}
 @media(max-width:900px){.learning-path{grid-template-columns:1fr 1fr}.read-three,.beginner-chapter-guide{grid-template-columns:1fr}}
 @media(max-width:650px){.learning-path,.chapter-map-grid{grid-template-columns:1fr}.topbar{padding:8px;gap:6px}.top-actions{gap:4px}.top-actions #printPage,.top-actions #themeToggle{display:none}.mode-toggle{padding:7px 9px;font-size:.84rem}.example-reader{padding:13px}.example-table{font-size:.82rem}.example-table th,.example-table td{padding:7px}.beginner-chapter-intro{padding:15px 13px 17px}.chapter-map-card{padding:12px}}
 @media(max-width:430px){.brand-text{display:none}}
+@media print{html[data-learning-mode="beginner"] .chapter{display:block!important}html[data-learning-mode="beginner"] .chapter-foundation,html[data-learning-mode="beginner"] .analysis-card{display:block!important}html[data-learning-mode="beginner"] .beginner-chapter-intro{display:none!important}html[data-learning-mode="beginner"] .analysis-question{display:block!important}}
 
 </style>
 <script>
@@ -142,7 +144,7 @@ try{document.documentElement.dataset.learningMode=JSON.parse(localStorage.getIte
 
 <section class="reference-section chapter-map beginner-only" id="chapter-map">
   <h2>八章只回答八个问题</h2>
-  <p class="chapter-map-lead">不必从头读到尾。先点你最关心的问题；每次只展开一章，看懂后再换下一章。</p>
+  <p class="chapter-map-lead">不必从头读到尾。先点你最关心的问题；页面只保留所选章节，读完点“返回八章问题地图”再换一章。</p>
   <div class="chapter-map-grid">
     <a class="chapter-map-card" href="#chapter-4"><span class="chapter-map-number">4</span><span><strong>哪些基因真正属于这个家族？</strong>先确认成员，再看它们在基因树上的关系。</span></a>
     <a class="chapter-map-card" href="#chapter-5"><span class="chapter-map-number">5</span><span><strong>这些基因的结构有什么不同？</strong>比较长度、外显子和内含子，但先排除注释问题。</span></a>
@@ -2637,6 +2639,10 @@ sha256sum docs/index.html docs/TUTORIAL_CONTENT_MATRIX.tsv docs/TUTORIAL_TOY_EVI
   const theme = storage.get('panfamflowTutorialTheme', null);
   if(theme) root.dataset.theme = theme;
   const learningModeToggle = $('#learningModeToggle');
+  const tabLabels = {
+    beginner:{concept:'先懂它',input:'准备什么',run:'怎么运行',interpret:'怎么看结果'},
+    advanced:{concept:'概念与问题',input:'输入与前提',run:'运行与输出',interpret:'解读与边界'}
+  };
   function getHashTarget(){
     if(!location.hash) return null;
     try{return document.getElementById(decodeURIComponent(location.hash.slice(1)))}catch{return null}
@@ -2646,7 +2652,7 @@ sha256sum docs/index.html docs/TUTORIAL_CONTENT_MATRIX.tsv docs/TUTORIAL_TOY_EVI
       const expanded = item === chapter && open;
       item.classList.toggle('beginner-chapter-open', expanded);
       const button = $('.chapter-toggle', item);
-      if(button){button.setAttribute('aria-expanded', String(expanded));button.textContent=expanded?'收起本章':'开始本章';}
+      if(button){button.setAttribute('aria-expanded', String(expanded));button.textContent=expanded?'返回八章问题地图':'开始本章';}
     });
   }
   function revealBeginnerTarget(){
@@ -2664,6 +2670,7 @@ sha256sum docs/index.html docs/TUTORIAL_CONTENT_MATRIX.tsv docs/TUTORIAL_TOY_EVI
       learningModeToggle.textContent = advanced ? '切换到零基础模式' : '切换到进阶模式';
       learningModeToggle.setAttribute('aria-pressed', String(advanced));
     }
+    $$('.analysis-tab').forEach(tab=>{tab.textContent=tabLabels[mode]?.[tab.dataset.tab] || tab.textContent;});
     if(!advanced) revealBeginnerTarget();
   }
   setLearningMode(root.dataset.learningMode || 'beginner');
@@ -2671,8 +2678,7 @@ sha256sum docs/index.html docs/TUTORIAL_CONTENT_MATRIX.tsv docs/TUTORIAL_TOY_EVI
   window.addEventListener('hashchange',()=>{if(root.dataset.learningMode === 'beginner')revealBeginnerTarget();});
   $$('.chapter-toggle').forEach(button=>button.addEventListener('click',()=>{
     if(root.dataset.learningMode !== 'beginner') return;
-    const chapter=button.closest('.chapter');const open=!chapter?.classList.contains('beginner-chapter-open');
-    setBeginnerChapterOpen(chapter, open);if(open) setTimeout(()=>chapter?.scrollIntoView({behavior:'smooth',block:'start'}),0);
+    location.hash='chapter-map';
   }));
   $$('a[href^="#chapter-"], a[href^="#analysis-"]').forEach(link=>link.addEventListener('click',()=>{
     if(root.dataset.learningMode !== 'beginner') return;
