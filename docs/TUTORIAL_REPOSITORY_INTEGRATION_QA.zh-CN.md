@@ -16,7 +16,7 @@
 - wheel 与 sdist 构建通过；
 - Pages 构建和内部链接检查通过；
 - 10 个教程矩阵/审计附件全部进入 Pages 白名单和部署触发范围，并通过内部链接与敏感路径检查；
-- PR #11 部署教程内容 SHA256 为 `2f0837e1c8282af151ddd20662e1b6d9c234f14a7f354a32c60f5bbc629bd35`；
+- PR #11 部署教程内容 SHA256 为 `2f0837e1c8282af151ddd20662e1b6d9c234f14a7f354a32c60f5bbc629bd35d`；
 - 58 项状态与权威能力矩阵逐行一致，当前为 53 `IMPLEMENTED`、5 `CONDITIONALLY_AVAILABLE`；
 - 无已停用自定义域名、旧 result-pointer 文件名或 toy 待回填占位。
 

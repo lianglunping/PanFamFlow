@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import re
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -181,3 +182,6 @@ def test_current_quality_count_is_not_stale() -> None:
     assert "278 passed" in integration_qa
     assert "277 passed" not in integration_qa
     assert "268 passed" not in integration_qa
+    recorded_hashes = re.findall(r"SHA256.*?`([0-9a-f]+)`", integration_qa)
+    assert recorded_hashes
+    assert all(re.fullmatch(r"[0-9a-f]{64}", value) for value in recorded_hashes)
