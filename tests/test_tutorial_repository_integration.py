@@ -179,7 +179,8 @@ def test_current_quality_count_is_not_stale() -> None:
         encoding="utf-8"
     )
     assert "PR #11" in integration_qa
-    assert "278 passed" in integration_qa
+    assert "279 passed" in integration_qa
+    assert "278 passed" not in integration_qa
     assert "277 passed" not in integration_qa
     assert "268 passed" not in integration_qa
     recorded_hashes = re.findall(r"SHA256.*?`([0-9a-f]+)`", integration_qa)

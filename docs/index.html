@@ -24,21 +24,79 @@
 .filter-help{margin:10px 0 0;color:var(--muted);font-size:.88rem}.filter-help .internal-label{margin:0 4px}
 @media(max-width:760px){.analysis-head{flex-direction:column}.state-badge{align-items:flex-start}.technical-title{overflow-wrap:anywhere}}
 
+/* 零基础模式只改变阅读层级，不删除任何技术内容。 */
+.mode-toggle{font-weight:800;white-space:nowrap}.newbie-path{padding:clamp(22px,4vw,42px)}
+.newbie-path>h2{max-width:820px;margin-top:0}.newbie-lead{max-width:850px;font-size:1.08rem;color:var(--muted)}
+.learning-path{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin:22px 0}
+.path-step{position:relative;border:1px solid var(--line);background:var(--panel2);border-radius:15px;padding:18px 16px 16px}
+.path-number{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--brand);color:#fff;font-weight:900;margin-bottom:10px}
+.path-step h3{margin:.2rem 0 .45rem}.path-step p{margin:0;color:var(--muted)}
+.beginner-note{display:flex;align-items:flex-start;gap:10px;margin-top:16px;padding:13px 15px;border-radius:12px;background:color-mix(in srgb,var(--brand) 9%,var(--panel));border:1px solid color-mix(in srgb,var(--brand) 28%,var(--line))}
+.beginner-note strong{color:var(--brand)}
+.example-reader{border:2px solid color-mix(in srgb,var(--brand) 55%,var(--line));border-radius:15px;padding:18px;margin:20px 0;background:var(--panel)}
+.example-reader h3{margin:0 0 4px}.example-reader .example-label{display:inline-flex;border-radius:99px;background:var(--panel2);padding:3px 9px;color:var(--muted);font-size:.82rem;font-weight:800}
+.example-table{margin:14px 0}.example-table th:nth-child(2),.example-table td:nth-child(2){background:color-mix(in srgb,var(--brand) 8%,var(--panel))}
+.read-three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}.read-three div{border-left:4px solid var(--brand);padding:9px 11px;background:var(--panel2);border-radius:0 10px 10px 0}.read-three strong{display:block;color:var(--brand)}
+.chapter-quick-nav::before{display:none}.beginner-only{display:none}
+html[data-learning-mode="beginner"] .beginner-only{display:block}
+html[data-learning-mode="beginner"] .technical-mode-only,
+html[data-learning-mode="beginner"] #evidence-states,
+html[data-learning-mode="beginner"] #filters,
+html[data-learning-mode="beginner"] #glossary,
+html[data-learning-mode="beginner"] #claim-strength,
+html[data-learning-mode="beginner"] #config-generator,
+html[data-learning-mode="beginner"] #toy-evidence,
+html[data-learning-mode="beginner"] #acceptance,
+html[data-learning-mode="beginner"] .technical-note-inline,
+html[data-learning-mode="beginner"] .technical-title,
+html[data-learning-mode="beginner"] .state-tech,
+html[data-learning-mode="beginner"] .chapter-kicker,
+html[data-learning-mode="beginner"] .chapter-status,
+html[data-learning-mode="beginner"] .chapter-completion,
+html[data-learning-mode="beginner"] .chapter-evidence,
+html[data-learning-mode="beginner"] .toy-evidence-slot,
+html[data-learning-mode="beginner"] .sidebar a[href="#evidence-states"],
+html[data-learning-mode="beginner"] .sidebar a[href="#filters"],
+html[data-learning-mode="beginner"] .sidebar a[href="#glossary"],
+html[data-learning-mode="beginner"] .sidebar a[href="#claim-strength"],
+html[data-learning-mode="beginner"] .sidebar a[href="#config-generator"],
+html[data-learning-mode="beginner"] .sidebar a[href="#toy-evidence"],
+html[data-learning-mode="beginner"] .sidebar a[href="#acceptance"]{display:none!important}
+html[data-learning-mode="beginner"] .hero{padding:clamp(26px,4vw,44px)}
+html[data-learning-mode="beginner"] .hero h1{font-size:clamp(2.15rem,4vw,3.75rem);max-width:900px}
+html[data-learning-mode="beginner"] .hero p{max-width:780px}
+html[data-learning-mode="beginner"] .chapter-foundation .chapter-block{display:none}
+html[data-learning-mode="beginner"] .chapter-foundation [data-component="concepts"],
+html[data-learning-mode="beginner"] .chapter-foundation [data-component="why"],
+html[data-learning-mode="beginner"] .chapter-foundation [data-component="figure-reading"]{display:block}
+html[data-learning-mode="beginner"] .analysis-card{display:none}
+html[data-learning-mode="beginner"] .analysis-card.beginner-open:not(.hidden){display:block}
+html[data-learning-mode="beginner"] .chapter-quick-nav::before{content:"选择一个问题开始：";display:inline-flex;align-items:center;white-space:nowrap;font-weight:800;color:var(--muted);font-size:.84rem}
+html[data-learning-mode="beginner"] .analysis-tabs{overflow-x:auto;flex-wrap:nowrap}
+html[data-learning-mode="beginner"] .analysis-tab{white-space:nowrap}
+@media(max-width:900px){.learning-path{grid-template-columns:1fr 1fr}.read-three{grid-template-columns:1fr}}
+@media(max-width:650px){.learning-path{grid-template-columns:1fr}.topbar{padding:8px;gap:6px}.top-actions{gap:4px}.top-actions #printPage,.top-actions #themeToggle{display:none}.mode-toggle{padding:7px 9px;font-size:.84rem}.example-reader{padding:13px}.example-table{font-size:.82rem}.example-table th,.example-table td{padding:7px}}
+@media(max-width:430px){.brand-text{display:none}}
+
 </style>
-<script>document.documentElement.classList.add('js');</script>
+<script>
+document.documentElement.classList.add('js');
+try{document.documentElement.dataset.learningMode=JSON.parse(localStorage.getItem('panfamflowTutorialMode'))||'beginner'}catch{document.documentElement.dataset.learningMode='beginner'}
+</script>
 </head>
 <body>
 <a class="skip-link" href="#main">跳到正文</a>
 <header class="topbar">
   <div class="brand"><button id="menuToggle" class="mobile-menu" type="button" aria-label="打开目录" aria-controls="sidebar" aria-expanded="false">☰</button><span class="brand-mark">PF</span><strong class="brand-text">PanFamFlow 中文教材</strong></div>
-  <div class="top-actions"><a class="button desktop-only" href="../README.zh-CN.md">中文 README</a><a class="button desktop-only" lang="en" href="../README.md">英文 README</a><button id="printPage" type="button">打印 / PDF</button><button id="themeToggle" type="button" aria-label="切换明暗主题">明暗主题</button></div>
+  <div class="top-actions"><button id="learningModeToggle" class="mode-toggle" type="button" aria-pressed="false">切换到进阶模式</button><a class="button desktop-only" href="../README.zh-CN.md">中文 README</a><a class="button desktop-only" lang="en" href="../README.md">英文 README</a><button id="printPage" type="button">打印 / PDF</button><button id="themeToggle" type="button" aria-label="切换明暗主题">明暗主题</button></div>
 </header>
 <div class="layout">
 <aside class="sidebar" id="sidebar" aria-label="教程目录">
   <div class="progress-card"><strong>学习进度</strong><div class="progress-track" aria-hidden="true"><div id="progressFill" class="progress-fill"></div></div><div id="progressText" class="progress-text">0 / 0 完成</div></div>
   <nav>
     <a href="#overview">教程总览</a>
-    <a href="#start">运行基础与恢复</a>
+    <a href="#newbie-path">零基础四步路线</a>
+    <a href="#start">第一次运行</a>
     <a href="#evidence-states">证据状态</a>
     <a href="#filters">58 项筛选</a>
     <a href="#glossary">术语词典</a>
@@ -46,30 +104,45 @@
     <a href="#output-reader">输出文件阅读器</a>
     <a href="#claim-strength">结论强度练习</a>
     <a href="#config-generator">配置片段生成器</a>
-    <a class="nav-chapter" href="#chapter-4">第 4 节</a><small>家族成员鉴定与系统发育</small><a class="nav-chapter" href="#chapter-5">第 5 节</a><small>基因结构</small><a class="nav-chapter" href="#chapter-6">第 6 节</a><small>HOG、目标家族占有与核心型 / 近核心型 / 壳层型 / 稀有型</small><a class="nav-chapter" href="#chapter-7">第 7 节</a><small>染色体定位</small><a class="nav-chapter" href="#chapter-8">第 8 节</a><small>复制类型与共线性</small><a class="nav-chapter" href="#chapter-9">第 9 节</a><small>Ka、Ks、Ka/Ks 与选择压力</small><a class="nav-chapter" href="#chapter-10">第 10 节</a><small>启动子与顺式作用元件</small><a class="nav-chapter" href="#chapter-11">第 11 节</a><small>表达模式与外部表达结果整合</small>
+    <a class="nav-chapter" href="#chapter-4">第 4 节</a><small>先确认哪些基因属于家族</small><a class="nav-chapter" href="#chapter-5">第 5 节</a><small>比较基因的结构差异</small><a class="nav-chapter" href="#chapter-6">第 6 节</a><small>查看成员在不同物种中的存在情况</small><a class="nav-chapter" href="#chapter-7">第 7 节</a><small>查看基因位于哪条染色体</small><a class="nav-chapter" href="#chapter-8">第 8 节</a><small>理解家族如何复制和扩增</small><a class="nav-chapter" href="#chapter-9">第 9 节</a><small>观察复制基因的选择压力线索</small><a class="nav-chapter" href="#chapter-10">第 10 节</a><small>寻找可能的调控元件</small><a class="nav-chapter" href="#chapter-11">第 11 节</a><small>查看基因何时、在哪里表达</small>
     <a href="#toy-evidence">最小示例运行证据</a>
     <a href="#acceptance">验收与归档</a>
   </nav>
 </aside>
 <main id="main">
 <section class="hero" id="overview">
-  <div class="eyebrow">PanFamFlow 中文入门教程 · 58 项分析 · 按证据分级</div>
-  <h1>先听懂生物学问题，再学习如何运行与解读</h1>
-  <p>本页围绕一个已经配置好的目标基因家族，按“概念 → 输入 → 运行 → 输出 → 解读”的顺序讲清成员鉴定、基因树、结构、分层正交组（HOG）占有、染色体定位、复制、Ka/Ks、启动子和表达整合。技术字段、命令和路径仍完整保留，但放在可展开的技术说明中。</p>
-  <div class="badges"><span class="badge">教程内容基线 <code>eebe5af5f58d</code> · 本地验证日期 2026-08-26</span><span class="badge">58 个稳定分析锚点</span><span class="badge">单文件自包含</span><span class="badge">不使用外部网页资源</span><span class="badge">只分析目标基因家族</span></div>
-  <div class="hero-actions"><a class="button primary" href="#start">从运行基础开始</a><a class="button" href="#filters">按问题筛选 58 项</a><a class="button" href="#chapter-4">进入家族鉴定章节</a></div>
-  <div class="callout danger"><strong>范围红线</strong>PanFamFlow 从已经组装的基因组序列（<code>genome FASTA</code>）和同版本基因注释（<code>GFF3</code>）开始。它不做泛基因组组装，不从原始测序读段组装基因组，不构建图泛基因组，也不把全基因组结构变异或全部 HOG 分类冒充为目标家族结果。</div>
+  <div class="eyebrow">PanFamFlow 中文入门教程</div>
+  <h1>用一个完整例子，学会目标基因家族分析</h1>
+  <p>你会先弄清“为什么分析”，再看流程“怎么做”，最后学习“结果怎么看”。第一次阅读不需要记软件名、文件名或参数。</p>
+  <div class="hero-actions"><a class="button primary" href="#newbie-path">零基础开始学习</a></div>
+  <div class="beginner-note"><span aria-hidden="true">✓</span><div><strong>学完后你应该能回答：</strong>哪些基因属于目标家族？它们有什么关系和差异？哪些结果可以下结论，哪些只能作为候选线索？</div></div>
+  <details class="technical-mode-only"><summary>查看教程范围与版本信息</summary><div class="badges"><span class="badge">教程内容基线 <code>eebe5af5f58d</code> · 本地验证日期 2026-08-26</span><span class="badge">58 个稳定分析锚点</span><span class="badge">单文件自包含</span><span class="badge">不使用外部网页资源</span><span class="badge">只分析目标基因家族</span></div><div class="callout danger"><strong>范围红线</strong>PanFamFlow 从已经组装的基因组序列（<code>genome FASTA</code>）和同版本基因注释（<code>GFF3</code>）开始。它不做泛基因组组装，不从原始测序读段组装基因组，不构建图泛基因组，也不把全基因组结构变异或全部 HOG 分类冒充为目标家族结果。</div></details>
+</section>
+
+<section class="reference-section newbie-path" id="newbie-path">
+  <h2>第一次学习，只走这四步</h2>
+  <p class="newbie-lead">不要从 58 项清单开始，也不要先背命令。沿着下面的顺序走一遍，就能建立完整认识。</p>
+  <div class="learning-path">
+    <article class="path-step"><span class="path-number">1</span><h3>先找出家族成员</h3><p>分清哪些基因证据充分，哪些只是相似候选。</p><p><a href="#analysis-4-1">看第一个分析</a></p></article>
+    <article class="path-step"><span class="path-number">2</span><h3>再理解成员差异</h3><p>依次阅读基因树、结构、染色体位置、复制和选择压力。</p><p><a href="#chapter-4">查看章节顺序</a></p></article>
+    <article class="path-step"><span class="path-number">3</span><h3>用示例跑一次</h3><p>先校验配置，再看运行计划，最后启动流程。</p><p><a href="#start">查看第一次运行</a></p></article>
+    <article class="path-step"><span class="path-number">4</span><h3>学会阅读结果</h3><p>先看标识和质量，再看数值和图，最后判断结论边界。</p><p><a href="#output-reader">看结果表示例</a></p></article>
+  </div>
+  <div class="callout"><strong>只记住一句话：</strong>先确认分析对象和数据是否可靠，再解释图表；不要只看颜色、P 值或某一个指标。</div>
 </section>
 
 <span class="legacy-anchor" id="step-0" aria-hidden="true"></span><span class="legacy-anchor" id="troubleshooting" aria-hidden="true"></span>
 <section class="reference-section" id="start">
-  <h2>运行基础：先校验，再查看计划，再正式运行</h2>
+  <h2>第一次运行：只做三件事</h2>
+  <p>先使用仓库自带的小型示例，不要一开始就放入自己的大数据。示例成功后，再替换为经过检查的真实输入。</p>
   <div class="grid">
-    <div class="card"><h3>最低输入</h3><p>每个物种至少需要已组装的基因组序列（<code>FASTA</code>）和同版本基因注释（<code>GFF3</code>）。Ka/Ks 还需要可追溯的编码序列；转座复制分类需要合适外群；表达分析需要表达矩阵或原始测序数据。</p></div>
-    <div class="card"><h3>唯一日常入口</h3><p>常规设置写入 <code>config.yaml</code>。配置模式会在运行前检查字段拼写、路径、物种标识和阈值，不应靠试错猜配置。</p></div>
-    <div class="card"><h3>原始数据不被覆盖</h3><p>中间文件进入 <code>work/</code>，结果进入 <code>results/</code>，日志进入 <code>logs/</code>。重新运行不应删除原始输入。</p></div>
-    <div class="card"><h3>修复后断点续跑</h3><p>先读最早失败的规则和日志，修复根因后再用 <code>status</code> 和 <code>resume</code>。不要通过删除全部结果来掩盖错误。</p></div>
+    <div class="card"><h3>① 检查</h3><p>让流程先检查输入、名称和路径是否完整。检查不通过时，不开始正式分析。</p></div>
+    <div class="card"><h3>② 预览</h3><p>查看将要运行哪些步骤、会产生哪些结果，但暂时不执行计算。</p></div>
+    <div class="card"><h3>③ 运行</h3><p>检查和预览都正常后再运行。完成后，主要结果统一放在结果目录中。</p></div>
   </div>
+  <div class="beginner-note"><span aria-hidden="true">→</span><div><strong>运行成功后去哪里看？</strong>先打开 <code>results/</code>，按章节编号寻找结果；不确定某张表怎么读时，回到<a href="#output-reader">输出文件阅读器</a>。</div></div>
+  <details class="technical-mode-only"><summary>进阶：查看输入要求、安装、命令和失败恢复</summary>
+  <h3>最低输入</h3><p>每个物种至少需要已组装的基因组序列（<code>FASTA</code>）和同版本基因注释（<code>GFF3</code>）。Ka/Ks 还需要可追溯的编码序列；转座复制分类需要合适外群；表达分析需要表达矩阵或原始测序数据。常规设置写入 <code>config.yaml</code>；中间文件进入 <code>work/</code>，结果进入 <code>results/</code>，日志进入 <code>logs/</code>。</p>
   <h3>安装与命令顺序</h3>
   <div class="code-wrap"><button class="copy-btn" type="button" aria-label="复制代码">复制</button><pre><code data-language="bash">mamba env create -f environment.yaml
 mamba run -n panfamflow-engine snakemake --version
@@ -83,6 +156,7 @@ uv run panfamflow status -c config.yaml
 uv run panfamflow resume -c config.yaml</code></pre></div>
   <div class="callout warn"><strong>普通正交组与分层正交组必须分开</strong>自动节点会优先读取公开 HOG；若没有公开 <code>N*.tsv</code>，流程可回退到普通 Orthogroup。<code>AUTO_ORTHOGROUP_FALLBACK</code> 是 <span class="internal-label">PanFamFlow 内部状态码</span>，表示发生了这种回退；正式多物种结果必须根据物种树冻结并复核相应节点，不能把回退结果写成固定节点 HOG。</div>
   <details><summary>遇到失败时的最小动作</summary><ol><li>读最先失败的规则和对应日志，而不是只看最后一行。</li><li>核对输入文件、标识映射、路径和软件依赖。</li><li>只修复根因，不覆盖原始数据。</li><li>运行 <code>status</code>，随后运行 <code>resume</code>。</li><li>记录修复前后命令、代码版本、日志和输出哈希。</li></ol></details>
+  </details>
 </section>
 
 <section class="reference-section" id="evidence-states">
@@ -127,6 +201,14 @@ uv run panfamflow resume -c config.yaml</code></pre></div>
 
 <section class="reference-section" id="output-reader">
   <h2>输出文件怎么读：先看标识和质量，再看数值与图</h2>
+  <p>第一次看结果时，不要从英文列名开始。先用下面的教学示意表掌握固定阅读顺序，再查看自己的真实结果。</p>
+  <div class="example-reader">
+    <span class="example-label">教学示意，不是真实分析结果</span>
+    <h3>示例：家族成员证据表应该怎么读？</h3>
+    <div class="table-scroll"><table class="example-table"><thead><tr><th>基因</th><th>是否保留</th><th>支持证据</th><th>一句话解释</th></tr></thead><tbody><tr><td>示例基因 A</td><td><strong>保留</strong></td><td>两类证据一致，结构域完整</td><td>可进入后续家族分析</td></tr><tr><td>示例基因 B</td><td><strong>需要复核</strong></td><td>只有序列相似，结构域不完整</td><td>不能直接当作正式成员</td></tr></tbody></table></div>
+    <div class="read-three"><div><strong>第 1 看：对象</strong>每行是不是一个唯一基因？</div><div><strong>第 2 看：质量</strong>保留或拒绝有没有证据？</div><div><strong>第 3 看：解释</strong>结论是否超过现有证据？</div></div>
+  </div>
+  <details class="technical-mode-only"><summary>进阶：查看所有规范文件、路径和精确字段</summary>
   <p>以下只说明真实表结构和阅读顺序，不提供虚构结果行。文件路径保留为技术形式，便于在结果目录中直接搜索。</p>
   <article class="reader-card"><h3>家族成员与证据表<span class="technical-term"><code>results/02_family/family_members.tsv</code></span></h3><p><strong>第一步：</strong>确认每个基因只有一个全流程稳定标识，成员判定与证据一致。</p><p><strong>第二步：</strong>再看候选来源、最佳命中、结构域和拒绝原因。</p><p><strong>异常信号：</strong>标识重复、正式成员没有启用证据、判定与证据冲突。</p><p class="reader-columns"><strong>精确字段：</strong><code>stable_id; species_id; gene_id; transcript_id; family_name; subfamily; evidence_*; decision; rejection_reason</code></p></article>
   <article class="reader-card"><h3>基因结构指标表<span class="technical-term"><code>results/04_gene_structure/gene_structure_metrics.tsv</code></span></h3><p><strong>第一步：</strong>先看结构质量标记和基因、编码区、外显子、内含子的逻辑关系。</p><p><strong>第二步：</strong>再按亚家族或群体读分布，不要先追逐 P 值。</p><p><strong>异常信号：</strong>缺少外显子或编码区、坐标不合理、分组标签大量缺失。</p><p class="reader-columns"><strong>精确字段：</strong><code>stable_id; subfamily; group; gene_length; cds_length; exon_count; intron_count; UTR lengths; structure_qc</code></p></article>
@@ -136,6 +218,7 @@ uv run panfamflow resume -c config.yaml</code></pre></div>
   <article class="reader-card"><h3>成对 Ka/Ks 结果表<span class="technical-term"><code>results/09_kaks/kaks_pairs.tsv</code></span></h3><p><strong>第一步：</strong>先看基因对来源、分组和质量状态。</p><p><strong>第二步：</strong>最后才读 Ka、Ks 和 Ka/Ks。</p><p><strong>异常信号：</strong>失败记录被删除、<code>Ks=0</code> 或饱和未标记、单个比值大于 1 直接称正选择。</p><p class="reader-columns"><strong>精确字段：</strong><code>pair_id; stable_id_1; stable_id_2; pair_type; group_id; Ka; Ks; Ka_Ks; qc_status; qc_message</code></p></article>
   <article class="reader-card"><h3>启动子基序命中表<span class="technical-term"><code>results/10_promoter/promoter_elements.tsv</code></span></h3><p><strong>第一步：</strong>先看启动子长度、边界质量和基因标识能否映射。</p><p><strong>第二步：</strong>再看元件、主类别、子类别及 FIMO 的显著性字段。</p><p><strong>异常信号：</strong>未知启动子标识、未分类项被丢弃、把基序命中写成转录因子结合。</p><p class="reader-columns"><strong>精确字段：</strong><code>stable_id; species_id; gene_id; element; major_class; subclass; promoter_length; promoter_qc; p_value; q_value</code></p></article>
   <article class="reader-card"><h3>表达矩阵<span class="technical-term"><code>results/11_expression/expression_matrix.tsv</code></span></h3><p><strong>第一步：</strong>先看样本元数据和每个基因—样本单元是否适用。</p><p><strong>第二步：</strong>再看表达值和热图变换方式。</p><p><strong>异常信号：</strong><code>MISSING_IN_INPUT</code> 与 <code>NOT_APPLICABLE</code> 混淆、他物种单元填零、用 TPM 运行 DESeq2。</p><p class="reader-columns"><strong>精确字段：</strong><code>stable_id; species_id; gene_id; subfamily; expression_data_status; sample columns</code></p></article>
+  </details>
 </section>
 
 <span class="legacy-anchor" id="quiz" aria-hidden="true"></span>
@@ -2518,6 +2601,26 @@ sha256sum docs/index.html docs/TUTORIAL_CONTENT_MATRIX.tsv docs/TUTORIAL_TOY_EVI
   const storage = {get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
   const theme = storage.get('panfamflowTutorialTheme', null);
   if(theme) root.dataset.theme = theme;
+  const learningModeToggle = $('#learningModeToggle');
+  function revealBeginnerTarget(){
+    $$('.analysis-card').forEach(card=>card.classList.remove('beginner-open'));
+    const target = location.hash ? $(location.hash) : null;
+    if(target?.classList.contains('analysis-card')) target.classList.add('beginner-open');
+  }
+  function setLearningMode(mode){
+    root.dataset.learningMode = mode;
+    storage.set('panfamflowTutorialMode', mode);
+    const advanced = mode === 'advanced';
+    if(learningModeToggle){
+      learningModeToggle.textContent = advanced ? '切换到零基础模式' : '切换到进阶模式';
+      learningModeToggle.setAttribute('aria-pressed', String(advanced));
+    }
+    if(!advanced) revealBeginnerTarget();
+  }
+  setLearningMode(root.dataset.learningMode || 'beginner');
+  learningModeToggle?.addEventListener('click',()=>setLearningMode(root.dataset.learningMode === 'advanced' ? 'beginner' : 'advanced'));
+  window.addEventListener('hashchange',()=>{if(root.dataset.learningMode === 'beginner')revealBeginnerTarget();});
+  $$('.chapter-quick-nav a, a[href^="#analysis-"]').forEach(link=>link.addEventListener('click',()=>{if(root.dataset.learningMode === 'beginner'){const card=$(link.getAttribute('href'));if(card?.classList.contains('analysis-card')){card.classList.add('beginner-open');setTimeout(()=>card.focus({preventScroll:true}),0);}}}));
   $('#themeToggle')?.addEventListener('click', () => {
     const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
     root.dataset.theme = next; storage.set('panfamflowTutorialTheme', next);
