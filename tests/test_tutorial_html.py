@@ -1,5 +1,8 @@
 """Regression checks for the self-contained Chinese beginner tutorial."""
 
+# Chinese prose assertions intentionally contain fullwidth Chinese punctuation.
+# ruff: noqa: RUF001
+
 from __future__ import annotations
 
 from html.parser import HTMLParser
@@ -92,3 +95,29 @@ def test_scientific_coverage_explorer_and_mobile_navigation_controls_exist() -> 
     assert "card.dataset.state===st" in text
     assert "section.classList.toggle('chapter-filtered',!has)" in text
     assert "MISSING_IN_INPUT" in text
+
+
+def test_beginner_mode_has_one_clear_path_and_keeps_advanced_content_available() -> None:
+    text = Path("docs/index.html").read_text(encoding="utf-8")
+    parser = TutorialParser()
+    parser.feed(text)
+
+    for required_id in (
+        "newbie-path",
+        "learningModeToggle",
+        "output-reader",
+    ):
+        assert required_id in parser.ids
+
+    assert "零基础开始学习" in text
+    assert "第一次学习，只走这四步" in text
+    assert text.count('class="path-step"') == 4
+    assert "教学示意，不是真实分析结果" in text
+    assert "第 1 看：对象" in text
+    assert "第 2 看：质量" in text
+    assert "第 3 看：解释" in text
+    assert "panfamflowTutorialMode" in text
+    assert "dataset.learningMode='beginner'" in text
+    assert "切换到进阶模式" in text
+    assert "切换到零基础模式" in text
+    assert ".analysis-card.beginner-open:not(.hidden){display:block}" in text
