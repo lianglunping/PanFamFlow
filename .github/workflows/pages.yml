@@ -12,6 +12,8 @@ on:
       - "docs/TEMPLATE_EQUIVALENCE_AUDIT.zh-CN.md"
       - "docs/TEMPLATE_FIGURE_EQUIVALENCE.tsv"
       - "docs/TUTORIAL_CONTENT_MATRIX.tsv"
+      - "docs/TUTORIAL_BEGINNER_LANGUAGE.tsv"
+      - "docs/TUTORIAL_BEGINNER_LANGUAGE_AUDIT.zh-CN.md"
       - "docs/TUTORIAL_GAP_AUDIT.zh-CN.md"
       - "docs/TUTORIAL_REPOSITORY_INTEGRATION_QA.zh-CN.md"
       - "docs/TUTORIAL_TERMINOLOGY.tsv"

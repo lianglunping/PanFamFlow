@@ -22,6 +22,10 @@ def write_tutorial_assets(tutorial: Path) -> None:
             "template_figure\tequivalence_status\nFig01\tMATCHED_CORE\n"
         ),
         "TUTORIAL_CONTENT_MATRIX.tsv": "source_id\tstate\n4.1\tIMPLEMENTED\n",
+        "TUTORIAL_BEGINNER_LANGUAGE.tsv": (
+            "source_id\tbeginner_title_zh\n4.1\t确认哪些基因属于这个家族\n"
+        ),
+        "TUTORIAL_BEGINNER_LANGUAGE_AUDIT.zh-CN.md": "# beginner language audit\n",
         "TUTORIAL_GAP_AUDIT.zh-CN.md": "# gap audit\n",
         "TUTORIAL_REPOSITORY_INTEGRATION_QA.zh-CN.md": "# integration QA\n",
         "TUTORIAL_TERMINOLOGY.tsv": (

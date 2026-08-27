@@ -122,9 +122,9 @@ def test_beginner_mode_has_one_clear_path_and_keeps_advanced_content_available()
     assert text.count('class="beginner-chapter-intro"') == 8
     assert text.count('class="chapter-toggle primary"') == 8
     assert "哪些基因真正属于这个家族？" in text
-    assert "这些基因何时、在哪里表达？" in text
-    assert "先懂三个词" in text
-    assert "结果先看什么" in text
+    assert "这些基因在什么条件下活跃？" in text
+    assert "先看什么" in text
+    assert "再看什么" in text
     assert "最容易误读" in text
     assert "examples/toy/config.yaml" in text
     assert "panfamflowTutorialMode" in text
