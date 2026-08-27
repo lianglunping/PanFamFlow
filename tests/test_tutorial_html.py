@@ -104,6 +104,7 @@ def test_beginner_mode_has_one_clear_path_and_keeps_advanced_content_available()
 
     for required_id in (
         "newbie-path",
+        "chapter-map",
         "learningModeToggle",
         "output-reader",
     ):
@@ -116,8 +117,23 @@ def test_beginner_mode_has_one_clear_path_and_keeps_advanced_content_available()
     assert "第 1 看：对象" in text
     assert "第 2 看：质量" in text
     assert "第 3 看：解释" in text
+    assert "八章只回答八个问题" in text
+    assert text.count('class="chapter-map-card"') == 8
+    assert text.count('class="beginner-chapter-intro"') == 8
+    assert text.count('class="chapter-toggle primary"') == 8
+    assert "哪些基因真正属于这个家族？" in text
+    assert "这些基因何时、在哪里表达？" in text
+    assert "先懂三个词" in text
+    assert "结果先看什么" in text
+    assert "最容易误读" in text
+    assert "examples/toy/config.yaml" in text
     assert "panfamflowTutorialMode" in text
     assert "dataset.learningMode='beginner'" in text
     assert "切换到进阶模式" in text
     assert "切换到零基础模式" in text
     assert ".analysis-card.beginner-open:not(.hidden){display:block}" in text
+    assert ".chapter:not(.beginner-chapter-open)" in text
+    assert 'html[data-learning-mode="beginner"] .chapter-foundation{display:none!important}' in text
+    assert "function setBeginnerChapterOpen(chapter, open)" in text
+    assert "document.getElementById(decodeURIComponent(location.hash.slice(1)))" in text
+    assert "button.textContent=expanded?'收起本章':'开始本章'" in text
