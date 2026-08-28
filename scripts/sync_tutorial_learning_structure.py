@@ -223,7 +223,7 @@ def render_mindmap(
         )
     return (
         "<!-- BEGIN TUTORIAL_MINDMAP -->\n"
-        '<section class="reference-section chapter-map beginner-only" id="chapter-map">'
+        '<section class="reference-section chapter-map" id="chapter-map">'
         "<h2>泛基因家族分析课程图谱：8 个专业大节、58 项分析</h2>"
         '<p class="chapter-map-lead">这不是摘要，也不是折叠菜单。下面按研究顺序完整列出 58 项分析；专业标题是课程目录，标题下的一句话负责解释“这一项在做什么”。</p>'
         '<div class="mindmap-summary" aria-label="课程覆盖摘要"><strong>58 / 58 项全部可见</strong><span>8 个专业大节</span><span>53 项已实现</span><span>5 项有条件可用</span></div>'
