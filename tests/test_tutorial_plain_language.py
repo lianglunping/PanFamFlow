@@ -377,6 +377,69 @@ def test_beginner_global_guidance_avoids_unexplained_statistics_and_domain_terms
     assert "结果目录" in beginner_notes[0].all_text()
 
 
+def test_first_run_is_an_eight_step_zero_terminal_closed_loop() -> None:
+    parser = parse_html()
+    start = find_by_id(parser, "start")
+
+    assert start is not None
+    steps = [node for node in start.descendants() if "first-run-step" in node.classes]
+    assert len(steps) == 8
+    assert [node.attrs.get("data-step") for node in steps] == [str(i) for i in range(1, 9)]
+    assert all("beginner-only" not in node.classes for node in steps)
+
+    text = re.sub(r"\s+", " ", start.all_text()).strip()
+    for required in (
+        "打开终端",
+        "pwd",
+        "检查电脑里已有的工具",
+        "git --version",
+        "mamba --version",
+        "conda --version",
+        "uv --version",
+        "git clone https://github.com/lianglunping/PanFamFlow.git",
+        "cd PanFamFlow",
+        "PANFAMFLOW ROOT OK",
+        "uv sync --locked --dev",
+        "uv run panfamflow --version",
+        "uv run panfamflow validate -c examples/toy/config.yaml",
+        "Validation passed",
+        "uv run panfamflow plan -c examples/toy/config.yaml",
+        "qc",
+        "results/00_qc/qc.done",
+        "uv run --with 'snakemake==9.25.1' panfamflow run -c examples/toy/config.yaml",
+        "2 of 2 steps (100%) done",
+        "examples/toy/results/00_qc/input_audit.tsv",
+        "examples/toy/results/00_qc/qc.done",
+        "TOY RUN PASSED",
+        "results",
+        "work",
+        "logs",
+        "最后 30 行",
+    ):
+        assert required in text
+
+    assert "--with" in text
+    assert "只在这一次运行时临时加入" in text
+    assert "不会自动使用" in text
+    assert "只证明命令和预期文件能够形成闭环" in text
+    assert "不能作为真实水稻的生物学结论" in text
+    assert "0.1.2a0" not in text
+    assert "只做三件事" not in text
+
+
+def test_first_run_commands_match_ci_verified_toy_contract() -> None:
+    html = Path("docs/index.html").read_text(encoding="utf-8")
+
+    run_command = "uv run --with 'snakemake==9.25.1' panfamflow run -c examples/toy/config.yaml"
+    assert run_command in html
+    assert "uv run panfamflow run -c examples/toy/config.yaml\n" not in html
+    assert "test -f pyproject.toml" in html
+    assert "echo 'PANFAMFLOW ROOT OK'" in html
+    assert "test -s examples/toy/results/00_qc/input_audit.tsv" in html
+    assert "test -s examples/toy/results/00_qc/qc.done" in html
+    assert "echo 'TOY RUN PASSED'" in html
+
+
 def test_beginner_mode_defines_its_five_required_basic_concepts() -> None:
     parser = parse_html()
     concepts = find_by_id(parser, "basic-concepts")
