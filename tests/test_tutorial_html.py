@@ -157,6 +157,12 @@ def test_beginner_mode_has_one_clear_path_and_keeps_advanced_content_available()
         "grid-template-columns:1fr;gap:10px;"
         "padding:0 13px 18px}" in text
     )
+    assert ".beginner-analysis-nav{display:none;" in text
+    assert 'html[data-learning-mode="beginner"] .beginner-analysis-nav{display:flex}' in text
+    assert "}.beginner-analysis-nav{display:flex" not in text
+    assert text.index(".beginner-analysis-nav{display:none;") < text.index(
+        'html[data-learning-mode="beginner"] .beginner-analysis-nav{display:flex}'
+    )
     assert (
         'html[data-learning-mode="beginner"] .beginner-analysis-nav a{display:flex;'
         "align-items:center;width:100%;min-height:44px" in text
