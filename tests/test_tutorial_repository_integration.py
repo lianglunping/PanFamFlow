@@ -67,7 +67,9 @@ def test_current_repository_legacy_tutorial_contract_is_preserved() -> None:
 
 def test_content_baseline_local_validation_and_pages_compatibility_are_explicit() -> None:
     text, _ = parse()
-    assert "教程内容基线" in text
+    assert "教程内容来源基线" in text
+    assert "构建版本" in text
+    assert "__PANFAMFLOW_RELEASE_REVISION__" in text
     assert PRO_CONTENT_BASELINE[:12] in text
     assert "本地验证日期 2026-08-26" in text
     assert "修复尚未提交" not in text

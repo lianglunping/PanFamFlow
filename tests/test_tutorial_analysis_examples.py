@@ -169,7 +169,8 @@ def test_all_58_micro_lessons_render_a_figure_and_result_table() -> None:
     assert text.count('class="analysis-micro-figure"') == 58
     assert text.count('class="analysis-example-table"') == 58
     assert text.count('role="img"') >= 58
-    assert text.count("本页数值只用于练习读图，不代表真实水稻分析结果") == 58
+    assert text.count("教学读图示例：") == 58
+    assert text.count("本页数值不是流程实跑产物，也不代表真实水稻分析结果") == 58
     assert text.count("先懂一个概念") == 58
     assert text.count('class="analysis-why-title"') == 58
     assert text.count("先试着回答") == 58
@@ -278,6 +279,20 @@ def test_required_plot_values_are_exact_ascii_numbers() -> None:
     assert "名次" in rows["10.14"]["legend_zh"]
     assert "总出现次数" not in rows["10.14"]["legend_zh"]
     assert "chinese_number" not in SYNC.read_text(encoding="utf-8")
+
+
+def test_promoter_function_example_contains_all_four_declared_categories() -> None:
+    row = next(item for item in read_rows() if item["source_id"] == "10.1")
+    output_rows = row["output_rows_zh"].split("；")
+    assert len(output_rows) == 4
+    assert [item.split("｜")[0] for item in output_rows] == [
+        "逆境响应",
+        "激素响应",
+        "光响应",
+        "生长发育",
+    ]
+    assert len(row["plot_values"].split("｜")) == 4
+    assert len(row["plot_colors"].split("｜")) == 4
 
 
 def test_legends_do_not_claim_unrendered_secondary_geometry() -> None:

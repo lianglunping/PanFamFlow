@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import os
 import shutil
+import subprocess
 from pathlib import Path
 
 FORBIDDEN_TOP_LEVEL = {
@@ -34,6 +36,26 @@ TUTORIAL_ASSETS = (
     "TUTORIAL_TERMINOLOGY.tsv",
     "TUTORIAL_TOY_EVIDENCE_SCHEMA.tsv",
 )
+RELEASE_REVISION_PLACEHOLDER = "__PANFAMFLOW_RELEASE_REVISION__"
+
+
+def resolve_release_revision() -> str:
+    """Return the exact checked-out revision used to build the Pages artifact."""
+
+    revision = os.environ.get("GITHUB_SHA", "").strip()
+    if not revision:
+        completed = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=Path(__file__).resolve().parents[1],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        revision = completed.stdout.strip()
+    is_hex = all(character in "0123456789abcdefABCDEF" for character in revision)
+    if len(revision) != 40 or not is_hex:
+        raise RuntimeError(f"Invalid Git release revision: {revision!r}")
+    return revision.lower()
 
 
 def parse_args() -> argparse.Namespace:
@@ -73,6 +95,13 @@ def build(source: Path, tutorial: Path, output: Path) -> None:
     tutorial_target = output / "tutorial" / "index.html"
     tutorial_target.parent.mkdir(parents=True, exist_ok=True)
     tutorial_html = tutorial.read_text(encoding="utf-8")
+    placeholder_count = tutorial_html.count(RELEASE_REVISION_PLACEHOLDER)
+    if placeholder_count != 1:
+        raise RuntimeError(
+            "Tutorial must contain exactly one release revision placeholder; "
+            f"found {placeholder_count}"
+        )
+    tutorial_html = tutorial_html.replace(RELEASE_REVISION_PLACEHOLDER, resolve_release_revision())
     tutorial_links = {
         "../README.zh-CN.md": (
             "https://github.com/lianglunping/PanFamFlow/blob/main/README.zh-CN.md"

@@ -131,7 +131,8 @@ CHAPTER_TEN_ITEM_CONTEXT = {
     for group_index, (label, source_ids) in enumerate(CHAPTER_TEN_GROUPS, start=1)
     for source_id in source_ids
 }
-DEFAULT_BEGINNER_CONDITION = "前一项结果已经看懂，材料名称和结果没有缺项；有疑问时先返回本章说明。"
+DEFAULT_BEGINNER_CONDITION = "前一项结果已经看懂，材料名称和结果没有缺项；有疑问时先返回本节说明。"
+FIRST_ITEM_BEGINNER_CONDITION = "已读本节学习路线，并准备好本项所需输入；有疑问时先返回本节说明。"
 CHAPTER_ACTIONS = {
     "4": "先按家族特征筛选，再把可靠成员放入关系比较",
     "5": "逐个统计长度和片段数量，再按分组比较",
@@ -315,8 +316,12 @@ def render_table(headers: list[str], rows: list[list[str]], class_name: str) -> 
         "<tr>" + "".join(f"<td>{html.escape(item)}</td>" for item in row) + "</tr>" for row in rows
     )
     return (
+        '<div class="horizontal-scroll-block">'
+        '<p class="horizontal-scroll-hint"><span aria-hidden="true">↔</span> '
+        "左右滑动查看完整表格</p>"
         f'<div class="analysis-table-scroll" tabindex="0"><table class="{class_name}">'
         f"<thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>"
+        "</div>"
     )
 
 
@@ -474,6 +479,8 @@ def micro_lesson(example: dict[str, str]) -> str:
         f"{input_table}"
         f'<p class="analysis-operation"><strong>本项怎样处理：</strong>{value["operation_zh"]}</p>'
         '<div class="analysis-result-grid"><figure>'
+        '<p class="horizontal-scroll-hint"><span aria-hidden="true">↔</span> '
+        "左右滑动查看完整图示</p>"
         f"{micro_svg(example)}"
         "<figcaption><b>横向说明：</b>"
         f"{value['x_axis_zh']}<br><b>纵向说明：</b>{value['y_axis_zh']}"
@@ -492,16 +499,21 @@ def micro_lesson(example: dict[str, str]) -> str:
         f'<div class="analysis-normal"><h4>看到什么算正常</h4><p>{value["normal_zh"]}</p></div>'
         f'<div class="analysis-stop"><h4>什么情况先暂停</h4><p>{value["stop_zh"]}</p></div></div>'
         f'<p class="analysis-next"><strong>这项完成后：</strong>{value["next_zh"]}</p>'
-        '<p class="analysis-teaching-note">本页数值只用于练习读图，不代表真实水稻分析结果。</p>'
+        '<p class="analysis-teaching-note"><strong>教学读图示例：</strong>'
+        "本页数值不是流程实跑产物，也不代表真实水稻分析结果。</p>"
         "</div>"
     )
 
 
 def beginner_guide(row: dict[str, str], example: dict[str, str]) -> str:
     value = {key: html.escape(row[key], quote=True) for key in FIELDS}
+    source_id = row["source_id"]
+    chapter_item = source_id.split(".", 1)[1]
+    default_condition = (
+        FIRST_ITEM_BEGINNER_CONDITION if chapter_item == "1" else DEFAULT_BEGINNER_CONDITION
+    )
     condition = html.escape(
-        CONDITIONAL_BEGINNER_CONDITIONS.get(row["source_id"], DEFAULT_BEGINNER_CONDITION),
-        quote=True,
+        CONDITIONAL_BEGINNER_CONDITIONS.get(source_id, default_condition), quote=True
     )
     location = ""
     if row["source_id"] in CHAPTER_TEN_ITEM_CONTEXT:
@@ -509,7 +521,7 @@ def beginner_guide(row: dict[str, str], example: dict[str, str]) -> str:
         item_index = int(row["source_id"].split(".", 1)[1])
         location = (
             '<p class="beginner-item-location">'
-            f"第 10 章 · 第 {group_index} 组 / 4：{html.escape(group_label)}"
+            f"第 10 节 · 第 {group_index} 组 / 4：{html.escape(group_label)}"
             f" · 第 {item_index} / 15 项</p>"
         )
     return (
@@ -538,7 +550,7 @@ def beginner_analysis_nav(source_id: str, rows: dict[str, dict[str, str]]) -> st
     chapter = source_id.split(".", 1)[0]
     chapter_ids = [item for item in EXPECTED_IDS if item.split(".", 1)[0] == chapter]
     index = chapter_ids.index(source_id)
-    links = [f'<a href="#chapter-{chapter}">返回本章路线</a>']
+    links = [f'<a href="#chapter-{chapter}">返回本节路线</a>']
     if index > 0:
         previous_id = chapter_ids[index - 1]
         links.append(
@@ -552,7 +564,7 @@ def beginner_analysis_nav(source_id: str, rows: dict[str, dict[str, str]]) -> st
             f"下一项：{html.escape(rows[next_id]['beginner_title_zh'])}</a>"
         )
     else:
-        links.append('<a href="#chapter-map">本章完成：返回分析思维导图</a>')
+        links.append('<a href="#chapter-map">本节完成：返回分析思维导图</a>')
     return (
         '<nav class="beginner-analysis-nav beginner-only" aria-label="本项学习导航">'
         + "".join(links)
