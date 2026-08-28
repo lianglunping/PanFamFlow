@@ -112,6 +112,8 @@ BEGINNER_FORBIDDEN_JARGON = (
     "随机重复",
     "抽样",
     "原始整数计数",
+    "上游信号",
+    "按各组自身范围",
 )
 
 ALLOWED_TERM_CATEGORIES = {
@@ -456,6 +458,44 @@ def test_mindmap_and_chapter_lessons_form_a_complete_learning_route() -> None:
     ]
     assert len(subgroup_grids) == 1
     assert len([node for node in subgroup_grids[0].children if node.tag == "div"]) == 4
+    assert len([node for node in subgroup_grids[0].descendants() if node.tag == "a"]) == 15
+
+
+def test_chapter_ten_items_keep_group_context_and_explain_color_ranges() -> None:
+    parser = parse_html()
+    chapter_ten = find_by_id(parser, "chapter-10")
+    locations = [
+        node for node in chapter_ten.descendants() if "beginner-item-location" in node.classes
+    ]
+    assert len(locations) == 15
+    location_text = [re.sub(r"\s+", " ", node.all_text()).strip() for node in locations]
+    assert sum("第 1 组 / 4：先认清有哪些线索" in text for text in location_text) == 3
+    assert sum("第 2 组 / 4：按家族分组比较" in text for text in location_text) == 4
+    assert sum("第 3 组 / 4：按材料或群体比较" in text for text in location_text) == 4
+    assert sum("第 4 组 / 4：看重点线索和组合分组" in text for text in location_text) == 4
+    assert location_text[0].endswith("第 1 / 15 项")
+    assert location_text[-1].endswith("第 15 / 15 项")
+
+    promoter_diagrams = [
+        node
+        for node in chapter_ten.descendants()
+        if node.attrs.get("data-diagram") == "promoter_signals"
+    ]
+    assert len(promoter_diagrams) == 1
+    diagram_text = re.sub(r"\s+", " ", promoter_diagrams[0].all_text()).strip()
+    for teaching_point in (
+        "同一张线索表",
+        "按四类汇总",
+        "按家族分组",
+        "按材料或群体",
+        "按成员有无",
+        "原始数值",
+        "换算后的相对高低",
+        "每种线索先按自身平均水平和波动换算",
+        "原始数值表仍单独保留、不被覆盖",
+        "不能用来比较不同线索的原始多少",
+    ):
+        assert teaching_point in diagram_text
 
 
 def test_all_58_items_have_linear_navigation_and_learning_progress() -> None:
