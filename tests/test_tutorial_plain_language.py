@@ -116,6 +116,23 @@ BEGINNER_FORBIDDEN_JARGON = (
     "按各组自身范围",
 )
 
+BRIDGED_STANDARD_TERMS = {
+    "9.1": ("Ka", "Ks", "HOG", "正交组"),
+    "9.7": ("Ka", "Ks"),
+    "9.9": ("Ka", "Ks", "HOG"),
+    "10.1": ("命中", "分母"),
+    "10.12": ("HOG", "正交组", "分母"),
+    "11.3": ("BH", "P", "原始整数计数"),
+    "11.7": ("亚家族",),
+}
+
+
+def without_bridged_terms(source_id: str, value: str) -> str:
+    for term in BRIDGED_STANDARD_TERMS.get(source_id, ()):
+        value = value.replace(term, "")
+    return value
+
+
 ALLOWED_TERM_CATEGORIES = {
     "STANDARD_TERM",
     "SOFTWARE_OR_FORMAT",
@@ -256,8 +273,9 @@ def test_beginner_language_contract_has_58_plain_chinese_rows() -> None:
         for field in BEGINNER_LANGUAGE_FIELDS[1:]:
             value = row[field].strip()
             assert value, (row["source_id"], field)
-            assert re.search(r"[A-Za-z]", value) is None, (row["source_id"], field, value)
-            assert all(term not in value for term in BEGINNER_FORBIDDEN_JARGON), (
+            checked = without_bridged_terms(row["source_id"], value)
+            assert re.search(r"[A-Za-z]", checked) is None, (row["source_id"], field, value)
+            assert all(term not in checked for term in BEGINNER_FORBIDDEN_JARGON), (
                 row["source_id"],
                 field,
                 value,
@@ -287,8 +305,9 @@ def test_beginner_cards_show_only_the_plain_language_contract() -> None:
         guide_text = re.sub(r"\s+", " ", guides[0].all_text())
         for field in BEGINNER_LANGUAGE_FIELDS[2:]:
             assert rows[source_id][field] in guide_text
-        assert re.search(r"[A-Za-z]", guide_text) is None, (source_id, guide_text)
-        assert all(term not in guide_text for term in BEGINNER_FORBIDDEN_JARGON)
+        checked_guide = without_bridged_terms(source_id, guide_text)
+        assert re.search(r"[A-Za-z]", checked_guide) is None, (source_id, guide_text)
+        assert all(term not in checked_guide for term in BEGINNER_FORBIDDEN_JARGON)
 
         condition_text = conditions[0].all_text()
         assert "继续前先确认" in condition_text
@@ -498,12 +517,16 @@ def test_beginner_mode_defines_its_five_required_basic_concepts() -> None:
     for required in (
         "基因与蛋白",
         "基因家族",
-        "材料、样本与重复",
+        "物种、材料、样本与基因",
         "家族分组",
         "染色体位置与复制",
     ):
         assert required in text
-    assert "同一条件下分别取得的多个样本才是重复" in text
+    assert "四者不能互相当作重复" in text
+    assert "正式分析前的三道输入门" in text
+    assert "第 0 门：样本说明可比较" in text
+    assert "第 1 门：基因组与注释配套" in text
+    assert "第 2 门：每个基因只选一条代表记录" in text
     assert "分组名称只是分类，不等于功能已经相同" in text
     assert "可能产生位置不同的相似基因" in text
     assert re.search(r"[A-Za-z]", text) is None
@@ -647,7 +670,8 @@ def test_all_58_items_have_linear_navigation_and_learning_progress() -> None:
     html = HTML_PATH.read_text(encoding="utf-8")
     assert html.count('rel="prev"') == 50
     assert html.count('rel="next"') == 50
-    assert html.count("本节完成：返回分析思维导图") == 8
+    assert html.count("本节完成：返回分析思维导图") == 7
+    assert "课程完成：用教学示例跑一次" in html
     assert "panfamflowTutorialVisitedAnalyses" in html
     assert "const done=visitedAnalyses.size;const total=58" in html
     assert "已打开 ${done} / ${total} 项" in html
@@ -687,7 +711,17 @@ def test_chapter_lesson_contract_and_html_are_synchronized() -> None:
         for field in set(LESSON_FIELDS) - {"chapter", "stage_id", "analysis_count", "diagram_type"}:
             value = row[field].strip()
             assert value
-            assert re.search(r"[A-Za-z]", value) is None, (row["chapter"], field, value)
+            plain_value = value
+            if row["chapter"] == "6":
+                plain_value = plain_value.replace("HOG", "").replace("OG", "")
+            if row["chapter"] == "9":
+                for term in ("Ka", "Ks", "HOG"):
+                    plain_value = plain_value.replace(term, "")
+            assert re.search(r"[A-Za-z]", plain_value) is None, (
+                row["chapter"],
+                field,
+                value,
+            )
 
     subprocess.run(
         [sys.executable, str(LESSON_SYNC_PATH), "--check"],

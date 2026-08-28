@@ -69,7 +69,9 @@ SUPPORTED_VISUALS = {
     "links",
     "scatter",
     "bars",
+    "donut",
     "expression",
+    "membership",
     "paired",
     "stacked",
     "multi_indicator",
@@ -190,17 +192,24 @@ def split_cells(value: str) -> list[str]:
     return [item.strip() for item in value.split("｜")]
 
 
-def parse_plot_contract(example: dict[str, str], row_count: int) -> tuple[list[float], list[str]]:
+def parse_plot_contract(
+    example: dict[str, str], row_count: int
+) -> tuple[list[float | None], list[str]]:
     source_id = example["source_id"]
     value_cells = split_cells(example["plot_values"])
     color_tokens = split_cells(example["plot_colors"])
     if len(value_cells) != row_count or len(color_tokens) != row_count:
         raise ValueError(f"Plot contract length mismatch for {source_id}")
-    try:
-        values = [float(item) for item in value_cells]
-    except ValueError as exc:
-        raise ValueError(f"Non-numeric plot value for {source_id}") from exc
-    if not all(math.isfinite(item) for item in values):
+    values: list[float | None] = []
+    for item in value_cells:
+        if item == "NA":
+            values.append(None)
+            continue
+        try:
+            values.append(float(item))
+        except ValueError as exc:
+            raise ValueError(f"Non-numeric plot value for {source_id}") from exc
+    if not all(item is None or math.isfinite(item) for item in values):
         raise ValueError(f"Non-finite plot value for {source_id}")
     invalid_colors = set(color_tokens) - set(PLOT_COLOR_CLASSES)
     if invalid_colors:
@@ -240,12 +249,16 @@ def validate_plot_source_contract(
             raise ValueError(f"Fixed teaching color varies within {source_id}")
         return
 
-    has_negative = any(value < 0 for value in values)
+    has_negative = any(value is not None and value < 0 for value in values)
     non_grey_colors = {color for color in colors if color != "grey"}
     if not has_negative and len(non_grey_colors) > 1:
         raise ValueError(f"Continuous non-negative color uses multiple base colors in {source_id}")
     for row, value, color in zip(rows, values, colors, strict=True):
         row_text = "｜".join(row)
+        if value is None:
+            if color != "grey" or not re.search(r"缺失|不能计算|未分配", row_text):
+                raise ValueError(f"Missing plot value lacks a grey missing row in {source_id}")
+            continue
         if color == "grey":
             if not re.search(r"缺失|不计算|不能解释|只描述方向|先暂停", row_text):
                 raise ValueError(f"Grey continuous row lacks an explicit stop state in {source_id}")
@@ -257,8 +270,10 @@ def validate_plot_source_contract(
             raise ValueError(f"Positive signed value is not red in {source_id}")
 
 
-def format_plot_value(value: float) -> str:
-    """Render a validated finite plot value without scientific notation."""
+def format_plot_value(value: float | None) -> str:
+    """Render a validated plot value without converting missing data to zero."""
+    if value is None:
+        return "缺失"
     if value == 0:
         return "0"
     if value.is_integer():
@@ -338,26 +353,64 @@ def micro_svg(example: dict[str, str]) -> str:
     rows = [split_cells(item) for item in example["output_rows_zh"].split("；")]
     height = 94 + 78 * len(rows)
     values, color_tokens = parse_plot_contract(example, len(rows))
-    max_abs = max((abs(item) for item in values), default=1) or 1
+    numeric_values = [item for item in values if item is not None]
+    max_abs = max((abs(item) for item in numeric_values), default=1) or 1
     non_grey_values = [
-        abs(value) for value, token in zip(values, color_tokens, strict=True) if token != "grey"
+        abs(value)
+        for value, token in zip(values, color_tokens, strict=True)
+        if value is not None and token != "grey"
     ]
     min_continuous = min(non_grey_values, default=0)
     max_continuous = max(non_grey_values, default=1)
 
     def magnitude(index: int, low: int = 24, high: int = 128) -> int:
-        return round(low + (high - low) * abs(values[index]) / max_abs)
+        value = values[index]
+        return low if value is None else round(low + (high - low) * abs(value) / max_abs)
 
     def matrix_opacity(index: int) -> float:
         if color_tokens[index] == "grey":
             return 0.24
         span = max_continuous - min_continuous
-        proportion = 1 if span == 0 else (abs(values[index]) - min_continuous) / span
+        value = values[index]
+        if value is None:
+            return 0.24
+        proportion = 1 if span == 0 else (abs(value) - min_continuous) / span
         return 0.22 + 0.62 * proportion
 
     parts: list[str] = []
     header_line = "结果列：" + "｜".join(headers)
-    parts.append(svg_text(22, 27, header_line, "micro-column-label"))
+    parts.append(svg_text(22, 27, header_line, "micro-column-label advanced-plot-contract"))
+    if visual_type == "tree" and len(rows) == 2:
+        parts.append(
+            '<path d="M20 99H58M58 99V60H100M58 99V138H100M100 60V44H145M100 60V76H145M100 138V122H145M100 138V154H145" '
+            'class="v-link micro-tree-topology"/>'
+        )
+        for x, y, label in (
+            (150, 48, "基因甲"),
+            (150, 80, "基因乙"),
+            (150, 126, "基因丙"),
+            (150, 158, "基因丁"),
+        ):
+            parts.append(f'<circle cx="{x - 7}" cy="{y - 4}" r="5" class="v-mid"/>')
+            parts.append(svg_text(x, y, label, "micro-tree-leaf"))
+    donut_offsets: list[float] = []
+    cumulative = 0.0
+    for value in values:
+        donut_offsets.append(cumulative)
+        if value is not None:
+            cumulative += value
+    if visual_type == "donut":
+        parts.append('<circle cx="88" cy="112" r="28" class="micro-donut-hole"/>')
+    if visual_type == "membership":
+        for row_index, row in enumerate(rows):
+            y = 56 + 78 * row_index
+            for column_index, cell in enumerate(row[1:4]):
+                x = 24 + 38 * column_index
+                present = cell == "有"
+                parts.append(
+                    f'<rect x="{x}" y="{y - 18}" width="30" height="30" rx="5" '
+                    f'class="{"v-good" if present else "v-low"}"/>'
+                )
     for index, row in enumerate(rows):
         y = 60 + 78 * index
         label = " · ".join(row[:2])
@@ -366,16 +419,18 @@ def micro_svg(example: dict[str, str]) -> str:
         )
         row_class = PLOT_COLOR_CLASSES[color_tokens[index]]
         row_title = html.escape("｜".join(row))
+        value_attribute = (
+            'data-plot-status="missing"'
+            if values[index] is None
+            else f'data-plot-value="{format_plot_value(values[index])}"'
+        )
         parts.append(
-            f'<g class="micro-data-row" data-row="{index + 1}" '
-            f'data-plot-value="{format_plot_value(values[index])}" '
+            f'<g class="micro-data-row" data-row="{index + 1}" {value_attribute} '
             f'data-plot-color="{color_tokens[index]}">'
             f"<title>{row_title}</title>"
         )
         if visual_type == "tree":
-            endpoint = 20 + magnitude(index)
-            parts.append(f'<path d="M20 39V{y}H{endpoint}" class="v-link"/>')
-            parts.append(f'<circle cx="{endpoint}" cy="{y}" r="8" class="{row_class}"/>')
+            parts.append(f'<circle cx="100" cy="{y}" r="7" class="{row_class}"/>')
         elif visual_type == "paired":
             endpoint = 32 + magnitude(index)
             parts.append(f'<path d="M28 {y}H{endpoint}" class="v-link"/>')
@@ -387,7 +442,8 @@ def micro_svg(example: dict[str, str]) -> str:
                 f'<rect x="22" y="{y - 19}" width="{magnitude(index)}" height="39" rx="5" class="{row_class}"/>'
             )
         elif visual_type == "chromosome":
-            position = 22 + round(126 * abs(values[index]) / max_abs)
+            value = values[index] or 0
+            position = 22 + round(126 * abs(value) / max_abs)
             parts.append(f'<path d="M22 {y}H148" class="v-chrom"/>')
             parts.append(f'<circle cx="{position}" cy="{y}" r="8" class="{row_class}"/>')
         elif visual_type == "links":
@@ -404,31 +460,58 @@ def micro_svg(example: dict[str, str]) -> str:
                 f'class="{row_class}" opacity="{matrix_opacity(index):.2f}"/>'
             )
         elif visual_type in {"scatter", "de"}:
-            x = 84 + round(62 * values[index] / max_abs)
+            value = values[index] or 0
+            x = 84 + round(62 * value / max_abs)
             parts.append(f'<path d="M22 {y + 25}H148" class="v-reference"/>')
             parts.append(f'<circle cx="{x}" cy="{y}" r="10" class="{row_class}"/>')
         elif visual_type == "curve":
             x = 72 + index * 125
-            point_y = y - round(30 * abs(values[index]) / max_abs)
+            value = values[index] or 0
+            point_y = y - round(30 * abs(value) / max_abs)
             if index:
                 previous_x = 72 + (index - 1) * 125
-                previous_y = (60 + 78 * (index - 1)) - round(30 * abs(values[index - 1]) / max_abs)
+                previous_value = values[index - 1] or 0
+                previous_y = (60 + 78 * (index - 1)) - round(30 * abs(previous_value) / max_abs)
                 parts.append(
                     f'<path d="M{previous_x} {previous_y}L{x} {point_y}" class="v-curve"/>'
                 )
+            if example["source_id"] == "6.5":
+                parts.append(
+                    f'<rect x="{x - 13}" y="{point_y - 13}" width="26" height="26" rx="7" '
+                    'class="micro-uncertainty-band"/>'
+                )
+                core_y = y + 18 + index * 4
+                if index:
+                    previous_core_y = (60 + 78 * (index - 1)) + 18 + (index - 1) * 4
+                    parts.append(
+                        f'<path d="M{previous_x} {previous_core_y}L{x} {core_y}" class="v-core-curve"/>'
+                    )
             parts.append(f'<circle cx="{x}" cy="{point_y}" r="8" class="{row_class}"/>')
+        elif visual_type == "donut":
+            value = values[index]
+            if value is not None:
+                parts.append(
+                    f'<circle cx="88" cy="112" r="54" pathLength="100" fill="none" '
+                    f'stroke-width="34" class="{row_class}" '
+                    f'stroke-dasharray="{format_plot_value(value)} {format_plot_value(100 - value)}" '
+                    f'stroke-dashoffset="-{format_plot_value(donut_offsets[index])}" '
+                    'transform="rotate(-90 88 112)"/>'
+                )
+        elif visual_type == "membership":
+            pass
         elif visual_type == "decision":
             parts.append(
                 f'<rect x="18" y="{y - 24}" width="{magnitude(index)}" height="50" rx="8" class="{row_class}"/>'
             )
         else:
             width = magnitude(index)
-            start = 84 if values[index] >= 0 else 84 - width
+            value = values[index] or 0
+            start = 84 if value >= 0 else 84 - width
             parts.append(
                 f'<rect x="{start}" y="{y - 20}" width="{width}" height="39" rx="6" class="{row_class}" opacity=".36"/>'
             )
             parts.append(f'<path d="M22 {y + 23}H148" class="v-reference"/>')
-            endpoint = start + width if values[index] >= 0 else start
+            endpoint = start + width if value >= 0 else start
             parts.append(f'<circle cx="{endpoint}" cy="{y}" r="9" class="{row_class}"/>')
         text_x = 170 if visual_type not in {"matrix", "expression"} else 36
         parts.append(svg_text(text_x, y - 5, label, "micro-row-label"))
@@ -437,16 +520,15 @@ def micro_svg(example: dict[str, str]) -> str:
             f"{example['plot_value_label_zh']}：{format_plot_value(values[index])}；"
             f"颜色：{PLOT_COLOR_LABELS[color_tokens[index]]}"
         )
-        parts.append(svg_text(text_x, y + 34, contract_text, "micro-plot-contract"))
+        parts.append(
+            svg_text(text_x, y + 34, contract_text, "micro-plot-contract advanced-plot-contract")
+        )
         parts.append("</g>")
 
     title = html.escape(example["visual_title_zh"])
     description = html.escape(
         f"横向说明：{example['x_axis_zh']}。纵向说明：{example['y_axis_zh']}。"
-        f"颜色和符号：{example['legend_zh']}。显式绘图值：{example['plot_value_label_zh']}。"
-        f"绘图值来自结果列：{plot_source_display(example['plot_value_source_column_zh'])}。"
-        f"颜色来自：{plot_source_display(example['plot_color_source_column_zh'])}。"
-        "逐行颜色：" + "、".join(PLOT_COLOR_LABELS[item] for item in color_tokens) + "。"
+        f"颜色和符号：{example['legend_zh']}。缺失值不会转换为零，也不会进入连续颜色范围。"
     )
     return (
         f'<svg class="analysis-micro-figure" viewBox="0 0 760 {height}" role="img" '
@@ -485,12 +567,13 @@ def micro_lesson(example: dict[str, str]) -> str:
         "<figcaption><b>横向说明：</b>"
         f"{value['x_axis_zh']}<br><b>纵向说明：</b>{value['y_axis_zh']}"
         f"<br><b>图中颜色与符号：</b>{value['legend_zh']}"
+        '<span class="advanced-plot-contract technical-mode-only">'
         f"<br><b>本图显式数值：</b>{value['plot_value_label_zh']}（按结果表行顺序）"
         f"<br><b>绘图值来自：</b>{plot_source_display(example['plot_value_source_column_zh'])}"
         f"<br><b>颜色来自：</b>{plot_source_display(example['plot_color_source_column_zh'])}"
         "<br><b>逐行颜色：</b>"
         + "、".join(PLOT_COLOR_LABELS[item] for item in split_cells(example["plot_colors"]))
-        + "</figcaption></figure>"
+        + "</span></figcaption></figure>"
         "<div><h4>用结果小表核对图</h4>"
         f"{output_table}</div></div>"
         f'<details class="analysis-reading-check"><summary>先试着回答：{value["reading_question_zh"]}</summary>'
@@ -563,6 +646,9 @@ def beginner_analysis_nav(source_id: str, rows: dict[str, dict[str, str]]) -> st
             f'<a rel="next" href="#analysis-{next_id.replace(".", "-")}">'
             f"下一项：{html.escape(rows[next_id]['beginner_title_zh'])}</a>"
         )
+    elif source_id == "11.7":
+        links.append('<a class="primary" href="#start">课程完成：用教学示例跑一次</a>')
+        links.append('<a href="#chapter-map">返回分析思维导图</a>')
     else:
         links.append('<a href="#chapter-map">本节完成：返回分析思维导图</a>')
     return (

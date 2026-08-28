@@ -120,6 +120,11 @@ def test_beginner_mode_has_one_clear_path_and_keeps_advanced_content_available()
     assert "第 2 看：质量" in text
     assert "第 3 看：解释" in text
     assert "泛基因家族分析课程图谱：8 个专业大节、58 项分析" in text
+    assert (
+        text.index('id="newbie-path"')
+        < text.index('id="basic-concepts"')
+        < text.index('id="chapter-map"')
+    )
     assert "58 / 58 项全部可见" in text
     assert text.count('class="mindmap-stage"') == 4
     assert text.count('class="mindmap-branch"') == 8
@@ -162,6 +167,10 @@ def test_beginner_mode_has_one_clear_path_and_keeps_advanced_content_available()
         in text
     )
     assert "location.hash='chapter-map'" in text
+    assert 'href="#start">课程完成：用教学示例跑一次' in text
+    assert 'href="#output-reader">运行完成：下一步学习怎样读结果' in text
+    assert "const readingTarget=getHashTarget()" in text
+    assert "scheduleBeginnerKeyboardTarget(readingTarget)" in text
     assert (
         'html[data-learning-mode="beginner"] .beginner-analysis-nav{display:grid;'
         "grid-template-columns:1fr;gap:10px;"
@@ -200,6 +209,10 @@ def test_course_map_supports_overview_search_and_truthful_state_filters() -> Non
 
     assert "只看 8 个大节" in text
     assert "展开 58 项分析" in text
+    assert (
+        '<button id="mapOverviewButton" class="primary" type="button" aria-pressed="true">' in text
+    )
+    assert '<button id="mapCompleteButton" type="button" aria-pressed="false">' in text
     assert "按编号或名称查找" in text
     assert "按结果条件查看" in text
     assert text.count('data-map-search="') == 58
@@ -210,6 +223,9 @@ def test_course_map_supports_overview_search_and_truthful_state_filters() -> Non
     assert 'option value="postprocess">需要后处理' in text
     assert 'option value="conditional">满足条件后运行' in text
     assert "function setMapView(view)" in text
+    assert "58 项分析默认收起，点击“展开 58 项分析”查看" in text
+    assert "let mapView='overview', mapVisible=58" in text
+    assert "setMapView('overview');filterMap()" in text
     assert "function filterMap()" in text
     assert "item.dataset.mapState===state" in text
     assert "branch.classList.toggle('map-filtered'" in text
@@ -217,3 +233,19 @@ def test_course_map_supports_overview_search_and_truthful_state_filters() -> Non
     assert "mapNoResults.hidden=mapVisible!==0" in text
     assert ".chapter-map.map-overview .mindmap-analysis-list{display:none}" in text
     assert 'aria-live="polite"' in text
+
+
+def test_beginner_semantic_closure_keeps_internal_drawing_contracts_advanced_only() -> None:
+    text = Path("docs/index.html").read_text(encoding="utf-8")
+    assert 'class="advanced-plot-contract technical-mode-only"' in text
+    assert 'class="micro-column-label advanced-plot-contract"' in text
+    assert 'class="micro-plot-contract advanced-plot-contract"' in text
+    assert (
+        'html[data-learning-mode="beginner"] .advanced-plot-contract{display:none!important}'
+        in text
+    )
+    assert "缺失值不会转换为零，也不会进入连续颜色范围" in text
+    assert "正式分析前的三道输入门" in text
+    assert "第 0 门：样本说明可比较" in text
+    assert "第 1 门：基因组与注释配套" in text
+    assert "第 2 门：每个基因只选一条代表记录" in text
