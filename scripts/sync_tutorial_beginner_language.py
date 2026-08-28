@@ -43,8 +43,19 @@ CHAPTER_BEGINNER_TITLES = {
     "7": "查看基因位于染色体哪里",
     "8": "判断家族成员怎样复制产生",
     "9": "比较编码序列变化的快慢",
-    "10": "寻找基因上游可能的调控信号",
+    "10": "寻找基因前方可能的调控线索",
     "11": "比较基因在不同样本中的活跃程度",
+}
+CHAPTER_TEN_GROUPS = (
+    ("先认清有哪些线索", ("10.1", "10.2", "10.3")),
+    ("按家族分组比较", ("10.4", "10.5", "10.6", "10.7")),
+    ("按材料或群体比较", ("10.8", "10.9", "10.10", "10.11")),
+    ("看重点线索和组合分组", ("10.12", "10.13", "10.14", "10.15")),
+)
+CHAPTER_TEN_ITEM_CONTEXT = {
+    source_id: (group_index, label)
+    for group_index, (label, source_ids) in enumerate(CHAPTER_TEN_GROUPS, start=1)
+    for source_id in source_ids
 }
 ADVANCED_TITLE_OVERRIDES = {
     "6.1": "物种系统树与正交组有无聚类（两类对象分开）",
@@ -132,8 +143,18 @@ def beginner_guide(row: dict[str, str]) -> str:
     action = html.escape(
         ITEM_ACTION_OVERRIDES.get(row["source_id"], CHAPTER_ACTIONS[chapter]), quote=True
     )
+    location = ""
+    if row["source_id"] in CHAPTER_TEN_ITEM_CONTEXT:
+        group_index, group_label = CHAPTER_TEN_ITEM_CONTEXT[row["source_id"]]
+        item_index = int(row["source_id"].split(".", 1)[1])
+        location = (
+            '<p class="beginner-item-location">'
+            f"第 10 章 · 第 {group_index} 组 / 4：{html.escape(group_label)}"
+            f" · 第 {item_index} / 15 项</p>"
+        )
     return (
         f'\n<section class="beginner-guide" aria-label="{value["source_id"]} 零基础说明">'
+        f"{location}"
         "<h4>这一项要回答什么？</h4>"
         f"<p>{value['beginner_question_zh']}</p>"
         '<div class="beginner-guide-grid">'
