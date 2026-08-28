@@ -100,7 +100,7 @@ CHAPTER_TEN_GROUPS = (
     ("先认清有哪些线索", ("10.1", "10.2", "10.3")),
     ("按家族分组比较", ("10.4", "10.5", "10.6", "10.7")),
     ("按材料或群体比较", ("10.8", "10.9", "10.10", "10.11")),
-    ("看重点线索和组合分组", ("10.12", "10.13", "10.14", "10.15")),
+    ("看 HOG、重点线索和组合分组", ("10.12", "10.13", "10.14", "10.15")),
 )
 
 POSTPROCESS_ONLY_IDS = {"6.3", "9.2", "9.4"}
@@ -281,8 +281,8 @@ def render_mindmap(
         '<div class="mindmap-finder-heading"><div><h3 id="mindmap-finder-title">在 58 项分析中快速定位</h3>'
         "<p>第一次只想理解框架，可以看 8 个大节；需要查具体分析时，再按编号、名称或结果条件筛选。</p></div>"
         '<div class="mindmap-view-switch" role="group" aria-label="图谱显示范围">'
-        '<button id="mapOverviewButton" type="button" aria-pressed="false">只看 8 个大节</button>'
-        '<button id="mapCompleteButton" class="primary" type="button" aria-pressed="true">展开 58 项分析</button>'
+        '<button id="mapOverviewButton" class="primary" type="button" aria-pressed="true">只看 8 个大节</button>'
+        '<button id="mapCompleteButton" type="button" aria-pressed="false">展开 58 项分析</button>'
         '</div></div><div class="mindmap-finder-fields">'
         '<label for="mapSearch">按编号或名称查找<input id="mapSearch" type="search" '
         'placeholder="例如：6.3、基因树、表达" autocomplete="off"></label>'
@@ -290,7 +290,7 @@ def render_mindmap(
         '<option value="all">全部结果条件</option><option value="direct">已有直接结果</option>'
         '<option value="postprocess">需要后处理</option><option value="conditional">满足条件后运行</option>'
         '</select></label><button id="mapClearFilters" type="button">清除查找条件</button></div>'
-        '<p id="mapFilterSummary" class="mindmap-filter-summary" aria-live="polite">当前显示 58 / 58 项分析</p>'
+        '<p id="mapFilterSummary" class="mindmap-filter-summary" aria-live="polite">当前显示 8 / 8 个专业大节；具体 58 项默认收起</p>'
         '<p id="mapNoResults" class="mindmap-no-results" role="status" hidden>没有找到符合条件的分析。请更换关键词或清除查找条件。</p>'
         "</section>"
         '<div class="mindmap-root"><strong>研究一个目标基因家族</strong><span>可靠成员 → 结构与位置 → 来源与变化 → 实际活跃条件</span></div>'
@@ -417,7 +417,7 @@ def render_chapter_intro(
     diagram = DIAGRAMS[row["diagram_type"]]
     chapter_ten = render_chapter_ten_groups(language) if row["chapter"] == "10" else ""
     next_link = (
-        '<a href="#chapter-map">完成课程，回到分析全图</a>'
+        '<a class="primary" href="#start">课程完成：用教学示例跑一次</a>'
         if row["chapter"] == "11"
         else f'<a href="#chapter-{int(row["chapter"]) + 1}" '
         f'data-next-chapter="{int(row["chapter"]) + 1}">继续下一节</a>'
@@ -516,6 +516,36 @@ def render(source: str) -> str:
     )
     if count != 1:
         raise ValueError("Missing tutorial mind-map markers")
+
+    # The beginner route and prerequisites must precede the complete inventory in
+    # both DOM and visual order. Keep one canonical generated map, then relocate it
+    # immediately after the prerequisite section on every synchronization run.
+    map_match = re.search(
+        r"<!-- BEGIN TUTORIAL_MINDMAP -->.*?<!-- END TUTORIAL_MINDMAP -->",
+        rendered,
+        flags=re.DOTALL,
+    )
+    if map_match is None:
+        raise ValueError("Missing generated tutorial mind map")
+    map_block = map_match.group(0)
+    rendered = (
+        rendered[: map_match.start()].rstrip() + "\n\n" + rendered[map_match.end() :].lstrip()
+    )
+    prerequisite_match = re.search(
+        r'(<section class="reference-section basic-concepts beginner-only" '
+        r'id="basic-concepts">.*?</section>\s*</section>)',
+        rendered,
+        flags=re.DOTALL,
+    )
+    if prerequisite_match is None:
+        raise ValueError("Missing beginner prerequisite section")
+    rendered = (
+        rendered[: prerequisite_match.end()].rstrip()
+        + "\n\n"
+        + map_block
+        + "\n\n"
+        + rendered[prerequisite_match.end() :].lstrip()
+    )
 
     example_by_chapter = {row["chapter"]: row for row in examples}
     intro_by_chapter = {

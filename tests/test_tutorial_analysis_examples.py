@@ -68,7 +68,9 @@ SUPPORTED_VISUALS = {
     "links",
     "scatter",
     "bars",
+    "donut",
     "expression",
+    "membership",
     "paired",
     "stacked",
     "multi_indicator",
@@ -95,6 +97,10 @@ def load_sync_module():
     return module
 
 
+def parse_values(row: dict[str, str]) -> list[float | None]:
+    return [None if item == "NA" else float(item) for item in row["plot_values"].split("｜")]
+
+
 def test_analysis_example_contract_is_complete_and_frozen() -> None:
     rows = read_rows()
     assert [row["source_id"] for row in rows] == EXPECTED_IDS
@@ -115,10 +121,10 @@ def test_analysis_example_contract_is_complete_and_frozen() -> None:
         assert value_source in output_headers or value_source in PLOT_VALUE_SPECIAL_SOURCES
         assert color_source in output_headers or color_source in PLOT_COLOR_SPECIAL_SOURCES
         assert row["plot_value_label_zh"] == value_source
-        plot_values = [float(item) for item in row["plot_values"].split("｜")]
+        plot_values = parse_values(row)
         plot_colors = row["plot_colors"].split("｜")
         assert len(plot_values) == len(plot_colors) == len(output_rows)
-        assert all(math.isfinite(item) for item in plot_values)
+        assert all(item is None or math.isfinite(item) for item in plot_values)
         assert set(plot_colors) <= PLOT_COLORS
         if value_source == "教学行序":
             assert plot_values == list(range(1, len(output_rows) + 1))
@@ -133,7 +139,7 @@ def test_color_source_contract_is_consistent_for_all_58_rows() -> None:
     for row in read_rows():
         headers = row["output_headers_zh"].split("｜")
         output_rows = [item.split("｜") for item in row["output_rows_zh"].split("；")]
-        values = [float(item) for item in row["plot_values"].split("｜")]
+        values = parse_values(row)
         colors = row["plot_colors"].split("｜")
         color_source = row["plot_color_source_column_zh"]
         if color_source in headers:
@@ -150,9 +156,9 @@ def test_color_source_contract_is_consistent_for_all_58_rows() -> None:
                 row_text = "｜".join(output_row)
                 if color == "grey":
                     assert re.search(r"缺失|不计算|不能解释|只描述方向|先暂停", row_text)
-                elif value < 0:
+                elif value is not None and value < 0:
                     assert color == "blue", row["source_id"]
-                elif any(item < 0 for item in values):
+                elif any(item is not None and item < 0 for item in values):
                     assert color == ("neutral" if value == 0 else "red"), row["source_id"]
 
 
@@ -213,7 +219,11 @@ def test_every_micro_figure_contains_its_own_result_rows() -> None:
             row["plot_colors"].split("｜"),
             strict=True,
         ):
-            assert f'data-plot-value="{sync.format_plot_value(float(value))}"' in svg
+            if value == "NA":
+                assert 'data-plot-status="missing"' in svg
+                assert 'data-plot-value="缺失"' not in svg
+            else:
+                assert f'data-plot-value="{sync.format_plot_value(float(value))}"' in svg
             assert f'data-plot-color="{color}"' in svg
             assert color_labels[color] in svg
         assert 'data-plot-value="1.2e+06"' not in svg
@@ -273,11 +283,12 @@ def test_required_plot_values_are_exact_ascii_numbers() -> None:
     assert rows["10.10"]["plot_values"] == "1.3｜0.9｜1.1"
     assert rows["10.12"]["plot_values"] == "1.2｜0.8｜1.5"
     assert rows["10.13"]["plot_values"] == "2｜1｜1"
-    assert rows["10.14"]["plot_values"] == "1｜2｜6"
-    assert rows["10.14"]["plot_value_label_zh"] == "名次"
-    assert rows["10.14"]["y_axis_zh"] == "名次"
-    assert "名次" in rows["10.14"]["legend_zh"]
-    assert "总出现次数" not in rows["10.14"]["legend_zh"]
+    assert rows["10.14"]["plot_values"] == "40｜30｜9"
+    assert rows["10.14"]["plot_value_label_zh"] == "总次数"
+    assert rows["10.14"]["y_axis_zh"] == "总出现次数"
+    assert "横条长度表示总出现次数" in rows["10.14"]["legend_zh"]
+    assert rows["11.2"]["plot_values"].endswith("｜NA")
+    assert rows["11.7"]["plot_values"].endswith("｜NA")
     assert "chinese_number" not in SYNC.read_text(encoding="utf-8")
 
 
@@ -300,7 +311,9 @@ def test_legends_do_not_claim_unrendered_secondary_geometry() -> None:
     assert "浅色点" not in rows["6.4"]["legend_zh"]
     assert "整根柱为百分之百" not in rows["6.7"]["legend_zh"]
     assert "深色柱为总次数" not in rows["10.2"]["legend_zh"]
-    assert rows["11.3"]["x_axis_zh"] == "效应方向与大小"
+    assert rows["11.3"]["x_axis_zh"] == "处理比较"
+    assert rows["11.3"]["y_axis_zh"] == "基因"
+    assert rows["11.3"]["visual_type"] == "membership"
     assert rows["11.4"]["x_axis_zh"] == "效应方向与大小"
     assert rows["11.5"]["x_axis_zh"] == "效应方向与大小"
 
@@ -387,10 +400,13 @@ def test_continuous_matrix_intensity_follows_explicit_values() -> None:
 def test_special_items_use_semantic_micro_figure_types() -> None:
     rows = {row["source_id"]: row for row in read_rows()}
     expected = {
+        "4.2": "tree",
         "4.4": "sequence",
         "6.1": "paired",
         "6.6": "stacked",
-        "9.7": "multi_indicator",
+        "8.1": "donut",
+        "10.1": "donut",
+        "11.3": "membership",
         "11.4": "de",
         "11.5": "de",
     }
@@ -398,8 +414,39 @@ def test_special_items_use_semantic_micro_figure_types() -> None:
     assert "一致比例" in rows["4.4"]["output_headers_zh"]
     assert "家族组甲" in rows["6.1"]["output_headers_zh"]
     assert "普遍" in rows["6.6"]["output_headers_zh"]
-    assert "基准值过小" in rows["9.7"]["output_rows_zh"]
-    assert "不能计算" in rows["9.7"]["output_rows_zh"]
+    assert "跨群体" in rows["9.7"]["output_rows_zh"]
+    assert "未分配" in rows["9.7"]["output_rows_zh"]
+
+
+def test_missing_values_are_not_encoded_as_numeric_zero() -> None:
+    sync = load_sync_module()
+    rows = {row["source_id"]: row for row in read_rows()}
+    for source_id in ("9.7", "11.2", "11.7"):
+        row = rows[source_id]
+        assert "NA" in row["plot_values"].split("｜")
+        svg = sync.micro_svg(row)
+        assert 'data-plot-status="missing"' in svg
+        missing_group = re.search(
+            r'<g class="micro-data-row"[^>]*data-plot-status="missing".*?</g>',
+            svg,
+            re.DOTALL,
+        )
+        assert missing_group is not None
+        assert 'data-plot-value="0"' not in missing_group.group(0)
+        assert "：0；" not in missing_group.group(0)
+
+
+def test_named_visuals_match_their_visible_geometry_and_denominators() -> None:
+    sync = load_sync_module()
+    rows = {row["source_id"]: row for row in read_rows()}
+    for source_id in ("8.1", "10.1"):
+        row = rows[source_id]
+        assert row["visual_type"] == "donut"
+        assert sum(value for value in parse_values(row) if value is not None) == 100
+        assert 'class="micro-donut-hole"' in sync.micro_svg(row)
+    assert "micro-tree-topology" in sync.micro_svg(rows["4.2"])
+    assert "出现比较数" in rows["11.3"]["output_headers_zh"]
+    assert rows["11.3"]["visual_type"] == "membership"
 
 
 def test_special_statistical_lessons_have_verifiable_fields() -> None:
@@ -411,7 +458,7 @@ def test_special_statistical_lessons_have_verifiable_fields() -> None:
         "质量状态",
         "允许解释",
     }
-    for source_id in ("5.3", "5.6", "11.3", "11.4", "11.5"):
+    for source_id in ("5.3", "5.6", "11.4", "11.5"):
         row = rows[source_id]
         headers = row["output_headers_zh"]
         assert all(term in headers for term in required_headers), source_id
@@ -420,6 +467,12 @@ def test_special_statistical_lessons_have_verifiable_fields() -> None:
         assert "通过" in row["output_rows_zh"], source_id
         assert "可以" in row["output_rows_zh"], source_id
         assert not re.search(r"较强|一般|可靠", row["output_rows_zh"]), source_id
+    overlap = rows["11.3"]
+    assert "BH 调整后的 P 值" in overlap["concept_zh"]
+    assert "不是某一个基因“出错的概率”" in overlap["concept_zh"]
+    assert all(
+        term in overlap["output_headers_zh"] for term in ("干旱", "盐", "病原", "出现比较数")
+    )
 
 
 def test_member_totals_and_unlocated_rows_are_internally_consistent() -> None:
