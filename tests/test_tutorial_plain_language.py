@@ -509,6 +509,7 @@ def test_beginner_mode_defines_its_five_required_basic_concepts() -> None:
     assert re.search(r"[A-Za-z]", text) is None
 
     map_text = re.sub(r"\s+", " ", chapter_map.all_text()).strip()
+    assert "beginner-only" not in chapter_map.classes
     assert "泛基因家族分析课程图谱：8 个专业大节、58 项分析" in map_text
     assert "58 / 58 项全部可见" in map_text
     assert "可靠成员 → 结构与位置 → 来源与变化 → 实际活跃条件" in map_text
