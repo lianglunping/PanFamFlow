@@ -31,6 +31,8 @@
 .path-step{position:relative;border:1px solid var(--line);background:var(--panel2);border-radius:15px;padding:18px 16px 16px}
 .path-number{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--brand);color:#fff;font-weight:900;margin-bottom:10px}
 .path-step h3{margin:.2rem 0 .45rem}.path-step p{margin:0;color:var(--muted)}
+.basic-concepts{padding:clamp(22px,4vw,40px)}.basic-concepts h2{margin-top:0}.basic-concepts-lead{max-width:850px;color:var(--muted)}
+.basic-concepts-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:18px}.basic-concept{border:1px solid var(--line);background:var(--panel2);border-radius:13px;padding:14px}.basic-concept h3{margin:0 0 5px;color:var(--brand);font-size:1rem}.basic-concept p{margin:0;color:var(--muted);font-size:.93rem}
 .beginner-note{display:flex;align-items:flex-start;gap:10px;margin-top:16px;padding:13px 15px;border-radius:12px;background:color-mix(in srgb,var(--brand) 9%,var(--panel));border:1px solid color-mix(in srgb,var(--brand) 28%,var(--line))}
 .beginner-note strong{color:var(--brand)}
 .example-reader{border:2px solid color-mix(in srgb,var(--brand) 55%,var(--line));border-radius:15px;padding:18px;margin:20px 0;background:var(--panel)}
@@ -102,8 +104,10 @@ html[data-learning-mode="beginner"] .analysis-card.beginner-open:not(.hidden){di
 html[data-learning-mode="beginner"] .analysis-question{display:none}
 html[data-learning-mode="beginner"] .analysis-head{padding-bottom:12px}
 html[data-learning-mode="beginner"] .chapter-quick-nav::before{content:"选择一个问题开始：";display:inline-flex;align-items:center;white-space:nowrap;font-weight:800;color:var(--muted);font-size:.84rem}
+@media(max-width:1100px){.basic-concepts-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:900px){.learning-path{grid-template-columns:1fr 1fr}.read-three,.beginner-chapter-guide,.beginner-guide-grid{grid-template-columns:1fr}}
 @media(max-width:650px){.learning-path,.chapter-map-grid{grid-template-columns:1fr}.topbar{padding:8px;gap:6px}.top-actions{gap:4px}.top-actions #printPage,.top-actions #themeToggle{display:none}.mode-toggle{padding:7px 9px;font-size:.84rem}.example-reader{padding:13px}.example-table{font-size:.82rem}.example-table th,.example-table td{padding:7px}.beginner-chapter-intro{padding:15px 13px 17px}.chapter-map-card{padding:12px}}
+@media(max-width:650px){.basic-concepts-grid{grid-template-columns:1fr}}
 @media(max-width:430px){.brand-text{display:none}}
 @media print{html[data-learning-mode="beginner"] .chapter{display:block!important}html[data-learning-mode="beginner"] .analysis-card,html[data-learning-mode="beginner"] .beginner-guide{display:block!important}html[data-learning-mode="beginner"] .chapter-foundation,html[data-learning-mode="beginner"] .beginner-chapter-intro,html[data-learning-mode="beginner"] .analysis-question,html[data-learning-mode="beginner"] .analysis-tabs,html[data-learning-mode="beginner"] .analysis-panels{display:none!important}}
 
@@ -125,6 +129,7 @@ try{document.documentElement.dataset.learningMode=JSON.parse(localStorage.getIte
   <nav>
     <a href="#overview">教程总览</a>
     <a href="#newbie-path">零基础四步路线</a>
+    <a class="beginner-only" href="#basic-concepts">五个必懂概念</a>
     <a href="#chapter-map">八章问题地图</a>
     <a href="#start">第一次运行</a>
     <a href="#evidence-states">证据状态</a>
@@ -154,16 +159,28 @@ try{document.documentElement.dataset.learningMode=JSON.parse(localStorage.getIte
   <p class="newbie-lead">不要从 58 项清单开始，也不要先背命令。沿着下面的顺序走一遍，就能建立完整认识。</p>
   <div class="learning-path">
     <article class="path-step"><span class="path-number">1</span><h3>先找出家族成员</h3><p>分清哪些基因证据充分，哪些只是相似候选。</p><p><a href="#analysis-4-1"><span class="beginner-title">4.1 确认哪些基因属于这个家族</span><span class="advanced-title">4.1 家族成员详细信息</span></a></p></article>
-    <article class="path-step"><span class="path-number">2</span><h3>再理解成员差异</h3><p>依次比较成员关系、组成、位置、复制来源和变化快慢。</p><p><a href="#chapter-4">查看章节顺序</a></p></article>
-    <article class="path-step"><span class="path-number">3</span><h3>用示例跑一次</h3><p>先校验配置，再看运行计划，最后启动流程。</p><p><a href="#start">查看第一次运行</a></p></article>
+    <article class="path-step"><span class="path-number">2</span><h3>再理解成员差异</h3><p>依次比较成员关系、组成、位置、产生方式和变化快慢。</p><p><a href="#chapter-4">查看章节顺序</a></p></article>
+    <article class="path-step"><span class="path-number">3</span><h3>用示例跑一次</h3><p>先检查输入是否完整，再预览步骤，最后启动流程。</p><p><a href="#start">查看第一次运行</a></p></article>
     <article class="path-step"><span class="path-number">4</span><h3>学会阅读结果</h3><p>先看标识和质量，再看数值和图，最后判断结论边界。</p><p><a href="#output-reader">看结果表示例</a></p></article>
   </div>
   <div class="callout"><strong>只记住一句话：</strong>先确认分析对象和数据是否可靠，再解释图表；不要只看颜色或某一个数值。</div>
 </section>
 
+<section class="reference-section basic-concepts beginner-only" id="basic-concepts">
+  <h2>开始前，只需懂这五件事</h2>
+  <p class="basic-concepts-lead">这里的解释只帮助第一次阅读；需要精确名称、软件和参数时，再切换到进阶模式。</p>
+  <div class="basic-concepts-grid">
+    <article class="basic-concept"><h3>基因与蛋白</h3><p>基因是遗传信息的一段记录；很多基因会指导细胞制造蛋白。流程会同时使用基因位置和蛋白序列。</p></article>
+    <article class="basic-concept"><h3>基因家族</h3><p>一组来源相关、序列或关键片段相似的基因。目标不是把所有相似基因都收进来，而是保留证据充分的成员。</p></article>
+    <article class="basic-concept"><h3>材料、样本与重复</h3><p>材料是一个品种或物种；样本是一次实际测量；同一条件下分别取得的多个样本才是重复。</p></article>
+    <article class="basic-concept"><h3>家族分组</h3><p>把关系较近、特征相似的家族成员放在一组，便于比较。分组名称只是分类，不等于功能已经相同。</p></article>
+    <article class="basic-concept"><h3>染色体位置与复制</h3><p>染色体是基因所在的长条遗传载体。某段遗传信息被复制后，可能产生位置不同的相似基因。</p></article>
+  </div>
+</section>
+
 <section class="reference-section chapter-map beginner-only" id="chapter-map">
   <h2>八章只回答八个问题</h2>
-  <p class="chapter-map-lead">不必从头读到尾。先点你最关心的问题；页面只保留所选章节，读完点“返回八章问题地图”再换一章。</p>
+  <p class="chapter-map-lead">编号沿用原分析资料：第 1–3 节是通用准备，这里从第 4 节的家族分析开始。不必从头读到尾；先点最关心的问题，读完再返回这里换一章。</p>
   <div class="chapter-map-grid">
     <a class="chapter-map-card" href="#chapter-4"><span class="chapter-map-number">4</span><span><strong>哪些基因真正属于这个家族？</strong>先确认成员，再看它们彼此关系的远近。</span></a>
     <a class="chapter-map-card" href="#chapter-5"><span class="chapter-map-number">5</span><span><strong>这些基因由哪些片段组成？</strong>比较整体长度和片段数量，但先排除数据问题。</span></a>
@@ -387,7 +404,7 @@ uv run panfamflow run -c config.yaml -m phylogeny</code></pre></div></section>
     <div><span class="source-id">4.2</span><h3><span class="beginner-title">查看家族成员之间的远近关系</span><span class="advanced-title">系统发育分析树</span></h3></div>
     <span class="state-badge implemented" data-state-label="IMPLEMENTED"><span class="state-cn">已实现</span><span class="state-tech">机器值 <code>IMPLEMENTED</code></span></span>
   </header>
-<section class="beginner-guide" aria-label="4.2 零基础说明"><h4>这一项要回答什么？</h4><p>这些家族成员在序列上彼此更接近谁，主要可以分成哪些分支？</p><div class="beginner-guide-grid"><div><h5>需要准备</h5><p>上一项确认的家族成员蛋白序列，数量不能太少。</p></div><div><h5>会得到什么</h5><p>一张关系树和用于画树的序列对齐结果。</p></div><div><h5>按什么顺序看</h5><p>先看树上的名称能否和成员表一一对应，再看异常长枝，最后才解释各分支。</p></div></div><p class="beginner-warning"><strong>不要这样理解：</strong>这张树描述的是家族基因之间的关系，不是物种之间的关系，也不能单独证明功能。</p><p class="beginner-condition"><strong>继续前先确认：</strong>输入、对应关系和质量检查都通过；否则先修复问题，再继续。</p></section>
+<section class="beginner-guide" aria-label="4.2 零基础说明"><h4>这一项要回答什么？</h4><p>这些家族成员在序列上彼此更接近谁，主要可以分成哪些分支？</p><div class="beginner-guide-grid"><div><h5>需要准备</h5><p>上一项确认的家族成员蛋白序列，数量不能太少。</p></div><div><h5>会得到什么</h5><p>一张关系树，以及画树前把各条蛋白序列逐位置排齐的结果。</p></div><div><h5>按什么顺序看</h5><p>先看树上的名称能否和成员表一一对应，再看异常长枝，最后才解释各分支。</p></div></div><p class="beginner-warning"><strong>不要这样理解：</strong>这张树描述的是家族基因之间的关系，不是物种之间的关系，也不能单独证明功能。</p><p class="beginner-condition"><strong>继续前先确认：</strong>输入、对应关系和质量检查都通过；否则先修复问题，再继续。</p></section>
   <p class="analysis-takeaway"><strong>一句话先懂：</strong>它用目标家族蛋白序列画出基因之间的亲缘关系，帮助识别主要分支和异常长枝。它用于提出家族分化假说，不替代物种树。</p>
   <p class="analysis-question"><strong>这项分析主要观察：</strong>它用目标家族蛋白序列画出基因之间的亲缘关系，帮助识别主要分支和异常长枝。</p>
   <div class="analysis-tabs" role="tablist" aria-label="4.2 教学层次">
@@ -444,7 +461,7 @@ uv run panfamflow run -c config.yaml -m phylogeny</code></pre></div></section>
 </article>
 <article class="analysis-card" id="analysis-4-4" data-source-id="4.4" data-chapter="4" data-state="CONDITIONALLY_AVAILABLE" data-search="4.4 4 核心结构域氨基酸序列 logo conditionally_available 家族核心结构域的哪些氨基酸位点高度保守，哪些位置具有可信变异？ 经验证的核心结构域边界、每个成员的氨基酸序列、同源结构域裁剪结果和高质量多序列比对。 模块 phylogeny；设置 domain_logo.enabled=true 并提供经过审计的 domain_alignment。 results/03_phylogeny/fig09_core_domain_logo.pdf；results/03_phylogeny/fig09_core_domain_logo.png；results/03_phylogeny/family_domain_segments.tsv；results/03_phylogeny/domain_logo.xlsx logo 每一列表示对齐位置的残基组成和信息量；必须先确认列是同源位点，再区分保守位点、缺口和低覆盖位置。 结构域边界来源；序列方向与裁剪一致；比对覆盖率；高缺口列；截短蛋白；冗余序列权重；位点编号映射。 在边界和比对都通过质量控制后，可描述核心结构域内的残基保守模式。 不能用未经裁剪的全长序列 logo 代替核心结构域证据，也不能仅凭图形证明功能位点或选择压力。 仅在 domain_logo.enabled=true 且结构域边界与对齐输入通过 qc 时运行；logo 不能证明功能位点或选择压力 仅在 domain_logo.enabled=true 且边界、序列 id、对齐长度和缺口 qc 通过时运行。 domain_logo 可选子路径读取经过审计的核心结构域对齐，输出逐位点残基频率、信息量、域片段和 logo qc 真实数据需冻结结构域数据库版本、边界来源、序列筛选和高缺口列规则。" tabindex="-1">
 <header class="analysis-head"><div><span class="source-id">4.4</span><h3><span class="beginner-title">找出蛋白中最保守的片段</span><span class="advanced-title">核心结构域氨基酸序列 Logo</span></h3></div><span class="state-badge conditional" data-state-label="CONDITIONALLY_AVAILABLE"><span class="state-cn">有条件可用</span><span class="state-tech">机器值 <code>CONDITIONALLY_AVAILABLE</code></span></span></header>
-<section class="beginner-guide" aria-label="4.4 零基础说明"><h4>这一项要回答什么？</h4><p>家族蛋白的核心片段中，哪些位置在不同成员之间最少变化？</p><div class="beginner-guide-grid"><div><h5>需要准备</h5><p>已经可靠截取并对齐的核心蛋白片段。</p></div><div><h5>会得到什么</h5><p>一张逐位置显示氨基酸保守程度的图和对应数值表。</p></div><div><h5>按什么顺序看</h5><p>先看每个位置有多少有效序列，再看高保守位置，最后核对缺口是否过多。</p></div></div><p class="beginner-warning"><strong>不要这样理解：</strong>保守位置可能重要，但仅凭这张图不能证明它就是功能位点或受到选择。</p><p class="beginner-condition"><strong>继续前先确认：</strong>已经可靠截取核心蛋白片段，并完成逐位置排齐；否则不运行本项。</p></section>
+<section class="beginner-guide" aria-label="4.4 零基础说明"><h4>这一项要回答什么？</h4><p>家族蛋白的核心片段中，哪些位置在不同成员之间最少变化？</p><div class="beginner-guide-grid"><div><h5>需要准备</h5><p>已经可靠截取并逐位置排齐的核心蛋白片段。</p></div><div><h5>会得到什么</h5><p>一张图和对应数值表，显示组成蛋白的氨基酸在各位置是否一致。</p></div><div><h5>按什么顺序看</h5><p>先看每个位置有多少有效序列，再看很少变化的位置，最后核对空缺是否过多。</p></div></div><p class="beginner-warning"><strong>不要这样理解：</strong>很少变化的位置可能重要，但仅凭这张图不能证明它就是功能位点或受到选择。</p><p class="beginner-condition"><strong>继续前先确认：</strong>已经可靠截取核心蛋白片段，并完成逐位置排齐；否则不运行本项。</p></section>
 <p class="analysis-takeaway"><strong>一句话先懂：</strong>这一项会带你弄清“核心结构域氨基酸序列 Logo”究竟比较什么、需要哪些证据，以及哪些结果现在仍不能下结论。</p>
 <p class="analysis-question"><strong>这项分析主要观察：</strong>家族核心结构域的哪些氨基酸位点高度保守，哪些位置具有可信变异？</p>
 <div class="analysis-tabs" role="tablist" aria-label="4.4 教学层次"><button type="button" class="analysis-tab active" role="tab" id="tab-analysis-4-4-concept" aria-controls="panel-analysis-4-4-concept" aria-selected="true" data-tab="concept">概念与问题</button><button type="button" class="analysis-tab" role="tab" id="tab-analysis-4-4-input" aria-controls="panel-analysis-4-4-input" aria-selected="false" data-tab="input">输入与前提</button><button type="button" class="analysis-tab" role="tab" id="tab-analysis-4-4-run" aria-controls="panel-analysis-4-4-run" aria-selected="false" data-tab="run">运行与输出</button><button type="button" class="analysis-tab" role="tab" id="tab-analysis-4-4-interpret" aria-controls="panel-analysis-4-4-interpret" aria-selected="false" data-tab="interpret">解读与边界</button></div>
@@ -505,7 +522,7 @@ inputs:
     <div><span class="source-id">5.1</span><h3><span class="beginner-title">比较各家族分组的基因结构</span><span class="advanced-title">不同亚家族之间基因结构比较图</span></h3></div>
     <span class="state-badge implemented" data-state-label="IMPLEMENTED"><span class="state-cn">已实现</span><span class="state-tech">机器值 <code>IMPLEMENTED</code></span></span>
   </header>
-<section class="beginner-guide" aria-label="5.1 零基础说明"><h4>这一项要回答什么？</h4><p>不同家族分组的基因长度、蛋白长度和分段数量是否不同？</p><div class="beginner-guide-grid"><div><h5>需要准备</h5><p>家族成员、基因注释和可靠的家族分组。</p></div><div><h5>会得到什么</h5><p>各分组的结构数值表和比较图。</p></div><div><h5>按什么顺序看</h5><p>先看每组有多少独立材料，再比较中间水平和分布范围，最后查看异常值。</p></div></div><p class="beginner-warning"><strong>不要这样理解：</strong>一个材料里很多基因不能当成很多独立材料；结构差异也不自动等于功能差异。</p><p class="beginner-condition"><strong>继续前先确认：</strong>输入、对应关系和质量检查都通过；否则先修复问题，再继续。</p></section>
+<section class="beginner-guide" aria-label="5.1 零基础说明"><h4>这一项要回答什么？</h4><p>不同家族分组的基因长度、蛋白长度和分段数量是否不同？</p><div class="beginner-guide-grid"><div><h5>需要准备</h5><p>家族成员、每个基因的位置与分段记录，以及可靠的家族分组。</p></div><div><h5>会得到什么</h5><p>各分组的结构数值表和比较图。</p></div><div><h5>按什么顺序看</h5><p>先看每组包含多少不同材料，再比较中间水平和分布范围，最后查看异常值。</p></div></div><p class="beginner-warning"><strong>不要这样理解：</strong>一个材料里很多基因不能当成很多不同材料；结构差异也不自动等于功能差异。</p><p class="beginner-condition"><strong>继续前先确认：</strong>输入、对应关系和质量检查都通过；否则先修复问题，再继续。</p></section>
   <p class="analysis-takeaway"><strong>一句话先懂：</strong>它比较不同亚家族的基因长度、外显子和内含子等结构分布，观察家族分支是否伴随结构分化。图形差异先作为描述，不能只凭外观宣布显著。</p>
   <p class="analysis-question"><strong>这项分析主要观察：</strong>它比较不同亚家族的基因长度、外显子和内含子等结构分布，观察家族分支是否伴随结构分化。</p>
   <div class="analysis-tabs" role="tablist" aria-label="5.1 教学层次">

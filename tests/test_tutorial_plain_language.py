@@ -353,6 +353,35 @@ def test_beginner_global_guidance_avoids_unexplained_statistics_and_domain_terms
     assert "结果目录" in beginner_notes[0].all_text()
 
 
+def test_beginner_mode_defines_its_five_required_basic_concepts() -> None:
+    parser = parse_html()
+    concepts = find_by_id(parser, "basic-concepts")
+    chapter_map = find_by_id(parser, "chapter-map")
+
+    assert "beginner-only" in concepts.classes
+    concept_cards = [node for node in concepts.descendants() if "basic-concept" in node.classes]
+    assert len(concept_cards) == 5
+
+    text = re.sub(r"\s+", " ", concepts.all_text()).strip()
+    for required in (
+        "基因与蛋白",
+        "基因家族",
+        "材料、样本与重复",
+        "家族分组",
+        "染色体位置与复制",
+    ):
+        assert required in text
+    assert "同一条件下分别取得的多个样本才是重复" in text
+    assert "分组名称只是分类，不等于功能已经相同" in text
+    assert "可能产生位置不同的相似基因" in text
+    assert re.search(r"[A-Za-z]", text) is None
+
+    map_text = re.sub(r"\s+", " ", chapter_map.all_text()).strip()
+    assert "编号沿用原分析资料" in map_text
+    assert "第 1–3 节是通用准备" in map_text
+    assert "从第 4 节的家族分析开始" in map_text
+
+
 def test_five_conditional_analyses_explain_their_extra_input_in_plain_chinese() -> None:
     parser = parse_html()
     cards = {
