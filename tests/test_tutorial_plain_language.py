@@ -541,10 +541,14 @@ def test_mindmap_and_chapter_lessons_form_a_complete_learning_route() -> None:
     items = nodes_with_class(parser, "mindmap-analysis-item")
     assert len(items) == 58
     assert all(node.tag == "li" for node in items)
-    assert sum("implemented" in node.classes for node in items) == 53
+    assert sum("implemented" in node.classes for node in items) == 50
+    assert sum("postprocess" in node.classes for node in items) == 3
     assert sum("conditionally_available" in node.classes for node in items) == 5
     assert not any(node.tag == "details" for node in branches)
     assert len(nodes_with_class(parser, "mindmap-analysis-state")) == 58
+    assert [node.attrs.get("id") for node in stages] == [f"stage-{i}" for i in range(1, 5)]
+    assert len(nodes_with_class(parser, "mindmap-stage-nav")) == 4
+    assert "基础结果可用，专用比较需后处理" in HTML_PATH.read_text(encoding="utf-8")
 
     map_titles = {
         item.attrs.get("href", "").removeprefix("#analysis-").replace("-", ".", 1): next(
@@ -643,10 +647,32 @@ def test_all_58_items_have_linear_navigation_and_learning_progress() -> None:
     html = HTML_PATH.read_text(encoding="utf-8")
     assert html.count('rel="prev"') == 50
     assert html.count('rel="next"') == 50
-    assert html.count("本章完成：返回分析思维导图") == 8
+    assert html.count("本节完成：返回分析思维导图") == 8
     assert "panfamflowTutorialVisitedAnalyses" in html
     assert "const done=visitedAnalyses.size;const total=58" in html
-    assert "已读 ${done} / ${total} 项" in html
+    assert "已打开 ${done} / ${total} 项" in html
+    assert "已读 ${done} / ${total} 项" not in html
+
+
+def test_each_section_starts_from_its_own_learning_route() -> None:
+    parser = parse_html()
+    for source_id in ("4.1", "5.1", "6.1", "7.1", "8.1", "9.1", "10.1", "11.1"):
+        card = find_by_id(parser, f"analysis-{source_id.replace('.', '-')}")
+        condition = next(
+            node for node in card.descendants() if "beginner-condition" in node.classes
+        )
+        condition_text = re.sub(r"\s+", " ", condition.all_text()).strip()
+        assert "已读本节学习路线" in condition_text
+        assert "前一项" not in condition_text
+
+
+def test_mobile_scroll_cues_and_persistent_evidence_ladders_are_rendered() -> None:
+    html = HTML_PATH.read_text(encoding="utf-8")
+    assert html.count("左右滑动查看完整图示") == 58
+    assert html.count("左右滑动查看完整表格") == 116
+    assert "三行分类框架（HOG）" in html
+    assert "表达证据四级阶梯" in html
+    assert html.count('class="chapter-evidence-ladder beginner-only"') == 2
 
 
 def test_chapter_lesson_contract_and_html_are_synchronized() -> None:

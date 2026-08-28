@@ -110,7 +110,9 @@ def test_beginner_mode_has_one_clear_path_and_keeps_advanced_content_available()
     ):
         assert required_id in parser.ids
 
-    assert "第一次来：从分析全图开始" in text
+    assert "第一次来：先走四步学习路线" in text
+    assert 'href="#newbie-path"' in text
+    assert "查阅完整 58 项思维导图" in text
     assert "第一次学习，只走这四步" in text
     assert text.count('class="path-step"') == 4
     assert "教学示意，不是真实分析结果" in text
@@ -147,10 +149,11 @@ def test_beginner_mode_has_one_clear_path_and_keeps_advanced_content_available()
     )
     assert "function setBeginnerChapterOpen(chapter, open)" in text
     assert "document.getElementById(decodeURIComponent(location.hash.slice(1)))" in text
-    assert "button.textContent=expanded?'返回分析思维导图':'开始本章'" in text
+    assert "button.textContent=expanded?'返回分析思维导图':'开始本节'" in text
     assert "const visitedAnalyses = new Set" in text
     assert "const done=visitedAnalyses.size;const total=58" in text
-    assert "已读 ${done} / ${total} 项" in text
+    assert "已打开 ${done} / ${total} 项" in text
+    assert "已读 ${done} / ${total} 项" not in text
     assert (
         "beginner:{concept:'先懂它',input:'准备什么',run:'怎么运行',interpret:'怎么看结果'}" in text
     )

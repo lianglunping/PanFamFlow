@@ -16,6 +16,7 @@ MATRIX_PATH = ROOT / "docs" / "TUTORIAL_CONTENT_MATRIX.tsv"
 TOY_PATH = ROOT / "docs" / "TUTORIAL_TOY_EVIDENCE_SCHEMA.tsv"
 COVERAGE_PATH = ROOT / "docs" / "ANALYSIS_COVERAGE.tsv"
 PENDING = "待本地 toy pipeline 验证后回填"
+DISPLAY_TITLE_OVERRIDES = {"4.2": "目标家族基因树"}
 EXPECTED_IDS = (
     [f"4.{i}" for i in range(1, 5)]
     + [f"5.{i}" for i in range(1, 7)]
@@ -216,7 +217,7 @@ def test_html_has_exact_anchors_and_matches_matrix_states():
         assert "analysis-card" in card.classes
         assert card.attrs.get("data-source-id") == row["source_id"]
         assert card.attrs.get("data-state") == row["state"]
-        assert row["title"] in card.all_text()
+        assert DISPLAY_TITLE_OVERRIDES.get(row["source_id"], row["title"]) in card.all_text()
 
 
 def test_implemented_cards_do_not_claim_canonical_results_are_missing():

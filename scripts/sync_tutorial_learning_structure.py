@@ -103,6 +103,28 @@ CHAPTER_TEN_GROUPS = (
     ("看重点线索和组合分组", ("10.12", "10.13", "10.14", "10.15")),
 )
 
+POSTPROCESS_ONLY_IDS = {"6.3", "9.2", "9.4"}
+
+CHAPTER_EVIDENCE_BOXES = {
+    "6": (
+        '<aside class="chapter-evidence-ladder beginner-only" aria-label="第 6 节分类口径">'
+        "<h4>三行分类框架（HOG）：单位、分母、有效范围</h4><ol>"
+        "<li><strong>分类单位：</strong>指定节点的目标家族 HOG；若退回普通正交组，必须明确标记。</li>"
+        "<li><strong>占有分母：</strong>开始分析前冻结的材料或物种清单。</li>"
+        "<li><strong>有效范围：</strong>只对当前节点、清单和阈值有效；当前未检出不等于真实缺失。</li>"
+        "</ol></aside>"
+    ),
+    "11": (
+        '<aside class="chapter-evidence-ladder beginner-only" aria-label="第 11 节证据强度">'
+        "<h4>表达证据四级阶梯：描述、比较、一致、验证</h4><ol>"
+        "<li><strong>表达描述：</strong>颜色图或表达量只说明当前样本中的模式。</li>"
+        "<li><strong>单项研究比较：</strong>原始整数计数、独立重复和明确比较才能支持正式差异表达。</li>"
+        "<li><strong>跨研究一致：</strong>只能整合方向和证据等级，不能直接混合不同研究的原始表达量。</li>"
+        "<li><strong>机制验证：</strong>仍需独立实验，不能由表达图自动推出因果机制。</li>"
+        "</ol></aside>"
+    ),
+}
+
 RESULT_VISUALS = {
     "membership_tree": """
       <svg viewBox="0 0 720 350" role="img" aria-labelledby="result-title-{chapter} result-desc-{chapter}">
@@ -177,16 +199,23 @@ def read_rows(path: Path, expected_fields: tuple[str, ...]) -> list[dict[str, st
 
 
 def render_analysis_links(rows: list[dict[str, str]]) -> str:
-    return "".join(
-        f'<li class="mindmap-analysis-item {row["state"].lower()}">'
-        f'<a href="#analysis-{row["source_id"].replace(".", "-")}">'
-        f'<span class="mindmap-analysis-number">{html.escape(row["source_id"])}</span>'
-        f'<span class="mindmap-analysis-copy"><strong>{html.escape(row["professional_title_zh"])}</strong>'
-        f"<small>{html.escape(row['beginner_title_zh'])}</small></span>"
-        f'<span class="mindmap-analysis-state">'
-        f"{'已实现' if row['state'] == 'IMPLEMENTED' else '有条件可用'}</span></a></li>"
-        for row in rows
-    )
+    rendered = []
+    for row in rows:
+        if row["source_id"] in POSTPROCESS_ONLY_IDS:
+            state_label = "基础结果可用，专用比较需后处理"
+            state_class = "postprocess"
+        else:
+            state_label = "已提供规范结果" if row["state"] == "IMPLEMENTED" else "有条件可用"
+            state_class = row["state"].lower()
+        rendered.append(
+            f'<li class="mindmap-analysis-item {state_class}">'
+            f'<a href="#analysis-{row["source_id"].replace(".", "-")}">'
+            f'<span class="mindmap-analysis-number">{html.escape(row["source_id"])}</span>'
+            f'<span class="mindmap-analysis-copy"><strong>{html.escape(row["professional_title_zh"])}</strong>'
+            f"<small>{html.escape(row['beginner_title_zh'])}</small></span>"
+            f'<span class="mindmap-analysis-state">{state_label}</span></a></li>'
+        )
+    return "".join(rendered)
 
 
 def render_mindmap(
@@ -216,17 +245,28 @@ def render_mindmap(
                 "</div></article>"
             )
         stage_html.append(
-            f'<article class="mindmap-stage" data-stage="{stage_id}">'
+            f'<article class="mindmap-stage" id="stage-{stage_id}" data-stage="{stage_id}">'
             f'<header><span class="mindmap-stage-number">{stage_id}</span><div><h3>{stage_title}</h3>'
             f'<p>{stage_text}</p></div></header><div class="mindmap-stage-chapters">'
-            f"{''.join(branches)}</div></article>"
+            f"{''.join(branches)}</div>"
+            '<nav class="mindmap-stage-nav beginner-only" aria-label="阶段快捷导航">'
+            '<a href="#newbie-path">返回四步路线</a>'
+            '<a href="#chapter-map">回到图谱顶部</a>'
+            + (
+                f'<a href="#stage-{int(stage_id) + 1}">进入下一阶段</a>'
+                if stage_id != "4"
+                else '<a href="#chapter-11">进入最后一节学习</a>'
+            )
+            + "</nav></article>"
         )
     return (
         "<!-- BEGIN TUTORIAL_MINDMAP -->\n"
         '<section class="reference-section chapter-map" id="chapter-map">'
         "<h2>泛基因家族分析课程图谱：8 个专业大节、58 项分析</h2>"
-        '<p class="chapter-map-lead">这不是摘要，也不是折叠菜单。下面按研究顺序完整列出 58 项分析；专业标题是课程目录，标题下的一句话负责解释“这一项在做什么”。</p>'
-        '<div class="mindmap-summary" aria-label="课程覆盖摘要"><strong>58 / 58 项全部可见</strong><span>8 个专业大节</span><span>53 项已实现</span><span>5 项有条件可用</span></div>'
+        '<p class="chapter-map-lead">先用四步路线理解顺序，再用这张图查阅全部内容。下面完整保留 58 项分析；专业标题是课程目录，标题下的一句话解释“这一项在做什么”。</p>'
+        '<p><a class="button" href="#newbie-path">第一次学习：先看四步路线</a></p>'
+        '<div class="mindmap-summary" aria-label="课程覆盖摘要"><strong>58 / 58 项全部可见</strong><span>8 个专业大节</span><span>53 项提供流程结果</span><span>其中 3 项需基于基础表后处理</span><span>5 项有条件可用</span></div>'
+        '<div class="callout"><strong>状态怎么理解：</strong>“提供流程结果”表示已有规范表或图；“需后处理”表示已有基础结果，但还要按本项口径汇总或比较；“有条件可用”表示只有输入与重复等前提满足时才运行。三种状态都不等于已经得到真实水稻结论。</div>'
         '<div class="mindmap-root"><strong>研究一个目标基因家族</strong><span>可靠成员 → 结构与位置 → 来源与变化 → 实际活跃条件</span></div>'
         f'<div class="mindmap-stages">{"".join(stage_html)}</div>'
         '<div class="beginner-note"><span aria-hidden="true">↓</span><div><strong>建议顺序：</strong>第一次学习请按阶段 1 → 4、专业大节 4 → 11 顺序学习。点击任一专业小节，可直接进入该项的基础知识、分析方法和结果解读。</div></div>'
@@ -244,7 +284,7 @@ def render_chapter_ten_groups(language: dict[str, dict[str, str]]) -> str:
         )
         groups.append(f"<div><h4>{label}</h4><ol>{links}</ol></div>")
     return (
-        '<div class="lesson-subgroups"><h4>本章 15 项先分成四组</h4>'
+        '<div class="lesson-subgroups"><h4>本节 15 项先分成四组</h4>'
         f'<div class="lesson-subgroup-grid">{"".join(groups)}</div></div>'
     )
 
@@ -303,7 +343,7 @@ def render_worked_example(row: dict[str, str]) -> str:
         '<div class="course-example-heading"><div><span class="course-example-label">贯穿全教程的教学示例</span>'
         f'<h4 id="course-example-{row["chapter"]}">{html.escape(row["case_title_zh"])}</h4></div>'
         "<strong>只用于练习读图，不代表真实水稻结论</strong></div>"
-        f'<p class="course-input"><b>这一章拿什么来练：</b>{html.escape(row["case_input_zh"])}</p>'
+        f'<p class="course-input"><b>这一节拿什么来练：</b>{html.escape(row["case_input_zh"])}</p>'
         f'<ol class="course-step-list">{steps}</ol>'
         '<div class="course-result-layout">'
         '<figure class="course-result-figure">'
@@ -321,7 +361,7 @@ def render_worked_example(row: dict[str, str]) -> str:
         f'<article class="course-normal"><h5>看到什么算正常</h5><p>{html.escape(row["normal_zh"])}</p></article>'
         f'<article class="course-warning"><h5>出现什么要停下来检查</h5><p>{html.escape(row["warning_zh"])}</p></article>'
         "</div>"
-        f'<p class="course-next"><b>学完本章去哪里：</b>{html.escape(row["next_zh"])}</p>'
+        f'<p class="course-next"><b>学完本节去哪里：</b>{html.escape(row["next_zh"])}</p>'
         "</section>"
     )
 
@@ -335,8 +375,8 @@ def render_inventory(
         for item in language_rows
     )
     return (
-        '<details class="course-inventory"><summary>查阅本章完整分析清单与原模板图号（选学）</summary>'
-        f"<p>本章覆盖 {lesson['analysis_count']} 项分析；对应原模板图："
+        '<details class="course-inventory"><summary>查阅本节完整分析清单与原模板图号（选学）</summary>'
+        f"<p>本节覆盖 {lesson['analysis_count']} 项分析；对应原模板图："
         f"{html.escape(beginner_plain(example['figure_contract_zh']))}。第一次学习不必逐项展开。</p>"
         f"<ol>{links}</ol></details>"
     )
@@ -354,11 +394,11 @@ def render_chapter_intro(
         '<a href="#chapter-map">完成课程，回到分析全图</a>'
         if row["chapter"] == "11"
         else f'<a href="#chapter-{int(row["chapter"]) + 1}" '
-        f'data-next-chapter="{int(row["chapter"]) + 1}">继续下一章</a>'
+        f'data-next-chapter="{int(row["chapter"]) + 1}">继续下一节</a>'
     )
     return (
         f'<section class="beginner-chapter-intro" data-chapter="{row["chapter"]}">'
-        '<div class="chapter-lesson-heading"><div><span class="lesson-label">本章学习路线</span>'
+        '<div class="chapter-lesson-heading"><div><span class="lesson-label">本节学习路线</span>'
         f"<h3>{html.escape(PROFESSIONAL_CHAPTER_TITLES[row['chapter']])}</h3>"
         f'<p class="chapter-plain-title">通俗理解：{html.escape(row["chapter_title_zh"])}</p>'
         f'<p class="beginner-chapter-question">{html.escape(row["question_zh"])}</p></div>'
@@ -367,7 +407,7 @@ def render_chapter_intro(
         f'<figure class="lesson-diagram course-concept-figure" data-diagram="{html.escape(row["diagram_type"])}" '
         f'aria-labelledby="concept-title-{row["chapter"]}">'
         f'<h4 id="concept-title-{row["chapter"]}">先看图，建立概念</h4>{diagram}'
-        f"<figcaption>这张图只解释第 {row['chapter']} 章的核心关系，不是分析结果。</figcaption></figure>"
+        f"<figcaption>这张图只解释第 {row['chapter']} 节的核心关系，不是分析结果。</figcaption></figure>"
         '<div class="chapter-lesson-grid">'
         f'<article data-lesson="foundation"><h4>① 基础知识</h4><p>{html.escape(row["foundation_zh"])}</p></article>'
         f'<article data-lesson="why"><h4>② 为什么做</h4><p>{html.escape(row["why_zh"])}</p></article>'
@@ -376,14 +416,15 @@ def render_chapter_intro(
         f'<article data-lesson="read"><h4>④ 怎么读结果</h4><p>{html.escape(row["read_zh"])}</p>'
         f'<p class="lesson-boundary"><b>不要误读：</b>{html.escape(row["boundary_zh"])}</p></article>'
         "</div></div>"
-        f'<p class="lesson-dependency"><b>与前后章节的关系：</b>{html.escape(row["dependency_zh"])}</p>'
+        f'<p class="lesson-dependency"><b>与前后各节的关系：</b>{html.escape(row["dependency_zh"])}</p>'
+        f"{CHAPTER_EVIDENCE_BOXES.get(row['chapter'], '')}"
         f"{render_worked_example(example)}"
         f"{chapter_ten}{render_inventory(row, example, language_rows)}"
-        '<nav class="course-chapter-nav" aria-label="章节学习导航">'
+        '<nav class="course-chapter-nav" aria-label="各节学习导航">'
         '<a href="#chapter-map">返回分析全图</a>'
         f"{next_link}"
         "</nav>"
-        f'<button class="chapter-toggle primary" type="button" aria-expanded="false">开始本章</button>'
+        f'<button class="chapter-toggle primary" type="button" aria-expanded="false">开始本节</button>'
         "</section>"
     )
 

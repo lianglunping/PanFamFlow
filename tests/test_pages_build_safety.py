@@ -63,20 +63,24 @@ def test_build_rejects_output_that_overlaps_inputs(tmp_path: Path, output_name: 
     assert sentinel.read_text(encoding="utf-8") == "keep"
 
 
-def test_build_accepts_disjoint_output(tmp_path: Path) -> None:
+def test_build_accepts_disjoint_output(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     source = tmp_path / "site"
     source.mkdir()
     (source / "index.html").write_text("home", encoding="utf-8")
     tutorial = tmp_path / "docs" / "index.html"
     tutorial.parent.mkdir()
-    tutorial.write_text("tutorial", encoding="utf-8")
+    release_revision = "a" * 40
+    monkeypatch.setenv("GITHUB_SHA", release_revision)
+    tutorial.write_text(f"tutorial {MODULE.RELEASE_REVISION_PLACEHOLDER}", encoding="utf-8")
     write_tutorial_assets(tutorial)
     output = tmp_path / "_site"
 
     build(source, tutorial, output)
 
     assert (output / "index.html").read_text(encoding="utf-8") == "home"
-    assert (output / "tutorial" / "index.html").read_text(encoding="utf-8") == "tutorial"
+    published_tutorial = (output / "tutorial" / "index.html").read_text(encoding="utf-8")
+    assert published_tutorial == f"tutorial {release_revision}"
+    assert MODULE.RELEASE_REVISION_PLACEHOLDER not in published_tutorial
     for name in MODULE.TUTORIAL_ASSETS:
         source_asset = tutorial.parent / name
         published_asset = output / "tutorial" / name
@@ -86,6 +90,25 @@ def test_build_accepts_disjoint_output(tmp_path: Path) -> None:
             output / "SITE_MANIFEST.tsv"
         ).read_text(encoding="utf-8")
     assert (output / "SITE_MANIFEST.tsv").is_file()
+
+
+def test_build_rejects_tutorial_without_exact_release_placeholder(tmp_path: Path) -> None:
+    source = tmp_path / "site"
+    source.mkdir()
+    (source / "index.html").write_text("home", encoding="utf-8")
+    tutorial = tmp_path / "docs" / "index.html"
+    tutorial.parent.mkdir()
+    tutorial.write_text("tutorial without revision", encoding="utf-8")
+    write_tutorial_assets(tutorial)
+
+    with pytest.raises(RuntimeError, match="exactly one release revision placeholder"):
+        build(source, tutorial, tmp_path / "_site")
+
+
+def test_release_revision_rejects_invalid_ci_sha(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GITHUB_SHA", "not-a-full-git-sha")
+    with pytest.raises(RuntimeError, match="Invalid Git release revision"):
+        MODULE.resolve_release_revision()
 
 
 def test_every_published_tutorial_asset_triggers_pages_deployment() -> None:
