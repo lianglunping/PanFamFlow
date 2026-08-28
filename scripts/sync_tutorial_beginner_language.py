@@ -58,7 +58,36 @@ ADVANCED_TITLE_OVERRIDES = {
     "11.4": "非生物胁迫响应",
     "11.5": "生物胁迫响应",
 }
-DEFAULT_BEGINNER_CONDITION = "输入、对应关系和质量检查都通过；否则先修复问题，再继续。"
+DEFAULT_BEGINNER_CONDITION = "前一项结果已经看懂，材料名称和结果没有缺项；有疑问时先返回本章说明。"
+CHAPTER_ACTIONS = {
+    "4": "先按家族特征筛选，再把可靠成员放入关系比较",
+    "5": "逐个统计长度和片段数量，再按分组比较",
+    "6": "把每个材料中的成员记为检出或未检出，再汇总出现比例",
+    "7": "把每个成员放到对应染色体位置，再汇总数量和密度",
+    "8": "结合成员位置和周围连续对应基因，判断可能的复制来源",
+    "9": "先配对相似基因，再分别统计两类编码变化",
+    "10": "在每个基因前方寻找短序列线索，再按指定分组汇总",
+    "11": "按样本整理每个基因的读数，再在可比条件内描述或比较",
+}
+ITEM_ACTION_OVERRIDES = {
+    "4.1": "把相似候选逐个检查，记录保留、排除和待复核的依据",
+    "4.2": "把可靠成员逐位置排齐，再根据序列差异建立成员关系图",
+    "4.3": "按材料和家族分组计数，同时计算每个材料内部的组成比例",
+    "4.4": "把可靠核心片段逐位置排齐，统计每个位置最常出现的氨基酸",
+    "6.1": "分别建立材料关系图和成员有无图，再比较两者是否呈现相似分组",
+    "6.2": "把每个家族组包含的基因和所在材料逐项列出，空缺也保留",
+    "6.3": "汇总每个家族组的完整度、成员数和异常记录，标出不可靠分组",
+    "6.4": "按成员出现于多少材料，把它们分成四类并同时报告两种总数口径",
+    "6.5": "用不同材料加入顺序反复累计，记录每增加材料还能发现多少新成员",
+    "6.6": "逐个材料统计四类成员的实际数量，再并列比较",
+    "6.7": "把每个材料的四类数量除以该材料成员总数，再比较组成比例",
+    "6.8": "把四类成员分别按家族分组计数，查看它们主要落在哪些分组",
+    "8.5": "按复制来源给成员分组，再比较每组基因长度和内部片段数量",
+    "8.6": "检查两个染色体片段上的多个相邻基因是否保持相同顺序和方向",
+    "11.3": "先分别完成每个处理与对照的严格比较，再汇总各处理共有或特有的变化基因",
+    "11.4": "在同一实验中比较环境处理与对照的独立样本，报告变化方向和大小",
+    "11.5": "在同一实验中比较病原处理与对照的独立样本，报告变化方向和大小",
+}
 CONDITIONAL_BEGINNER_CONDITIONS = {
     "4.4": "已经可靠截取核心蛋白片段，并完成逐位置排齐；否则不运行本项。",
     "8.6": "已经准备完整染色体位置、全基因组蛋白序列和成片段对应证据；否则不运行本项。",
@@ -99,6 +128,10 @@ def beginner_guide(row: dict[str, str]) -> str:
         CONDITIONAL_BEGINNER_CONDITIONS.get(row["source_id"], DEFAULT_BEGINNER_CONDITION),
         quote=True,
     )
+    chapter = row["source_id"].split(".", 1)[0]
+    action = html.escape(
+        ITEM_ACTION_OVERRIDES.get(row["source_id"], CHAPTER_ACTIONS[chapter]), quote=True
+    )
     return (
         f'\n<section class="beginner-guide" aria-label="{value["source_id"]} 零基础说明">'
         "<h4>这一项要回答什么？</h4>"
@@ -111,11 +144,41 @@ def beginner_guide(row: dict[str, str]) -> str:
         "<div><h5>按什么顺序看</h5>"
         f"<p>{value['beginner_read_zh']}</p></div>"
         "</div>"
+        '<div class="beginner-bridge"><span><strong>一条输入记录</strong>'
+        f'{value["beginner_input_zh"]}</span><b aria-hidden="true">→</b>'
+        f'<span><strong>本项怎样处理</strong>{action}</span><b aria-hidden="true">→</b>'
+        f"<span><strong>在结果中看到</strong>{value['beginner_output_zh']}</span></div>"
         '<p class="beginner-warning"><strong>不要这样理解：</strong>'
         f"{value['beginner_warning_zh']}</p>"
         '<p class="beginner-condition"><strong>继续前先确认：</strong>'
         f"{condition}</p>"
         "</section>"
+    )
+
+
+def beginner_analysis_nav(source_id: str, rows: dict[str, dict[str, str]]) -> str:
+    chapter = source_id.split(".", 1)[0]
+    chapter_ids = [item for item in EXPECTED_IDS if item.split(".", 1)[0] == chapter]
+    index = chapter_ids.index(source_id)
+    links = [f'<a href="#chapter-{chapter}">返回本章路线</a>']
+    if index > 0:
+        previous_id = chapter_ids[index - 1]
+        links.append(
+            f'<a rel="prev" href="#analysis-{previous_id.replace(".", "-")}">'
+            f"上一项：{html.escape(rows[previous_id]['beginner_title_zh'])}</a>"
+        )
+    if index + 1 < len(chapter_ids):
+        next_id = chapter_ids[index + 1]
+        links.append(
+            f'<a rel="next" href="#analysis-{next_id.replace(".", "-")}">'
+            f"下一项：{html.escape(rows[next_id]['beginner_title_zh'])}</a>"
+        )
+    else:
+        links.append('<a href="#chapter-map">本章完成：返回分析思维导图</a>')
+    return (
+        '<nav class="beginner-analysis-nav beginner-only" aria-label="本项学习导航">'
+        + "".join(links)
+        + "</nav>"
     )
 
 
@@ -139,6 +202,13 @@ def replace_card(
         count=1,
         flags=re.DOTALL,
     )
+    card = re.sub(
+        r'\n?<nav class="beginner-analysis-nav beginner-only".*?</nav>',
+        "",
+        card,
+        count=1,
+        flags=re.DOTALL,
+    )
     card, count = re.subn(
         r'(<header class="analysis-head">.*?<h3>).*?(</h3>)',
         rf'\1<span class="beginner-title">{beginner_title}</span>'
@@ -157,6 +227,14 @@ def replace_card(
     )
     if count != 1:
         raise ValueError(f"Could not insert beginner guide for {source_id}")
+    card, count = re.subn(
+        r'(<a class="back-to-chapter")',
+        beginner_analysis_nav(source_id, rows) + r"\n\1",
+        card,
+        count=1,
+    )
+    if count != 1:
+        raise ValueError(f"Could not insert beginner navigation for {source_id}")
     return card
 
 
@@ -173,18 +251,32 @@ def render(source: str) -> str:
     if count != len(EXPECTED_IDS):
         raise ValueError(f"Expected 58 analysis cards, found {count}")
 
-    for source_id in EXPECTED_IDS:
-        beginner = html.escape(rows[source_id]["beginner_title_zh"], quote=True)
-        advanced = html.escape(advanced_titles[source_id], quote=True)
-        pattern = rf'<a href="#analysis-{re.escape(source_id.replace(".", "-"))}">.*?</a>'
-        replacement = (
-            f'<a href="#analysis-{source_id.replace(".", "-")}">'
-            f'<span class="beginner-title">{source_id} {beginner}</span>'
-            f'<span class="advanced-title">{source_id} {advanced}</span></a>'
-        )
-        rendered, link_count = re.subn(pattern, replacement, rendered, flags=re.DOTALL)
-        if link_count < 1:
-            raise ValueError(f"Could not replace quick-navigation label for {source_id}")
+    quick_nav_replacements = 0
+
+    def replace_quick_nav(match: re.Match[str]) -> str:
+        nonlocal quick_nav_replacements
+        nav = match.group(0)
+        for source_id in EXPECTED_IDS:
+            beginner = html.escape(rows[source_id]["beginner_title_zh"], quote=True)
+            advanced = html.escape(advanced_titles[source_id], quote=True)
+            pattern = rf'<a href="#analysis-{re.escape(source_id.replace(".", "-"))}">.*?</a>'
+            replacement = (
+                f'<a href="#analysis-{source_id.replace(".", "-")}">'
+                f'<span class="beginner-title">{source_id} {beginner}</span>'
+                f'<span class="advanced-title">{source_id} {advanced}</span></a>'
+            )
+            nav, link_count = re.subn(pattern, replacement, nav, count=1, flags=re.DOTALL)
+            quick_nav_replacements += link_count
+        return nav
+
+    rendered = re.sub(
+        r'<nav class="chapter-quick-nav".*?</nav>',
+        replace_quick_nav,
+        rendered,
+        flags=re.DOTALL,
+    )
+    if quick_nav_replacements != len(EXPECTED_IDS):
+        raise ValueError(f"Expected 58 quick-navigation labels, replaced {quick_nav_replacements}")
 
     for chapter, beginner in CHAPTER_BEGINNER_TITLES.items():
         pattern = rf'(<h2 id="chapter-{chapter}-title">)(.*?)(</h2>)'
@@ -202,7 +294,7 @@ def render(source: str) -> str:
             rf'<span class="advanced-title">{advanced}</span>\3'
         )
         rendered = re.sub(pattern, replacement, rendered, count=1, flags=re.DOTALL)
-    return rendered
+    return re.sub(r"^[ \t]+$", "", rendered, flags=re.MULTILINE)
 
 
 def parse_args() -> argparse.Namespace:
