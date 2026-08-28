@@ -275,7 +275,7 @@ def render_mindmap(
         "<h2>泛基因家族分析课程图谱：8 个专业大节、58 项分析</h2>"
         '<p class="chapter-map-lead">先用四步路线理解顺序，再用这张图查阅全部内容。下面完整保留 58 项分析；专业标题是课程目录，标题下的一句话解释“这一项在做什么”。</p>'
         '<p><a class="button" href="#newbie-path">第一次学习：先看四步路线</a></p>'
-        '<div class="mindmap-summary" aria-label="课程覆盖摘要"><strong>58 / 58 项全部可见</strong><span>8 个专业大节</span><span>53 项提供流程结果</span><span>其中 3 项需基于基础表后处理</span><span>5 项有条件可用</span></div>'
+        '<div class="mindmap-summary" aria-label="课程覆盖摘要"><strong>58 / 58 项完整收录</strong><span>8 个专业大节</span><span>53 项提供流程结果</span><span>其中 3 项需基于基础表后处理</span><span>5 项有条件可用</span></div>'
         '<div class="callout"><strong>状态怎么理解：</strong>“提供流程结果”表示已有规范表或图；“需后处理”表示已有基础结果，但还要按本项口径汇总或比较；“有条件可用”表示只有输入与重复等前提满足时才运行。三种状态都不等于已经得到真实水稻结论。</div>'
         '<section class="mindmap-finder" aria-labelledby="mindmap-finder-title">'
         '<div class="mindmap-finder-heading"><div><h3 id="mindmap-finder-title">在 58 项分析中快速定位</h3>'
