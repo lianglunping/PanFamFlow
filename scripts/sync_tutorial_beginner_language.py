@@ -42,6 +42,8 @@ EXAMPLE_FIELDS = (
     "legend_zh",
     "output_headers_zh",
     "output_rows_zh",
+    "plot_value_source_column_zh",
+    "plot_color_source_column_zh",
     "plot_values",
     "plot_colors",
     "plot_value_label_zh",
@@ -87,6 +89,12 @@ PLOT_COLOR_LABELS = {
     "grey": "灰色",
     "neutral": "白色",
     "purple": "紫色",
+}
+PLOT_VALUE_SPECIAL_SOURCES = {"教学行序"}
+PLOT_COLOR_SPECIAL_SOURCES = {"plot_values连续色", "固定教学色"}
+PLOT_SOURCE_DISPLAY = {
+    "plot_values连续色": "绘图数值的连续颜色",
+    "固定教学色": "固定教学颜色",
 }
 EXPECTED_IDS = (
     [f"4.{index}" for index in range(1, 5)]
@@ -207,6 +215,55 @@ def parse_plot_contract(example: dict[str, str], row_count: int) -> tuple[list[f
     return values, color_tokens
 
 
+def validate_plot_source_contract(
+    example: dict[str, str], headers: list[str], rows: list[list[str]]
+) -> None:
+    source_id = example["source_id"]
+    value_source = example["plot_value_source_column_zh"]
+    color_source = example["plot_color_source_column_zh"]
+    if value_source not in headers and value_source not in PLOT_VALUE_SPECIAL_SOURCES:
+        raise ValueError(f"Plot value source is not an output column for {source_id}")
+    if example["plot_value_label_zh"] != value_source:
+        raise ValueError(f"Plot value label does not match its source for {source_id}")
+    if color_source not in headers and color_source not in PLOT_COLOR_SPECIAL_SOURCES:
+        raise ValueError(f"Plot color source is not an output column for {source_id}")
+
+    values, colors = parse_plot_contract(example, len(rows))
+    if value_source == "教学行序" and values != list(range(1, len(rows) + 1)):
+        raise ValueError(f"Teaching row order is not 1..n in {source_id}")
+    if color_source in headers:
+        source_index = headers.index(color_source)
+        mapping: dict[str, str] = {}
+        for row, color in zip(rows, colors, strict=True):
+            source_value = row[source_index]
+            previous = mapping.setdefault(source_value, color)
+            if previous != color:
+                raise ValueError(
+                    f"Inconsistent color for {color_source}={source_value} in {source_id}"
+                )
+        return
+    if color_source == "固定教学色":
+        if len(set(colors)) != 1:
+            raise ValueError(f"Fixed teaching color varies within {source_id}")
+        return
+
+    has_negative = any(value < 0 for value in values)
+    non_grey_colors = {color for color in colors if color != "grey"}
+    if not has_negative and len(non_grey_colors) > 1:
+        raise ValueError(f"Continuous non-negative color uses multiple base colors in {source_id}")
+    for row, value, color in zip(rows, values, colors, strict=True):
+        row_text = "｜".join(row)
+        if color == "grey":
+            if not re.search(r"缺失|不计算|不能解释|只描述方向|先暂停", row_text):
+                raise ValueError(f"Grey continuous row lacks an explicit stop state in {source_id}")
+        elif value < 0 and color != "blue":
+            raise ValueError(f"Negative continuous value is not blue in {source_id}")
+        elif has_negative and value == 0 and color != "neutral":
+            raise ValueError(f"Zero signed value is not neutral in {source_id}")
+        elif has_negative and value > 0 and color != "red":
+            raise ValueError(f"Positive signed value is not red in {source_id}")
+
+
 def format_plot_value(value: float) -> str:
     """Render a validated finite plot value without scientific notation."""
     if value == 0:
@@ -214,6 +271,10 @@ def format_plot_value(value: float) -> str:
     if value.is_integer():
         return str(int(value))
     return f"{value:.15f}".rstrip("0").rstrip(".")
+
+
+def plot_source_display(value: str) -> str:
+    return PLOT_SOURCE_DISPLAY.get(value, value)
 
 
 def read_examples() -> list[dict[str, str]]:
@@ -242,6 +303,7 @@ def read_examples() -> list[dict[str, str]]:
         if any(len(item) != len(output_headers) for item in output_rows):
             raise ValueError(f"Output example has mismatched columns for {source_id}")
         parse_plot_contract(row, len(output_rows))
+        validate_plot_source_contract(row, output_headers, output_rows)
     return rows
 
 
@@ -385,6 +447,8 @@ def micro_svg(example: dict[str, str]) -> str:
     description = html.escape(
         f"横向说明：{example['x_axis_zh']}。纵向说明：{example['y_axis_zh']}。"
         f"颜色和符号：{example['legend_zh']}。显式绘图值：{example['plot_value_label_zh']}。"
+        f"绘图值来自结果列：{plot_source_display(example['plot_value_source_column_zh'])}。"
+        f"颜色来自：{plot_source_display(example['plot_color_source_column_zh'])}。"
         "逐行颜色：" + "、".join(PLOT_COLOR_LABELS[item] for item in color_tokens) + "。"
     )
     return (
@@ -423,6 +487,8 @@ def micro_lesson(example: dict[str, str]) -> str:
         f"{value['x_axis_zh']}<br><b>纵向说明：</b>{value['y_axis_zh']}"
         f"<br><b>图中颜色与符号：</b>{value['legend_zh']}"
         f"<br><b>本图显式数值：</b>{value['plot_value_label_zh']}（按结果表行顺序）"
+        f"<br><b>绘图值来自：</b>{plot_source_display(example['plot_value_source_column_zh'])}"
+        f"<br><b>颜色来自：</b>{plot_source_display(example['plot_color_source_column_zh'])}"
         "<br><b>逐行颜色：</b>"
         + "、".join(PLOT_COLOR_LABELS[item] for item in split_cells(example["plot_colors"]))
         + "</figcaption></figure>"

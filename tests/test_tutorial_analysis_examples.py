@@ -35,6 +35,8 @@ FIELDS = [
     "legend_zh",
     "output_headers_zh",
     "output_rows_zh",
+    "plot_value_source_column_zh",
+    "plot_color_source_column_zh",
     "plot_values",
     "plot_colors",
     "plot_value_label_zh",
@@ -74,6 +76,8 @@ SUPPORTED_VISUALS = {
     "test",
 }
 PLOT_COLORS = {"blue", "green", "orange", "red", "grey", "neutral", "purple"}
+PLOT_VALUE_SPECIAL_SOURCES = {"教学行序"}
+PLOT_COLOR_SPECIAL_SOURCES = {"plot_values连续色", "固定教学色"}
 
 
 def read_rows() -> list[dict[str, str]]:
@@ -106,16 +110,50 @@ def test_analysis_example_contract_is_complete_and_frozen() -> None:
         assert len(output_headers) >= 2
         assert len(output_rows) >= 2
         assert all(len(item.split("｜")) == len(output_headers) for item in output_rows)
+        value_source = row["plot_value_source_column_zh"]
+        color_source = row["plot_color_source_column_zh"]
+        assert value_source in output_headers or value_source in PLOT_VALUE_SPECIAL_SOURCES
+        assert color_source in output_headers or color_source in PLOT_COLOR_SPECIAL_SOURCES
+        assert row["plot_value_label_zh"] == value_source
         plot_values = [float(item) for item in row["plot_values"].split("｜")]
         plot_colors = row["plot_colors"].split("｜")
         assert len(plot_values) == len(plot_colors) == len(output_rows)
         assert all(math.isfinite(item) for item in plot_values)
         assert set(plot_colors) <= PLOT_COLORS
+        if value_source == "教学行序":
+            assert plot_values == list(range(1, len(output_rows) + 1))
         assert row["reading_question_zh"].endswith("？")
         assert row["reading_answer_zh"].endswith("。")
         assert row["normal_zh"].endswith("。")
         assert row["stop_zh"].endswith("。")
         assert row["next_zh"].endswith("。")
+
+
+def test_color_source_contract_is_consistent_for_all_58_rows() -> None:
+    for row in read_rows():
+        headers = row["output_headers_zh"].split("｜")
+        output_rows = [item.split("｜") for item in row["output_rows_zh"].split("；")]
+        values = [float(item) for item in row["plot_values"].split("｜")]
+        colors = row["plot_colors"].split("｜")
+        color_source = row["plot_color_source_column_zh"]
+        if color_source in headers:
+            index = headers.index(color_source)
+            mapping: dict[str, str] = {}
+            for output_row, color in zip(output_rows, colors, strict=True):
+                source_value = output_row[index]
+                assert mapping.setdefault(source_value, color) == color, row["source_id"]
+        elif color_source == "固定教学色":
+            assert len(set(colors)) == 1, row["source_id"]
+        else:
+            assert color_source == "plot_values连续色"
+            for output_row, value, color in zip(output_rows, values, colors, strict=True):
+                row_text = "｜".join(output_row)
+                if color == "grey":
+                    assert re.search(r"缺失|不计算|不能解释|只描述方向|先暂停", row_text)
+                elif value < 0:
+                    assert color == "blue", row["source_id"]
+                elif any(item < 0 for item in values):
+                    assert color == ("neutral" if value == 0 else "red"), row["source_id"]
 
 
 def test_analysis_examples_are_item_specific_not_majority_boilerplate() -> None:
@@ -223,7 +261,33 @@ def test_required_plot_values_are_exact_ascii_numbers() -> None:
     assert rows["5.5"]["plot_values"] == "380｜420"
     assert rows["10.13"]["plot_values"] == "2｜1｜1"
     assert rows["7.1"]["plot_values"] == "1200000｜1300000｜900000"
+    assert rows["7.1"]["plot_colors"] == "blue｜blue｜orange"
+    assert rows["7.2"]["plot_color_source_column_zh"] == "材料"
+    assert rows["7.3"]["plot_values"] == "1｜0.6｜0"
+    assert rows["7.3"]["plot_value_label_zh"] == "每千万长度成员数"
+    assert rows["8.2"]["plot_values"] == "40｜25｜35"
+    assert rows["5.5"]["plot_value_label_zh"] == "中间蛋白长度"
+    assert rows["10.3"]["plot_values"] == "16｜9｜12"
+    assert rows["10.6"]["plot_values"] == "20｜10｜15"
+    assert rows["10.10"]["plot_values"] == "1.3｜0.9｜1.1"
+    assert rows["10.12"]["plot_values"] == "1.2｜0.8｜1.5"
+    assert rows["10.13"]["plot_values"] == "2｜1｜1"
+    assert rows["10.14"]["plot_values"] == "1｜2｜6"
+    assert rows["10.14"]["plot_value_label_zh"] == "名次"
+    assert rows["10.14"]["y_axis_zh"] == "名次"
+    assert "名次" in rows["10.14"]["legend_zh"]
+    assert "总出现次数" not in rows["10.14"]["legend_zh"]
     assert "chinese_number" not in SYNC.read_text(encoding="utf-8")
+
+
+def test_legends_do_not_claim_unrendered_secondary_geometry() -> None:
+    rows = {row["source_id"]: row for row in read_rows()}
+    assert "浅色点" not in rows["6.4"]["legend_zh"]
+    assert "整根柱为百分之百" not in rows["6.7"]["legend_zh"]
+    assert "深色柱为总次数" not in rows["10.2"]["legend_zh"]
+    assert rows["11.3"]["x_axis_zh"] == "效应方向与大小"
+    assert rows["11.4"]["x_axis_zh"] == "效应方向与大小"
+    assert rows["11.5"]["x_axis_zh"] == "效应方向与大小"
 
 
 def test_plot_contract_parser_rejects_bad_length_token_and_nonfinite_values() -> None:
@@ -239,6 +303,24 @@ def test_plot_contract_parser_rejects_bad_length_token_and_nonfinite_values() ->
         changed.update(update)
         with pytest.raises(ValueError):
             sync.parse_plot_contract(changed, 2)
+
+
+def test_plot_source_contract_rejects_drifted_sources_labels_and_group_colors() -> None:
+    sync = load_sync_module()
+    base = next(row for row in read_rows() if row["source_id"] == "7.1")
+    headers = base["output_headers_zh"].split("｜")
+    output_rows = [item.split("｜") for item in base["output_rows_zh"].split("；")]
+    bad_contracts = (
+        {"plot_value_source_column_zh": "不存在的列", "plot_value_label_zh": "不存在的列"},
+        {"plot_value_label_zh": "自行改名的单位"},
+        {"plot_color_source_column_zh": "不存在的列"},
+        {"plot_colors": "blue｜green｜orange"},
+    )
+    for update in bad_contracts:
+        changed = dict(base)
+        changed.update(update)
+        with pytest.raises(ValueError):
+            sync.validate_plot_source_contract(changed, headers, output_rows)
 
 
 def test_explicit_signed_percentage_and_fdr_values_change_geometry() -> None:
