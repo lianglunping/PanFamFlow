@@ -14,6 +14,7 @@ on:
       - "docs/TUTORIAL_CONTENT_MATRIX.tsv"
       - "docs/TUTORIAL_BEGINNER_LANGUAGE.tsv"
       - "docs/TUTORIAL_CHAPTER_LESSONS.tsv"
+      - "docs/TUTORIAL_COURSE_EXAMPLES.tsv"
       - "docs/TUTORIAL_BEGINNER_LANGUAGE_AUDIT.zh-CN.md"
       - "docs/TUTORIAL_GAP_AUDIT.zh-CN.md"
       - "docs/TUTORIAL_REPOSITORY_INTEGRATION_QA.zh-CN.md"

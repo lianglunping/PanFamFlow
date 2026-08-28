@@ -127,7 +127,7 @@ def test_beginner_mode_has_one_clear_path_and_keeps_advanced_content_available()
     assert "这些基因在什么组织或处理下更活跃，哪些变化有可靠证据？" in text
     for lesson in ("① 基础知识", "② 为什么做", "③ 怎么做", "④ 怎么读结果"):
         assert text.count(lesson) == 8
-    assert text.count('class="lesson-diagram"') == 8
+    assert text.count('class="lesson-diagram course-concept-figure"') == 8
     assert "examples/toy/config.yaml" in text
     assert "panfamflowTutorialMode" in text
     assert "dataset.learningMode='beginner'" in text
@@ -138,6 +138,10 @@ def test_beginner_mode_has_one_clear_path_and_keeps_advanced_content_available()
     assert ".chapter.beginner-chapter-open{display:flex;flex-direction:column}" in text
     assert 'html[data-learning-mode="beginner"] .analysis-question{display:none}' in text
     assert 'html[data-learning-mode="beginner"] .chapter-foundation{display:none!important}' in text
+    assert (
+        'html[data-learning-mode="beginner"] .chapter>.chapter-block{display:none!important}'
+        in text
+    )
     assert "function setBeginnerChapterOpen(chapter, open)" in text
     assert "document.getElementById(decodeURIComponent(location.hash.slice(1)))" in text
     assert "button.textContent=expanded?'返回分析思维导图':'开始本章'" in text
@@ -168,6 +172,4 @@ def test_beginner_mode_has_one_clear_path_and_keeps_advanced_content_available()
         "align-items:center;width:100%;min-height:44px" in text
     )
     assert "}.beginner-analysis-nav{display:grid" not in text
-    assert (
-        'html[data-learning-mode="beginner"] #chapter-10>.chapter-quick-nav{display:none}' in text
-    )
+    assert 'html[data-learning-mode="beginner"] .chapter-quick-nav{display:none!important}' in text

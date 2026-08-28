@@ -28,6 +28,7 @@ def write_tutorial_assets(tutorial: Path) -> None:
         "TUTORIAL_CHAPTER_LESSONS.tsv": (
             "chapter\tstage_id\tchapter_title_zh\n4\t1\t先确定家族成员\n"
         ),
+        "TUTORIAL_COURSE_EXAMPLES.tsv": ("chapter\tcase_title_zh\n4\t确认可靠家族成员\n"),
         "TUTORIAL_BEGINNER_LANGUAGE_AUDIT.zh-CN.md": "# beginner language audit\n",
         "TUTORIAL_GAP_AUDIT.zh-CN.md": "# gap audit\n",
         "TUTORIAL_REPOSITORY_INTEGRATION_QA.zh-CN.md": "# integration QA\n",
