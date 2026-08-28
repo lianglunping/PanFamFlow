@@ -125,7 +125,7 @@ html[data-learning-mode="beginner"] .chapter-quick-nav::before{content:"选择�
 @media(max-width:650px){.basic-concepts-grid{grid-template-columns:1fr}}
 @media(max-width:430px){.brand-text{display:none}}
 @media print{html[data-learning-mode="beginner"] .chapter{display:block!important}html[data-learning-mode="beginner"] .analysis-card,html[data-learning-mode="beginner"] .beginner-guide{display:block!important}html[data-learning-mode="beginner"] .chapter-foundation,html[data-learning-mode="beginner"] .beginner-chapter-intro,html[data-learning-mode="beginner"] .analysis-question,html[data-learning-mode="beginner"] .analysis-tabs,html[data-learning-mode="beginner"] .analysis-panels{display:none!important}}
-.first-run-intro{max-width:920px}.first-run-steps{display:grid;gap:14px;margin:18px 0}.first-run-step{display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 14px;border:1px solid var(--line);border-radius:14px;padding:16px;background:var(--panel2)}.first-run-number{grid-row:1/6;display:grid;place-items:center;align-self:start;width:40px;height:40px;border-radius:50%;background:var(--brand);color:#fff;font-weight:900}.first-run-step h3{margin:3px 0 7px}.first-run-step p{margin:5px 0}.first-run-step .code-wrap{min-width:0}.first-run-success{border-left:4px solid var(--ok);padding:8px 11px!important;border-radius:0 8px 8px 0;background:color-mix(in srgb,var(--ok) 8%,var(--panel))}.first-run-stop{border-left:4px solid var(--danger);padding:8px 11px!important;border-radius:0 8px 8px 0;background:color-mix(in srgb,var(--danger) 7%,var(--panel))}.first-run-fold{margin-top:9px}.first-run-fold summary{cursor:pointer;color:var(--brand);font-weight:800}.first-run-boundary{margin-top:16px}.first-run-step code{overflow-wrap:anywhere}@media(max-width:650px){.first-run-step{grid-template-columns:1fr;padding:13px}.first-run-number{grid-row:auto;margin-bottom:7px}.first-run-step .code-wrap pre{font-size:.8rem}}
+.first-run-intro{max-width:920px}.first-run-steps{display:grid;gap:14px;margin:18px 0;padding:0;list-style:none}.first-run-step{display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 14px;border:1px solid var(--line);border-radius:14px;padding:16px;background:var(--panel2)}.first-run-number{grid-row:1/10;display:grid;place-items:center;align-self:start;width:40px;height:40px;border-radius:50%;background:var(--brand);color:#fff;font-weight:900}.first-run-step h3{margin:3px 0 7px}.first-run-step p{margin:5px 0}.first-run-step .code-wrap{min-width:0}.first-run-success{border-left:4px solid var(--ok);padding:8px 11px!important;border-radius:0 8px 8px 0;background:color-mix(in srgb,var(--ok) 8%,var(--panel))}.first-run-stop{border-left:4px solid var(--danger);padding:8px 11px!important;border-radius:0 8px 8px 0;background:color-mix(in srgb,var(--danger) 7%,var(--panel))}.first-run-fold{margin-top:9px}.first-run-fold summary{cursor:pointer;color:var(--brand);font-weight:800}.first-run-boundary{margin-top:16px}.first-run-step code{overflow-wrap:anywhere}.first-run-links{margin:8px 0;padding-left:1.3rem}.first-run-choice{border:1px solid var(--line);border-radius:10px;padding:10px;margin:9px 0;background:var(--panel)}.first-run-choice h4{margin:0 0 5px}@media(max-width:650px){.first-run-step{grid-template-columns:1fr;padding:13px}.first-run-number{grid-row:auto;margin-bottom:7px}.first-run-step .code-wrap pre{font-size:.8rem}}
 
 </style>
 <script>
@@ -201,67 +201,79 @@ try{document.documentElement.dataset.learningMode=JSON.parse(localStorage.getIte
 <span class="legacy-anchor" id="step-0" aria-hidden="true"></span><span class="legacy-anchor" id="troubleshooting" aria-hidden="true"></span>
 <section class="reference-section" id="start">
   <h2>第一次运行：从打开终端到找到结果</h2>
-  <p class="first-run-intro">先运行仓库自带的小型教学示例，不要一开始就放入自己的数据。终端就是输入文字命令的窗口；每一步只复制当前代码框，看到写出的成功信号后再进入下一步。本指南适用于 macOS、Linux 和 Windows 的 WSL（Linux 子系统）。</p>
+  <p class="first-run-intro">先运行仓库自带的小型教学示例，不要一开始就放入自己的数据。终端就是输入文字命令的窗口；每一步只复制当前代码框，看到写出的成功信号后再进入下一步。</p>
   <div class="beginner-note"><span aria-hidden="true">→</span><div><strong>怎样使用这八步？</strong>一次只做一步；看到该步的成功信号再继续。最后会同时检查结果目录中的输入检查表和完成标记。</div></div>
-  <div class="first-run-steps" aria-label="第一次运行的八个步骤">
-    <article class="first-run-step" data-step="1">
+  <ol class="first-run-steps" aria-label="第一次运行的八个步骤">
+    <li class="first-run-step" data-step="1">
       <span class="first-run-number" aria-hidden="true">1</span>
-      <h3>打开终端，先看看自己在哪里</h3>
-      <p>macOS 打开“终端”，Linux 或 WSL 打开“Terminal”。输入 <code>pwd</code>，它会显示当前所在文件夹。</p>
+      <h3>确认平台，打开正确的终端</h3>
+      <p>macOS 打开“终端”，Linux 打开系统的终端。Windows 用户必须先进入 WSL 的 Ubuntu 终端，再做后面七步；不要在 PowerShell 中运行后面的命令。还没有 WSL 时，请先按<a href="https://learn.microsoft.com/en-us/windows/wsl/install">微软官方 WSL 安装说明</a>安装 Ubuntu，重启电脑并打开 Ubuntu。</p>
+      <p>在正确的终端输入 <code>pwd</code>，它会显示当前所在文件夹。</p>
       <div class="code-wrap"><button class="copy-btn" type="button" aria-label="复制代码">复制</button><pre><code data-language="bash">pwd</code></pre></div>
       <p class="first-run-success"><strong>成功信号：</strong>出现一行文件夹路径。现在只是确认位置，还没有修改任何文件。</p>
-    </article>
-    <article class="first-run-step" data-step="2">
+    </li>
+    <li class="first-run-step" data-step="2">
       <span class="first-run-number" aria-hidden="true">2</span>
-      <h3>检查电脑里已有的工具</h3>
-      <p><code>git</code> 用来下载项目，<code>uv</code> 用来安装并运行 PanFamFlow。<code>mamba</code> 或 <code>conda</code> 用来准备分析软件环境，二者至少有一个能显示版本。</p>
+      <h3>检查电脑里已有的工具，缺什么就先安装</h3>
+      <p><code>git</code> 用来下载项目，<code>uv</code> 用来安装并运行 PanFamFlow，<code>conda</code> 用来准备本示例需要的软件环境。下面三项都必须显示版本。</p>
       <div class="code-wrap"><button class="copy-btn" type="button" aria-label="复制代码">复制</button><pre><code data-language="bash">git --version
 uv --version
-mamba --version
 conda --version</code></pre></div>
-      <p class="first-run-success"><strong>成功信号：</strong><code>git</code> 和 <code>uv</code> 都显示版本；<code>mamba</code>、<code>conda</code> 至少一个显示版本。</p>
-      <p class="first-run-stop"><strong>先停下来：</strong>如果必需工具显示“找不到命令”，先按<a href="../README.zh-CN.md">中文安装说明</a>补装，不要跳过。</p>
-    </article>
-    <article class="first-run-step" data-step="3">
+      <p><code>mamba</code> 只是可选的下载加速工具，不能代替 <code>conda</code>。想确认是否已有它，可单独运行：</p>
+      <div class="code-wrap"><button class="copy-btn" type="button" aria-label="复制代码">复制</button><pre><code data-language="bash">mamba --version</code></pre></div>
+      <ul class="first-run-links"><li><a href="https://git-scm.com/install/">Git 官方安装页</a></li><li><a href="https://docs.astral.sh/uv/getting-started/installation/">uv 官方安装页</a></li><li><a href="https://docs.conda.io/projects/conda/en/stable/user-guide/install/">conda 官方安装页</a></li></ul>
+      <p class="first-run-success"><strong>成功信号：</strong><code>git --version</code>、<code>uv --version</code> 和 <code>conda --version</code> 都正常显示。conda 是本示例运行时必需的；mamba 只是可选的下载加速工具。</p>
+      <p class="first-run-stop"><strong>先停下来：</strong>如果三项必需工具中有任何一项显示“找不到命令”，请从上面的对应官方页面安装。安装后关闭并重新打开终端，再重新运行三条版本检查，全部通过后才继续。</p>
+    </li>
+    <li class="first-run-step" data-step="3">
       <span class="first-run-number" aria-hidden="true">3</span>
-      <h3>下载项目并进入项目根目录</h3>
-      <p>仓库就是项目文件夹。下面先下载 PanFamFlow，再进入这个文件夹，并检查最外层的 <code>pyproject.toml</code> 是否存在。</p>
-      <div class="code-wrap"><button class="copy-btn" type="button" aria-label="复制代码">复制</button><pre><code data-language="bash">git clone https://github.com/lianglunping/PanFamFlow.git
-cd PanFamFlow
-test -f pyproject.toml &amp;&amp; echo 'PANFAMFLOW ROOT OK'</code></pre></div>
-      <p class="first-run-success"><strong>成功信号：</strong>最后一行是 <code>PANFAMFLOW ROOT OK</code>。如果你已经下载过项目，只运行 <code>cd</code> 和检查命令，不要重复下载。</p>
-    </article>
-    <article class="first-run-step" data-step="4">
+      <h3>只选一种情况，进入正确的项目根目录</h3>
+      <p>仓库就是项目文件夹。不要把下面三个代码框都运行；先看自己属于哪一种情况，只运行对应代码框。</p>
+      <div class="first-run-choice"><h4>情况一：我已经在 PanFamFlow 根目录</h4><div class="code-wrap"><button class="copy-btn" type="button" aria-label="复制代码">复制</button><pre><code data-language="bash">test -f pyproject.toml &amp;&amp; \
+git remote get-url origin &amp;&amp; \
+echo 'PANFAMFLOW ROOT OK'</code></pre></div></div>
+      <div class="first-run-choice"><h4>情况二：当前目录的下一层已有 PanFamFlow</h4><div class="code-wrap"><button class="copy-btn" type="button" aria-label="复制代码">复制</button><pre><code data-language="bash">cd PanFamFlow &amp;&amp; \
+test -f pyproject.toml &amp;&amp; \
+git remote get-url origin &amp;&amp; \
+echo 'PANFAMFLOW ROOT OK'</code></pre></div></div>
+      <div class="first-run-choice"><h4>情况三：当前目录和下一层都没有 PanFamFlow</h4><div class="code-wrap"><button class="copy-btn" type="button" aria-label="复制代码">复制</button><pre><code data-language="bash">git clone https://github.com/lianglunping/PanFamFlow.git &amp;&amp; \
+cd PanFamFlow &amp;&amp; \
+test -f pyproject.toml &amp;&amp; \
+git remote get-url origin &amp;&amp; \
+echo 'PANFAMFLOW ROOT OK'</code></pre></div></div>
+      <p class="first-run-success"><strong>成功信号：</strong>先显示的网址中包含 <code>lianglunping/PanFamFlow</code>，最后一行才是 <code>PANFAMFLOW ROOT OK</code>。如果下载失败，后面的命令不会继续，因此旧目录不会冒充本次下载成功。</p>
+    </li>
+    <li class="first-run-step" data-step="4">
       <span class="first-run-number" aria-hidden="true">4</span>
       <h3>安装项目所需内容并确认 PanFamFlow 能启动</h3>
       <p><code>uv sync</code> 会按照仓库锁定的清单准备一致的 Python 依赖；<code>--dev</code> 也装上本仓库用于检查的工具。等待命令结束后再查版本。</p>
       <div class="code-wrap"><button class="copy-btn" type="button" aria-label="复制代码">复制</button><pre><code data-language="bash">uv sync --locked --dev
 uv run panfamflow --version</code></pre></div>
       <p class="first-run-success"><strong>成功信号：</strong>第二条命令显示 <code>panfamflow</code> 和一个版本号。版本号会随发布更新，不需要与教程截图完全相同。</p>
-    </article>
-    <article class="first-run-step" data-step="5">
+    </li>
+    <li class="first-run-step" data-step="5">
       <span class="first-run-number" aria-hidden="true">5</span>
       <h3>检查教学示例的输入</h3>
       <p>这一步只检查配置、文件名和路径，不开始分析。请单独运行这一条命令。</p>
-      <div class="code-wrap"><button class="copy-btn" type="button" aria-label="复制代码">复制</button><pre><code data-language="bash">uv run panfamflow validate -c examples/toy/config.yaml</code></pre></div>
+      <div class="code-wrap"><button class="copy-btn" type="button" aria-label="复制代码">复制</button><pre><code data-language="bash">uv run panfamflow validate -c examples/toy/config.yaml -m qc</code></pre></div>
       <p class="first-run-success"><strong>成功信号：</strong>最后看到 <code>Validation passed.</code>。如果看到 <code>Validation failed</code>，先修复列出的文件或路径。</p>
-    </article>
-    <article class="first-run-step" data-step="6">
+    </li>
+    <li class="first-run-step" data-step="6">
       <span class="first-run-number" aria-hidden="true">6</span>
       <h3>预览将要做什么</h3>
       <p>预览只列出计划，不执行计算。示例只运行 <code>qc</code>；这里的意思是先检查输入质量和完整性。</p>
-      <div class="code-wrap"><button class="copy-btn" type="button" aria-label="复制代码">复制</button><pre><code data-language="bash">uv run panfamflow plan -c examples/toy/config.yaml</code></pre></div>
+      <div class="code-wrap"><button class="copy-btn" type="button" aria-label="复制代码">复制</button><pre><code data-language="bash">uv run panfamflow plan -c examples/toy/config.yaml -m qc</code></pre></div>
       <p class="first-run-success"><strong>成功信号：</strong>计划表中出现 <code>qc</code>，最终目标是 <code>results/00_qc/qc.done</code>。这说明示例只会完成输入检查。</p>
-    </article>
-    <article class="first-run-step" data-step="7">
+    </li>
+    <li class="first-run-step" data-step="7">
       <span class="first-run-number" aria-hidden="true">7</span>
       <h3>真正运行教学示例</h3>
       <p>请完整复制这一条命令。<code>Snakemake</code> 是安排各步骤执行的流程引擎；<code>--with</code> 表示让 <code>uv</code> 只在这一次运行时临时加入固定版本的流程引擎。</p>
-      <div class="code-wrap"><button class="copy-btn" type="button" aria-label="复制代码">复制</button><pre><code data-language="bash">uv run --with 'snakemake==9.25.1' panfamflow run -c examples/toy/config.yaml</code></pre></div>
-      <p class="first-run-success"><strong>成功信号：</strong>结尾看到 <code>2 of 2 steps (100%) done</code>，且没有失败信息。第一次运行可能需要下载软件，请耐心等待。</p>
+      <div class="code-wrap"><button class="copy-btn" type="button" aria-label="复制代码">复制</button><pre><code data-language="bash">uv run --with 'snakemake==9.25.1' panfamflow run -c examples/toy/config.yaml -m qc</code></pre></div>
+      <p class="first-run-success"><strong>成功信号：</strong>第一次完成时，结尾看到 <code>2 of 2 steps (100%) done</code>；已有完整结果时再次运行，会看到 <code>Nothing to be done (all requested files are present and up to date).</code>。二者都可以继续做第 8 步，最终仍以两个结果文件是否通过为准。</p>
       <p class="first-run-stop"><strong>为什么命令较长？</strong>教学配置要求在当前环境运行，所以即使中文 README 创建了另一个分析环境，这个 toy 也不会自动使用它；这里明确临时加入流程引擎，避免“找不到 Snakemake”。</p>
-    </article>
-    <article class="first-run-step" data-step="8">
+    </li>
+    <li class="first-run-step" data-step="8">
       <span class="first-run-number" aria-hidden="true">8</span>
       <h3>检查两个结果文件，再判断是否完成</h3>
       <p><code>input_audit.tsv</code> 是输入检查表，<code>qc.done</code> 是这一步已经完成的标记。下面的命令只有在两个文件都存在且不是空文件时才显示通过。</p>
@@ -269,9 +281,14 @@ uv run panfamflow --version</code></pre></div>
 test -s examples/toy/results/00_qc/qc.done &amp;&amp; \
 echo 'TOY RUN PASSED'</code></pre></div>
       <p class="first-run-success"><strong>成功信号：</strong>看到 <code>TOY RUN PASSED</code>。<code>results/</code> 放最终结果，<code>work/</code> 放中间文件，<code>logs/</code> 放运行记录；本示例的结果位于 <code>examples/toy/</code> 下。</p>
-      <details class="first-run-fold"><summary>如果没有通过，提交求助时复制什么？</summary><p>复制你运行的完整命令、终端中第一条失败信息和最后 30 行，并附上 <code>examples/toy/logs/</code> 中对应记录文件的内容。不要只发“运行失败”四个字。</p></details>
-    </article>
-  </div>
+      <details class="first-run-fold"><summary>如果没有通过，怎样安全收集错误？</summary><p>优先从终端复制完整错误：从第一条 <code>Error</code> 或 <code>WorkflowError</code> 开始，一直复制到命令结束。如果存在流程引擎日志，再运行下面这段只读命令，复制它显示的最后 30 行；如果日志还没产生，会明确显示跳过。</p><div class="code-wrap"><button class="copy-btn" type="button" aria-label="复制代码">复制</button><pre><code data-language="bash">latest_log=$(find examples/toy/.snakemake/log -type f -name '*.snakemake.log' -print 2&gt;/dev/null | sort | tail -n 1)
+if [ -n "$latest_log" ]; then
+  tail -n 30 "$latest_log"
+else
+  echo 'NO SNAKEMAKE LOG: skip this step'
+fi</code></pre></div><p>求助时提供：完整运行命令、上述终端错误、可用时的最后 30 行日志，以及所用系统。不要复制整个个人目录，也不要发送密码或访问令牌。</p></details>
+    </li>
+  </ol>
   <div class="callout warn first-run-boundary"><strong>这个教学示例能证明什么？</strong>它只证明命令和预期文件能够形成闭环，不能作为真实水稻的生物学结论。准备自己的数据前，请先学习各章节的输入要求和结果边界。</div>
   <details class="technical-mode-only"><summary>进阶：查看输入要求、安装、命令和失败恢复</summary>
   <h3>最低输入</h3><p>每个物种至少需要已组装的基因组序列（<code>FASTA</code>）和同版本基因注释（<code>GFF3</code>）。Ka/Ks 还需要可追溯的编码序列；转座复制分类需要合适外群；表达分析需要表达矩阵或原始测序数据。常规设置写入 <code>config.yaml</code>；中间文件进入 <code>work/</code>，结果进入 <code>results/</code>，日志进入 <code>logs/</code>。</p>
