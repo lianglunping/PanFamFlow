@@ -25,6 +25,7 @@ on:
       - "scripts/check_site_links.py"
       - "scripts/sync_tutorial_beginner_language.py"
       - "scripts/sync_tutorial_learning_structure.py"
+      - "scripts/tutorial_title_contract.py"
       - "README.md"
       - "README.zh-CN.md"
       - ".github/workflows/pages.yml"

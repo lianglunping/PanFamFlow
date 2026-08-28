@@ -117,10 +117,13 @@ def test_beginner_mode_has_one_clear_path_and_keeps_advanced_content_available()
     assert "第 1 看：对象" in text
     assert "第 2 看：质量" in text
     assert "第 3 看：解释" in text
-    assert "先看全图：58 项分析怎样连成一个故事" in text
+    assert "泛基因家族分析课程图谱：8 个专业大节、58 项分析" in text
+    assert "58 / 58 项全部可见" in text
     assert text.count('class="mindmap-stage"') == 4
     assert text.count('class="mindmap-branch"') == 8
     assert text.count('class="mindmap-analysis-list"') == 8
+    assert text.count('class="mindmap-analysis-item ') == 58
+    assert '<details class="mindmap-branch"' not in text
     assert text.count('class="beginner-chapter-intro"') == 8
     assert text.count('class="chapter-toggle primary"') == 8
     assert "哪些基因真正属于目标家族，它们彼此谁更接近？" in text
