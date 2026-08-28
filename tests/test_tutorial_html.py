@@ -125,7 +125,8 @@ def test_beginner_mode_has_one_clear_path_and_keeps_advanced_content_available()
         < text.index('id="basic-concepts"')
         < text.index('id="chapter-map"')
     )
-    assert "58 / 58 项全部可见" in text
+    assert "58 / 58 项完整收录" in text
+    assert "58 / 58 项全部可见" not in text
     assert text.count('class="mindmap-stage"') == 4
     assert text.count('class="mindmap-branch"') == 8
     assert text.count('class="mindmap-analysis-list"') == 8
