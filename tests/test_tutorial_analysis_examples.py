@@ -8,10 +8,13 @@ from __future__ import annotations
 import csv
 import html
 import importlib.util
+import math
 import re
 import subprocess
 import sys
 from pathlib import Path
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "docs" / "TUTORIAL_ANALYSIS_EXAMPLES.tsv"
@@ -32,6 +35,9 @@ FIELDS = [
     "legend_zh",
     "output_headers_zh",
     "output_rows_zh",
+    "plot_values",
+    "plot_colors",
+    "plot_value_label_zh",
     "reading_question_zh",
     "reading_answer_zh",
     "normal_zh",
@@ -67,6 +73,7 @@ SUPPORTED_VISUALS = {
     "de",
     "test",
 }
+PLOT_COLORS = {"blue", "green", "orange", "red", "grey", "neutral", "purple"}
 
 
 def read_rows() -> list[dict[str, str]]:
@@ -93,14 +100,17 @@ def test_analysis_example_contract_is_complete_and_frozen() -> None:
         assert all(row[field].strip() for field in FIELDS[1:]), row["source_id"]
         assert row["visual_type"] in SUPPORTED_VISUALS
         assert len(row["input_headers_zh"].split("｜")) >= 2
-        assert len(row["input_headers_zh"].split("｜")) == len(
-            row["input_row_zh"].split("｜")
-        )
+        assert len(row["input_headers_zh"].split("｜")) == len(row["input_row_zh"].split("｜"))
         output_headers = row["output_headers_zh"].split("｜")
         output_rows = row["output_rows_zh"].split("；")
         assert len(output_headers) >= 2
         assert len(output_rows) >= 2
         assert all(len(item.split("｜")) == len(output_headers) for item in output_rows)
+        plot_values = [float(item) for item in row["plot_values"].split("｜")]
+        plot_colors = row["plot_colors"].split("｜")
+        assert len(plot_values) == len(plot_colors) == len(output_rows)
+        assert all(math.isfinite(item) for item in plot_values)
+        assert set(plot_colors) <= PLOT_COLORS
         assert row["reading_question_zh"].endswith("？")
         assert row["reading_answer_zh"].endswith("。")
         assert row["normal_zh"].endswith("。")
@@ -143,57 +153,138 @@ def test_all_58_micro_lessons_render_a_figure_and_result_table() -> None:
 
 def test_every_micro_figure_contains_its_own_result_rows() -> None:
     sync = load_sync_module()
+    color_labels = {
+        "blue": "蓝色",
+        "green": "绿色",
+        "orange": "橙色",
+        "red": "红色",
+        "grey": "灰色",
+        "neutral": "白色",
+        "purple": "紫色",
+    }
     for row in read_rows():
         svg = sync.micro_svg(row)
         output_rows = [item.split("｜") for item in row["output_rows_zh"].split("；")]
         assert f'data-source-id="{row["source_id"]}"' in svg
         assert f'data-result-rows="{len(output_rows)}"' in svg
-        assert svg.count('class="micro-data-row"') == len(output_rows), row[
-            "source_id"
-        ]
+        assert svg.count('class="micro-data-row"') == len(output_rows), row["source_id"]
+        assert row["plot_value_label_zh"] in svg
+        for value, color in zip(
+            row["plot_values"].split("｜"),
+            row["plot_colors"].split("｜"),
+            strict=True,
+        ):
+            assert f'data-plot-value="{sync.format_plot_value(float(value))}"' in svg
+            assert f'data-plot-color="{color}"' in svg
+            assert color_labels[color] in svg
+        assert 'data-plot-value="1.2e+06"' not in svg
+        assert 'data-plot-value="1.3e+06"' not in svg
         for output_row in output_rows:
             for cell in output_row:
                 assert html.escape(cell) in svg, (row["source_id"], output_row, cell)
 
 
-def test_micro_figure_changes_when_result_data_changes() -> None:
+def geometry(svg: str) -> list[str]:
+    return re.findall(r"<(?:rect|circle|path)\b[^>]*>", svg)
+
+
+def row_group(svg: str, row_index: int) -> str:
+    match = re.search(
+        rf'<g class="micro-data-row" data-row="{row_index}".*?</g>',
+        svg,
+        re.DOTALL,
+    )
+    assert match is not None
+    return match.group(0)
+
+
+def test_micro_figure_geometry_uses_only_explicit_plot_contract() -> None:
     sync = load_sync_module()
     example = next(row for row in read_rows() if row["source_id"] == "5.3")
     before = sync.micro_svg(example)
-    changed = dict(example)
-    changed["output_rows_zh"] = example["output_rows_zh"].replace(
+    prose_changed = dict(example)
+    prose_changed["output_rows_zh"] = example["output_rows_zh"].replace(
         "乙组高一千一百", "乙组高九千九百九十九", 1
     )
-    after = sync.micro_svg(changed)
-    assert before != after
-    assert "乙组高九千九百九十九" in after
+    prose_after = sync.micro_svg(prose_changed)
+    assert geometry(before) == geometry(prose_after)
+    assert "乙组高九千九百九十九" in prose_after
     assert "乙组高九千九百九十九" not in before
-    before_points = re.findall(r'<circle cx="(\d+)"', before)
-    after_points = re.findall(r'<circle cx="(\d+)"', after)
-    assert before_points != after_points
+
+    plot_changed = dict(example)
+    plot_changed["plot_values"] = "0.04｜0.18"
+    plot_after = sync.micro_svg(plot_changed)
+    assert geometry(before) != geometry(plot_after)
 
 
-def test_percentage_geometry_uses_the_reported_percentage_not_the_prefix() -> None:
+def test_required_plot_values_are_exact_ascii_numbers() -> None:
+    rows = {row["source_id"]: row for row in read_rows()}
+    assert rows["5.2"]["plot_values"] == "3100｜4200"
+    assert rows["5.5"]["plot_values"] == "380｜420"
+    assert rows["10.13"]["plot_values"] == "2｜1｜1"
+    assert rows["7.1"]["plot_values"] == "1200000｜1300000｜900000"
+    assert "chinese_number" not in SYNC.read_text(encoding="utf-8")
+
+
+def test_plot_contract_parser_rejects_bad_length_token_and_nonfinite_values() -> None:
+    sync = load_sync_module()
+    base = next(row for row in read_rows() if row["source_id"] == "4.2")
+    bad_contracts = (
+        {"plot_values": "1"},
+        {"plot_values": "1｜nan"},
+        {"plot_colors": "blue｜unknown"},
+    )
+    for update in bad_contracts:
+        changed = dict(base)
+        changed.update(update)
+        with pytest.raises(ValueError):
+            sync.parse_plot_contract(changed, 2)
+
+
+def test_explicit_signed_percentage_and_fdr_values_change_geometry() -> None:
     sync = load_sync_module()
     rows = {row["source_id"]: row for row in read_rows()}
+    cases = (
+        ("5.3", "0.02｜0.18", "0.04｜0.18", None),
+        ("8.1", "40｜30｜20｜10", "45｜30｜20｜5", None),
+        ("10.5", "1.5｜-0.3｜0", "1.5｜0.3｜0", "red｜red｜neutral"),
+    )
+    for source_id, before_values, after_values, after_colors in cases:
+        example = rows[source_id]
+        assert example["plot_values"] == before_values
+        changed = dict(example)
+        changed["plot_values"] = after_values
+        if after_colors is not None:
+            changed["plot_colors"] = after_colors
+        assert geometry(sync.micro_svg(example)) != geometry(sync.micro_svg(changed))
 
-    sequence = rows["4.4"]
-    sequence_headers = sequence["output_headers_zh"].split("｜")
-    sequence_rows = [item.split("｜") for item in sequence["output_rows_zh"].split("；")]
-    assert [sync.row_value(sequence_headers, row, "sequence") for row in sequence_rows] == [
-        95,
-        60,
-        90,
-    ]
 
-    composition = rows["8.1"]
-    composition_headers = composition["output_headers_zh"].split("｜")
-    composition_rows = [
-        item.split("｜") for item in composition["output_rows_zh"].split("；")
-    ]
-    assert [
-        sync.row_value(composition_headers, row, "bars") for row in composition_rows
-    ] == [40, 30, 20, 10]
+def test_semantic_color_contract_matches_de_signed_zero_and_missing_states() -> None:
+    sync = load_sync_module()
+    rows = {row["source_id"]: row for row in read_rows()}
+    expected = {
+        "10.5": ((1, "v-bad"), (2, "v-mid"), (3, "v-neutral")),
+        "11.4": ((1, "v-bad"), (2, "v-mid"), (3, "v-low")),
+        "11.5": ((1, "v-bad"), (2, "v-mid"), (3, "v-low")),
+        "11.7": ((4, "v-low"),),
+    }
+    for source_id, states in expected.items():
+        svg = sync.micro_svg(rows[source_id])
+        for row_index, css_class in states:
+            assert f'class="{css_class}"' in row_group(svg, row_index)
+
+
+def test_continuous_matrix_intensity_follows_explicit_values() -> None:
+    sync = load_sync_module()
+    rows = {row["source_id"]: row for row in read_rows()}
+    for source_id, expected_order in (("4.3", [2, 1, 3]), ("11.7", [1, 3, 2])):
+        svg = sync.micro_svg(rows[source_id])
+        opacity = {}
+        for row_index in expected_order:
+            match = re.search(r'opacity="([0-9.]+)"', row_group(svg, row_index))
+            assert match is not None
+            opacity[row_index] = float(match.group(1))
+        assert opacity[expected_order[0]] > opacity[expected_order[1]] > opacity[expected_order[2]]
 
 
 def test_special_items_use_semantic_micro_figure_types() -> None:
@@ -239,8 +330,7 @@ def test_member_totals_and_unlocated_rows_are_internally_consistent() -> None:
     composition = rows["8.1"]["output_rows_zh"]
     assert "待定｜三｜百分之十" in composition
     assert all(
-        item in composition
-        for item in ("百分之四十", "百分之三十", "百分之二十", "百分之十")
+        item in composition for item in ("百分之四十", "百分之三十", "百分之二十", "百分之十")
     )
 
     chromosome = rows["7.3"]["output_rows_zh"]
@@ -258,10 +348,7 @@ def test_legend_claims_match_visible_svg_elements() -> None:
             assert "<circle" in svg, row["source_id"]
         if "柱" in legend or "格" in legend:
             assert "<rect" in svg, row["source_id"]
-        if any(
-            term in legend
-            for term in ("分支", "细线", "粗线", "横线", "中线", "竖线", "线段")
-        ):
+        if any(term in legend for term in ("分支", "细线", "粗线", "横线", "中线", "竖线", "线段")):
             assert "<path" in svg, row["source_id"]
         if "缺失" in legend:
             assert "缺失" in row["output_rows_zh"], row["source_id"]
@@ -273,7 +360,11 @@ def test_decision_and_qc_colors_match_the_legend() -> None:
 
     expected = {
         "4.1": {"基因甲｜保留": "v-good", "基因乙｜待复核": "v-warn", "基因丙｜排除": "v-bad"},
-        "6.3": {"组甲｜八｜零｜通过": "v-good", "组乙｜三｜二｜复核": "v-warn", "组丙｜一｜四｜暂停": "v-bad"},
+        "6.3": {
+            "组甲｜八｜零｜通过": "v-good",
+            "组乙｜三｜二｜复核": "v-warn",
+            "组丙｜一｜四｜暂停": "v-bad",
+        },
         "8.1": {"待定｜三｜百分之十｜三": "v-low"},
     }
     for source_id, markers in expected.items():
@@ -315,6 +406,24 @@ def test_micro_lesson_sync_preserves_the_eight_step_first_run() -> None:
     assert "uv run panfamflow validate -c examples/toy/config.yaml" in body
     assert "uv run --with 'snakemake==9.25.1' panfamflow run" in body
     assert "TOY RUN PASSED" in body
+    for official_url in (
+        "https://learn.microsoft.com/en-us/windows/wsl/install",
+        "https://git-scm.com/install/",
+        "https://docs.astral.sh/uv/getting-started/installation/",
+        "https://docs.conda.io/projects/conda/en/stable/user-guide/install/",
+    ):
+        assert f'href="{official_url}"' in body
+
+
+def test_mobile_micro_figure_scroll_is_contained_inside_the_figure() -> None:
+    css = re.sub(r"\s+", "", HTML.read_text(encoding="utf-8"))
+    assert "html,body{max-width:100%;overflow-x:hidden}" in css
+    assert ".analysis-result-grid>figure{min-width:0;max-width:100%;overflow-x:auto" in css
+    assert ".analysis-result-grid>div{min-width:0;max-width:100%}" in css
+    assert ".analysis-micro-figure{display:block;width:100%;min-width:680px;max-width:none" in css
+    assert (
+        "@media(max-width:760px){.analysis-result-grid{grid-template-columns:minmax(0,1fr)}" in css
+    )
 
 
 def test_analysis_example_sync_is_idempotent() -> None:

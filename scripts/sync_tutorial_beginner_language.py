@@ -42,6 +42,9 @@ EXAMPLE_FIELDS = (
     "legend_zh",
     "output_headers_zh",
     "output_rows_zh",
+    "plot_values",
+    "plot_colors",
+    "plot_value_label_zh",
     "reading_question_zh",
     "reading_answer_zh",
     "normal_zh",
@@ -66,6 +69,24 @@ SUPPORTED_VISUALS = {
     "multi_indicator",
     "de",
     "test",
+}
+PLOT_COLOR_CLASSES = {
+    "blue": "v-mid",
+    "green": "v-good",
+    "orange": "v-warn",
+    "red": "v-bad",
+    "grey": "v-low",
+    "neutral": "v-neutral",
+    "purple": "v-purple",
+}
+PLOT_COLOR_LABELS = {
+    "blue": "蓝色",
+    "green": "绿色",
+    "orange": "橙色",
+    "red": "红色",
+    "grey": "灰色",
+    "neutral": "白色",
+    "purple": "紫色",
 }
 EXPECTED_IDS = (
     [f"4.{index}" for index in range(1, 5)]
@@ -168,6 +189,33 @@ def split_cells(value: str) -> list[str]:
     return [item.strip() for item in value.split("｜")]
 
 
+def parse_plot_contract(example: dict[str, str], row_count: int) -> tuple[list[float], list[str]]:
+    source_id = example["source_id"]
+    value_cells = split_cells(example["plot_values"])
+    color_tokens = split_cells(example["plot_colors"])
+    if len(value_cells) != row_count or len(color_tokens) != row_count:
+        raise ValueError(f"Plot contract length mismatch for {source_id}")
+    try:
+        values = [float(item) for item in value_cells]
+    except ValueError as exc:
+        raise ValueError(f"Non-numeric plot value for {source_id}") from exc
+    if not all(math.isfinite(item) for item in values):
+        raise ValueError(f"Non-finite plot value for {source_id}")
+    invalid_colors = set(color_tokens) - set(PLOT_COLOR_CLASSES)
+    if invalid_colors:
+        raise ValueError(f"Invalid plot colors for {source_id}: {sorted(invalid_colors)}")
+    return values, color_tokens
+
+
+def format_plot_value(value: float) -> str:
+    """Render a validated finite plot value without scientific notation."""
+    if value == 0:
+        return "0"
+    if value.is_integer():
+        return str(int(value))
+    return f"{value:.15f}".rstrip("0").rstrip(".")
+
+
 def read_examples() -> list[dict[str, str]]:
     with EXAMPLES_PATH.open(encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle, delimiter="\t")
@@ -193,6 +241,7 @@ def read_examples() -> list[dict[str, str]]:
             raise ValueError(f"Output example is too small for {source_id}")
         if any(len(item) != len(output_headers) for item in output_rows):
             raise ValueError(f"Output example has mismatched columns for {source_id}")
+        parse_plot_contract(row, len(output_rows))
     return rows
 
 
@@ -207,56 +256,14 @@ def read_advanced_titles() -> dict[str, str]:
 
 
 def render_table(headers: list[str], rows: list[list[str]], class_name: str) -> str:
-    head = "".join(f"<th scope=\"col\">{html.escape(item)}</th>" for item in headers)
+    head = "".join(f'<th scope="col">{html.escape(item)}</th>' for item in headers)
     body = "".join(
-        "<tr>" + "".join(f"<td>{html.escape(item)}</td>" for item in row) + "</tr>"
-        for row in rows
+        "<tr>" + "".join(f"<td>{html.escape(item)}</td>" for item in row) + "</tr>" for row in rows
     )
     return (
         f'<div class="analysis-table-scroll" tabindex="0"><table class="{class_name}">'
         f"<thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>"
     )
-
-
-CHINESE_DIGITS = {"零": 0, "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
-
-
-def chinese_number(value: str) -> float | None:
-    """Read the first plain-Chinese number so teaching geometry follows its table."""
-    percentage = re.search(r"百分之(负?[零一二两三四五六七八九十百千万点]+)", value)
-    if percentage:
-        token = percentage.group(1)
-    else:
-        matches = re.findall(r"负?[零一二两三四五六七八九十百千万点]+", value)
-        if not matches:
-            return None
-        token = matches[0]
-    negative = token.startswith("负")
-    token = token.removeprefix("负")
-    if "点" in token:
-        integer, decimal = token.split("点", 1)
-        integer_value = chinese_number(integer) if integer else 0
-        if integer_value is None or any(item not in CHINESE_DIGITS for item in decimal):
-            return None
-        fraction = float("0." + "".join(str(CHINESE_DIGITS[item]) for item in decimal))
-        result = integer_value + fraction
-        return -result if negative else result
-    total = 0
-    current = 0
-    units = {"十": 10, "百": 100, "千": 1000, "万": 10000}
-    if all(item in CHINESE_DIGITS for item in token):
-        result = float("".join(str(CHINESE_DIGITS[item]) for item in token))
-        return -result if negative else result
-    for item in token:
-        if item in CHINESE_DIGITS:
-            current = CHINESE_DIGITS[item]
-        elif item in units:
-            total += (current or 1) * units[item]
-            current = 0
-        else:
-            return None
-    result = float(total + current)
-    return -result if negative else result
 
 
 def svg_text(x: int, y: int, value: str, class_name: str) -> str:
@@ -265,150 +272,120 @@ def svg_text(x: int, y: int, value: str, class_name: str) -> str:
     return f'<text x="{x}" y="{y}" class="{class_name}"{fit}>{escaped}</text>'
 
 
-def row_value(headers: list[str], row: list[str], visual_type: str) -> float | None:
-    preferred_headers = {
-        "bars": ("比例",),
-        "sequence": ("一致比例",),
-        "de": ("效应方向与大小",),
-        "test": ("效应方向与大小",),
-        "multi_indicator": ("中间比值", "中间基准变化率"),
-    }.get(visual_type, ())
-    for preferred in preferred_headers:
-        for index, header in enumerate(headers):
-            if preferred in header:
-                number = chinese_number(row[index])
-                if number is not None:
-                    return number
-    for cell in reversed(row):
-        number = chinese_number(cell)
-        if number is not None:
-            return number
-    return None
-
-
 def micro_svg(example: dict[str, str]) -> str:
     source_slug = example["source_id"].replace(".", "-")
     visual_type = example["visual_type"]
     headers = split_cells(example["output_headers_zh"])
     rows = [split_cells(item) for item in example["output_rows_zh"].split("；")]
-    height = 78 + 64 * len(rows)
-    values = [row_value(headers, row, visual_type) for row in rows]
+    height = 94 + 78 * len(rows)
+    values, color_tokens = parse_plot_contract(example, len(rows))
+    max_abs = max((abs(item) for item in values), default=1) or 1
+    non_grey_values = [
+        abs(value) for value, token in zip(values, color_tokens, strict=True) if token != "grey"
+    ]
+    min_continuous = min(non_grey_values, default=0)
+    max_continuous = max(non_grey_values, default=1)
 
-    def magnitude(index: int) -> int:
-        value = values[index]
-        if value is None:
-            return 260
-        return round(130 + min(320, 75 * math.log10(abs(value) + 1)))
+    def magnitude(index: int, low: int = 24, high: int = 128) -> int:
+        return round(low + (high - low) * abs(values[index]) / max_abs)
 
-    def color(index: int, row: list[str]) -> str:
-        combined = "".join(row)
-        if (
-            "不允许" in combined
-            or "只描述" in combined
-            or "暂不" in combined
-            or "待定" in combined
-            or "不能" in combined
-            or "未检出" in combined
-        ):
-            return "v-low"
-        if "排除" in combined or "暂停" in combined:
-            return "v-bad"
-        if "复核" in combined:
-            return "v-warn"
-        if "保留" in combined or "通过" in combined or "可以解释" in combined:
-            return "v-good"
-        if "上升" in combined:
-            return "v-bad"
-        if "下降" in combined:
-            return "v-mid"
-        return ("v-mid", "v-good", "v-warn")[index % 3]
+    def matrix_opacity(index: int) -> float:
+        if color_tokens[index] == "grey":
+            return 0.24
+        span = max_continuous - min_continuous
+        proportion = 1 if span == 0 else (abs(values[index]) - min_continuous) / span
+        return 0.22 + 0.62 * proportion
 
     parts: list[str] = []
     header_line = "结果列：" + "｜".join(headers)
     parts.append(svg_text(22, 27, header_line, "micro-column-label"))
-    if visual_type == "stacked":
-        height = 82 + 92 * len(rows)
-        cell_width = 125
-        for index, row in enumerate(rows):
-            y = 55 + 92 * index
-            row_title = html.escape("｜".join(row))
+    for index, row in enumerate(rows):
+        y = 60 + 78 * index
+        label = " · ".join(row[:2])
+        detail = " ｜ ".join(
+            f"{headers[cell_index]}：{cell}" for cell_index, cell in enumerate(row[2:], start=2)
+        )
+        row_class = PLOT_COLOR_CLASSES[color_tokens[index]]
+        row_title = html.escape("｜".join(row))
+        parts.append(
+            f'<g class="micro-data-row" data-row="{index + 1}" '
+            f'data-plot-value="{format_plot_value(values[index])}" '
+            f'data-plot-color="{color_tokens[index]}">'
+            f"<title>{row_title}</title>"
+        )
+        if visual_type == "tree":
+            endpoint = 20 + magnitude(index)
+            parts.append(f'<path d="M20 39V{y}H{endpoint}" class="v-link"/>')
+            parts.append(f'<circle cx="{endpoint}" cy="{y}" r="8" class="{row_class}"/>')
+        elif visual_type == "paired":
+            endpoint = 32 + magnitude(index)
+            parts.append(f'<path d="M28 {y}H{endpoint}" class="v-link"/>')
             parts.append(
-                f'<g class="micro-data-row" data-row="{index + 1}"><title>{row_title}</title>'
+                f'<rect x="{endpoint - 18}" y="{y - 18}" width="36" height="36" rx="6" class="{row_class}"/>'
             )
-            parts.append(svg_text(22, y, row[0], "micro-row-label"))
-            for cell_index, cell in enumerate(row[1:]):
-                x = 22 + cell_index * cell_width
-                parts.append(
-                    f'<rect x="{x}" y="{y + 12}" width="116" height="42" rx="7" '
-                    f'class="{("v-mid", "v-good", "v-warn", "v-bad")[cell_index % 4]}"/>'
-                )
-                parts.append(svg_text(x + 6, y + 29, headers[cell_index + 1], "micro-cell-label"))
-                parts.append(svg_text(x + 6, y + 47, cell, "micro-cell-value"))
-            parts.append("</g>")
-    else:
-        for index, row in enumerate(rows):
-            y = 58 + 64 * index
-            label = " · ".join(row[:2])
-            detail = " ｜ ".join(
-                f"{headers[cell_index]}：{cell}"
-                for cell_index, cell in enumerate(row[2:], start=2)
-            )
-            row_class = color(index, row)
-            row_title = html.escape("｜".join(row))
-            data_value = "" if values[index] is None else f' data-value="{values[index]:g}"'
+        elif visual_type == "sequence":
             parts.append(
-                f'<g class="micro-data-row" data-row="{index + 1}"{data_value}>'
-                f"<title>{row_title}</title>"
+                f'<rect x="22" y="{y - 19}" width="{magnitude(index)}" height="39" rx="5" class="{row_class}"/>'
             )
-            if visual_type == "tree":
-                parts.append(f'<path d="M28 45V{y}H118" class="v-link"/>')
-                parts.append(f'<circle cx="118" cy="{y}" r="8" class="{row_class}"/>')
-            elif visual_type == "paired":
-                parts.append(f'<path d="M28 45V{y}H92" class="v-link"/>')
-                parts.append(f'<rect x="102" y="{y - 18}" width="44" height="38" rx="6" class="{row_class}"/>')
-            elif visual_type == "sequence":
-                parts.append(f'<rect x="22" y="{y - 19}" width="126" height="39" rx="5" class="{row_class}"/>')
-            elif visual_type == "chromosome":
-                parts.append(f'<path d="M72 {y - 25}V{y + 25}" class="v-chrom"/>')
-                parts.append(f'<circle cx="72" cy="{y}" r="8" class="{row_class}"/>')
-            elif visual_type == "links":
-                parts.append(f'<path d="M32 {y - 20}V{y + 20}M126 {y - 20}V{y + 20}" class="v-chrom"/>')
-                parts.append(f'<path d="M32 {y - 6}C68 {y - 6} 90 {y + 6} 126 {y + 6}" class="v-link"/>')
-            elif visual_type in {"matrix", "expression"}:
+        elif visual_type == "chromosome":
+            position = 22 + round(126 * abs(values[index]) / max_abs)
+            parts.append(f'<path d="M22 {y}H148" class="v-chrom"/>')
+            parts.append(f'<circle cx="{position}" cy="{y}" r="8" class="{row_class}"/>')
+        elif visual_type == "links":
+            endpoint = 32 + magnitude(index)
+            parts.append(
+                f'<path d="M32 {y - 20}V{y + 20}M{endpoint} {y - 20}V{y + 20}" class="v-chrom"/>'
+            )
+            parts.append(
+                f'<path d="M32 {y - 6}C68 {y - 6} 90 {y + 6} {endpoint} {y + 6}" class="v-link"/>'
+            )
+        elif visual_type in {"matrix", "expression"}:
+            parts.append(
+                f'<rect x="18" y="{y - 25}" width="712" height="52" rx="8" '
+                f'class="{row_class}" opacity="{matrix_opacity(index):.2f}"/>'
+            )
+        elif visual_type in {"scatter", "de"}:
+            x = 84 + round(62 * values[index] / max_abs)
+            parts.append(f'<path d="M22 {y + 25}H148" class="v-reference"/>')
+            parts.append(f'<circle cx="{x}" cy="{y}" r="10" class="{row_class}"/>')
+        elif visual_type == "curve":
+            x = 72 + index * 125
+            point_y = y - round(30 * abs(values[index]) / max_abs)
+            if index:
+                previous_x = 72 + (index - 1) * 125
+                previous_y = (60 + 78 * (index - 1)) - round(30 * abs(values[index - 1]) / max_abs)
                 parts.append(
-                    f'<rect x="18" y="{y - 25}" width="712" height="52" rx="8" '
-                    f'class="{row_class}" opacity=".22"/>'
+                    f'<path d="M{previous_x} {previous_y}L{x} {point_y}" class="v-curve"/>'
                 )
-            elif visual_type in {"scatter", "de"}:
-                x = 58 + magnitude(index)
-                parts.append(f'<path d="M30 {y + 25}H520" class="v-reference"/>')
-                parts.append(f'<circle cx="{x}" cy="{y}" r="10" class="{row_class}"/>')
-            elif visual_type == "curve":
-                x = 72 + index * 125
-                point_y = y - round(magnitude(index) / 8)
-                if index:
-                    previous_x = 72 + (index - 1) * 125
-                    previous_y = (58 + 64 * (index - 1)) - round(magnitude(index - 1) / 8)
-                    parts.append(f'<path d="M{previous_x} {previous_y}L{x} {point_y}" class="v-curve"/>')
-                parts.append(f'<circle cx="{x}" cy="{point_y}" r="8" class="{row_class}"/>')
-            elif visual_type == "decision":
-                parts.append(f'<rect x="18" y="{y - 24}" width="138" height="50" rx="8" class="{row_class}"/>')
-            else:
-                width = magnitude(index)
-                parts.append(f'<rect x="18" y="{y - 20}" width="{width}" height="39" rx="6" class="{row_class}" opacity=".28"/>')
-                parts.append(
-                    f'<path d="M18 {y + 23}H{18 + width}" class="v-reference"/>'
-                )
-                parts.append(f'<circle cx="{18 + width}" cy="{y}" r="9" class="{row_class}"/>')
-            text_x = 170 if visual_type not in {"matrix", "expression"} else 36
-            parts.append(svg_text(text_x, y - 5, label, "micro-row-label"))
-            parts.append(svg_text(text_x, y + 15, detail, "micro-row-value"))
-            parts.append("</g>")
+            parts.append(f'<circle cx="{x}" cy="{point_y}" r="8" class="{row_class}"/>')
+        elif visual_type == "decision":
+            parts.append(
+                f'<rect x="18" y="{y - 24}" width="{magnitude(index)}" height="50" rx="8" class="{row_class}"/>'
+            )
+        else:
+            width = magnitude(index)
+            start = 84 if values[index] >= 0 else 84 - width
+            parts.append(
+                f'<rect x="{start}" y="{y - 20}" width="{width}" height="39" rx="6" class="{row_class}" opacity=".36"/>'
+            )
+            parts.append(f'<path d="M22 {y + 23}H148" class="v-reference"/>')
+            endpoint = start + width if values[index] >= 0 else start
+            parts.append(f'<circle cx="{endpoint}" cy="{y}" r="9" class="{row_class}"/>')
+        text_x = 170 if visual_type not in {"matrix", "expression"} else 36
+        parts.append(svg_text(text_x, y - 5, label, "micro-row-label"))
+        parts.append(svg_text(text_x, y + 15, detail, "micro-row-value"))
+        contract_text = (
+            f"{example['plot_value_label_zh']}：{format_plot_value(values[index])}；"
+            f"颜色：{PLOT_COLOR_LABELS[color_tokens[index]]}"
+        )
+        parts.append(svg_text(text_x, y + 34, contract_text, "micro-plot-contract"))
+        parts.append("</g>")
 
     title = html.escape(example["visual_title_zh"])
     description = html.escape(
         f"横向说明：{example['x_axis_zh']}。纵向说明：{example['y_axis_zh']}。"
-        f"颜色和符号：{example['legend_zh']}。"
+        f"颜色和符号：{example['legend_zh']}。显式绘图值：{example['plot_value_label_zh']}。"
+        "逐行颜色：" + "、".join(PLOT_COLOR_LABELS[item] for item in color_tokens) + "。"
     )
     return (
         f'<svg class="analysis-micro-figure" viewBox="0 0 760 {height}" role="img" '
@@ -435,20 +412,24 @@ def micro_lesson(example: dict[str, str]) -> str:
     return (
         '<div class="analysis-micro-lesson">'
         '<div class="analysis-foundation-grid">'
-        f'<div><h4>先懂一个概念</h4><p>{value["concept_zh"]}</p></div>'
+        f"<div><h4>先懂一个概念</h4><p>{value['concept_zh']}</p></div>"
         f'<div><h4 class="analysis-why-title">为什么要做</h4><p>{value["why_zh"]}</p></div></div>'
-        '<h4>看一条具体输入记录</h4>'
+        "<h4>看一条具体输入记录</h4>"
         f"{input_table}"
         f'<p class="analysis-operation"><strong>本项怎样处理：</strong>{value["operation_zh"]}</p>'
         '<div class="analysis-result-grid"><figure>'
         f"{micro_svg(example)}"
-        '<figcaption><b>横向说明：</b>'
-        f'{value["x_axis_zh"]}<br><b>纵向说明：</b>{value["y_axis_zh"]}'
-        f'<br><b>图中颜色与符号：</b>{value["legend_zh"]}</figcaption></figure>'
-        '<div><h4>用结果小表核对图</h4>'
+        "<figcaption><b>横向说明：</b>"
+        f"{value['x_axis_zh']}<br><b>纵向说明：</b>{value['y_axis_zh']}"
+        f"<br><b>图中颜色与符号：</b>{value['legend_zh']}"
+        f"<br><b>本图显式数值：</b>{value['plot_value_label_zh']}（按结果表行顺序）"
+        "<br><b>逐行颜色：</b>"
+        + "、".join(PLOT_COLOR_LABELS[item] for item in split_cells(example["plot_colors"]))
+        + "</figcaption></figure>"
+        "<div><h4>用结果小表核对图</h4>"
         f"{output_table}</div></div>"
         f'<details class="analysis-reading-check"><summary>先试着回答：{value["reading_question_zh"]}</summary>'
-        f'<p><strong>参考答案：</strong>{value["reading_answer_zh"]}</p></details>'
+        f"<p><strong>参考答案：</strong>{value['reading_answer_zh']}</p></details>"
         '<div class="analysis-verdict-grid">'
         f'<div class="analysis-normal"><h4>看到什么算正常</h4><p>{value["normal_zh"]}</p></div>'
         f'<div class="analysis-stop"><h4>什么情况先暂停</h4><p>{value["stop_zh"]}</p></div></div>'
