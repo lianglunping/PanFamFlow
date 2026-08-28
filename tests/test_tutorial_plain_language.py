@@ -322,10 +322,9 @@ def test_beginner_explanations_stay_plain_beneath_professional_titles() -> None:
     assert len(nodes_with_class(parser, "mindmap-branch")) == 8
     assert len(nodes_with_class(parser, "beginner-chapter-intro")) == 8
 
-    plain_regions = (
-        nodes_with_class(parser, "mindmap-analysis-copy")
-        + [node for node in parser.all_nodes if node.tag == "small" and is_inside_sidebar(node)]
-    )
+    plain_regions = nodes_with_class(parser, "mindmap-analysis-copy") + [
+        node for node in parser.all_nodes if node.tag == "small" and is_inside_sidebar(node)
+    ]
     for node in plain_regions:
         if "mindmap-analysis-copy" in node.classes:
             node = next(child for child in node.descendants() if child.tag == "small")
@@ -547,8 +546,11 @@ def test_mindmap_and_chapter_lessons_form_a_complete_learning_route() -> None:
     assert len(nodes_with_class(parser, "mindmap-analysis-state")) == 58
 
     map_titles = {
-        item.attrs.get("href", "").removeprefix("#analysis-").replace("-", ".", 1):
-        next(node for node in item.descendants() if node.tag == "strong").all_text().strip()
+        item.attrs.get("href", "").removeprefix("#analysis-").replace("-", ".", 1): next(
+            node for node in item.descendants() if node.tag == "strong"
+        )
+        .all_text()
+        .strip()
         for analysis_list in analysis_lists
         for item in analysis_list.descendants()
         if item.tag == "a" and item.attrs.get("href", "").startswith("#analysis-")
@@ -556,7 +558,9 @@ def test_mindmap_and_chapter_lessons_form_a_complete_learning_route() -> None:
     cards = {
         card.attrs["data-source-id"]: next(
             node for node in card.descendants() if "advanced-title" in node.classes
-        ).all_text().strip()
+        )
+        .all_text()
+        .strip()
         for card in nodes_with_class(parser, "analysis-card")
     }
     assert map_titles == cards

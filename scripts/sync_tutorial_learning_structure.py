@@ -188,9 +188,9 @@ def render_analysis_links(rows: list[dict[str, str]]) -> str:
         f'<a href="#analysis-{row["source_id"].replace(".", "-")}">'
         f'<span class="mindmap-analysis-number">{html.escape(row["source_id"])}</span>'
         f'<span class="mindmap-analysis-copy"><strong>{html.escape(row["professional_title_zh"])}</strong>'
-        f'<small>{html.escape(row["beginner_title_zh"])}</small></span>'
+        f"<small>{html.escape(row['beginner_title_zh'])}</small></span>"
         f'<span class="mindmap-analysis-state">'
-        f'{"已实现" if row["state"] == "IMPLEMENTED" else "有条件可用"}</span></a></li>'
+        f"{'已实现' if row['state'] == 'IMPLEMENTED' else '有条件可用'}</span></a></li>"
         for row in rows
     )
 
@@ -209,9 +209,9 @@ def render_mindmap(
             branches.append(
                 f'<article class="mindmap-branch" data-chapter="{chapter}">'
                 f'<header class="mindmap-branch-heading"><span class="mindmap-chapter">{chapter}</span>'
-                f'<span><strong>{html.escape(PROFESSIONAL_CHAPTER_TITLES[chapter])}</strong>'
-                f'<small>通俗理解：{html.escape(row["chapter_title_zh"])}</small></span>'
-                f'<em>{row["analysis_count"]} 项</em></header>'
+                f"<span><strong>{html.escape(PROFESSIONAL_CHAPTER_TITLES[chapter])}</strong>"
+                f"<small>通俗理解：{html.escape(row['chapter_title_zh'])}</small></span>"
+                f"<em>{row['analysis_count']} 项</em></header>"
                 '<div class="mindmap-branch-body">'
                 f'<p class="mindmap-chapter-question">本节回答：{html.escape(row["question_zh"])}</p>'
                 f"<p><b>接着哪里：</b>{html.escape(row['dependency_zh'])}</p>"
@@ -419,7 +419,15 @@ def render(source: str) -> str:
     )
     coverage_rows = read_rows(
         COVERAGE_PATH,
-        ("source_id", "source_title", "state", "evidence", "output", "limitation", "tutorial_anchor"),
+        (
+            "source_id",
+            "source_title",
+            "state",
+            "evidence",
+            "output",
+            "limitation",
+            "tutorial_anchor",
+        ),
     )
     if [row["source_id"] for row in coverage_rows] != [row["source_id"] for row in language_rows]:
         raise ValueError("Coverage and beginner-language rows must use the same frozen order")
