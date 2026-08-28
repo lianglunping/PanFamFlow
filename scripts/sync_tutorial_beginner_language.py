@@ -14,6 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_PATH = ROOT / "docs" / "TUTORIAL_BEGINNER_LANGUAGE.tsv"
+EXAMPLES_PATH = ROOT / "docs" / "TUTORIAL_ANALYSIS_EXAMPLES.tsv"
 COVERAGE_PATH = ROOT / "docs" / "ANALYSIS_COVERAGE.tsv"
 HTML_PATH = ROOT / "docs" / "index.html"
 
@@ -26,6 +27,40 @@ FIELDS = (
     "beginner_read_zh",
     "beginner_warning_zh",
 )
+EXAMPLE_FIELDS = (
+    "source_id",
+    "concept_zh",
+    "why_zh",
+    "input_headers_zh",
+    "input_row_zh",
+    "operation_zh",
+    "visual_type",
+    "visual_title_zh",
+    "x_axis_zh",
+    "y_axis_zh",
+    "legend_zh",
+    "output_headers_zh",
+    "output_rows_zh",
+    "reading_question_zh",
+    "reading_answer_zh",
+    "normal_zh",
+    "stop_zh",
+    "next_zh",
+)
+SUPPORTED_VISUALS = {
+    "decision",
+    "tree",
+    "matrix",
+    "sequence",
+    "distribution",
+    "comparison",
+    "curve",
+    "chromosome",
+    "links",
+    "scatter",
+    "bars",
+    "expression",
+}
 EXPECTED_IDS = (
     [f"4.{index}" for index in range(1, 5)]
     + [f"5.{index}" for index in range(1, 7)]
@@ -123,6 +158,38 @@ def read_tsv(path: Path) -> list[dict[str, str]]:
     return rows
 
 
+def split_cells(value: str) -> list[str]:
+    return [item.strip() for item in value.split("｜")]
+
+
+def read_examples() -> list[dict[str, str]]:
+    with EXAMPLES_PATH.open(encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle, delimiter="\t")
+        if tuple(reader.fieldnames or ()) != EXAMPLE_FIELDS:
+            raise ValueError(f"Unexpected columns in {EXAMPLES_PATH}: {reader.fieldnames}")
+        rows = list(reader)
+    if [row["source_id"] for row in rows] != EXPECTED_IDS:
+        raise ValueError("Analysis-example source IDs must be the frozen 58-item order")
+    for row in rows:
+        source_id = row["source_id"]
+        for field in EXAMPLE_FIELDS[1:]:
+            if not row[field].strip():
+                raise ValueError(f"Blank {field} for {source_id}")
+        if row["visual_type"] not in SUPPORTED_VISUALS:
+            raise ValueError(f"Unsupported visual type for {source_id}: {row['visual_type']}")
+        input_headers = split_cells(row["input_headers_zh"])
+        input_values = split_cells(row["input_row_zh"])
+        if len(input_headers) < 2 or len(input_headers) != len(input_values):
+            raise ValueError(f"Input example has mismatched columns for {source_id}")
+        output_headers = split_cells(row["output_headers_zh"])
+        output_rows = [split_cells(item) for item in row["output_rows_zh"].split("；")]
+        if len(output_headers) < 2 or len(output_rows) < 2:
+            raise ValueError(f"Output example is too small for {source_id}")
+        if any(len(item) != len(output_headers) for item in output_rows):
+            raise ValueError(f"Output example has mismatched columns for {source_id}")
+    return rows
+
+
 def read_advanced_titles() -> dict[str, str]:
     with COVERAGE_PATH.open(encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle, delimiter="\t"))
@@ -133,15 +200,92 @@ def read_advanced_titles() -> dict[str, str]:
     return titles
 
 
-def beginner_guide(row: dict[str, str]) -> str:
+def render_table(headers: list[str], rows: list[list[str]], class_name: str) -> str:
+    head = "".join(f"<th scope=\"col\">{html.escape(item)}</th>" for item in headers)
+    body = "".join(
+        "<tr>" + "".join(f"<td>{html.escape(item)}</td>" for item in row) + "</tr>"
+        for row in rows
+    )
+    return (
+        f'<div class="analysis-table-scroll" tabindex="0"><table class="{class_name}">'
+        f"<thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>"
+    )
+
+
+def micro_svg(example: dict[str, str]) -> str:
+    source_slug = example["source_id"].replace(".", "-")
+    visual_type = example["visual_type"]
+    shapes = {
+        "decision": '<rect x="24" y="62" width="112" height="54" rx="9" class="v-mid"/><path d="M136 89H194"/><path d="m184 80 12 9-12 9"/><rect x="202" y="28" width="126" height="44" rx="9" class="v-good"/><rect x="202" y="82" width="126" height="44" rx="9" class="v-warn"/><rect x="202" y="136" width="126" height="44" rx="9" class="v-bad"/>',
+        "tree": '<path d="M45 105H115M115 42V168M115 62H205M115 148H205M205 28V92M205 118V174M205 45H326M205 78H326M205 130H326M205 164H326"/><circle cx="326" cy="45" r="8" class="v-good"/><circle cx="326" cy="78" r="8" class="v-good"/><circle cx="326" cy="130" r="8" class="v-warn"/><circle cx="326" cy="164" r="8" class="v-warn"/>',
+        "matrix": '<g class="v-grid"><rect x="75" y="38" width="66" height="40" class="v-low"/><rect x="145" y="38" width="66" height="40" class="v-mid"/><rect x="215" y="38" width="66" height="40" class="v-good"/><rect x="75" y="82" width="66" height="40" class="v-good"/><rect x="145" y="82" width="66" height="40" class="v-low"/><rect x="215" y="82" width="66" height="40" class="v-mid"/><rect x="75" y="126" width="66" height="40" class="v-mid"/><rect x="145" y="126" width="66" height="40" class="v-good"/><rect x="215" y="126" width="66" height="40" class="v-low"/></g>',
+        "sequence": '<rect x="32" y="72" width="42" height="54" class="v-mid"/><rect x="79" y="52" width="42" height="74" class="v-good"/><rect x="126" y="84" width="42" height="42" class="v-warn"/><rect x="173" y="40" width="42" height="86" class="v-good"/><rect x="220" y="66" width="42" height="60" class="v-mid"/><rect x="267" y="92" width="42" height="34" class="v-low"/><path d="M25 135H326"/>',
+        "distribution": '<path d="M36 174V24M36 174H330"/><path d="M92 52V145M70 91H114M70 110H114"/><circle cx="83" cy="75" r="7" class="v-good"/><circle cx="101" cy="132" r="7" class="v-mid"/><path d="M210 40V158M188 74H232M188 112H232"/><circle cx="197" cy="57" r="7" class="v-warn"/><circle cx="222" cy="140" r="7" class="v-mid"/>',
+        "comparison": '<path d="M36 174V24M36 174H330"/><rect x="78" y="86" width="70" height="88" class="v-mid"/><rect x="206" y="48" width="70" height="126" class="v-good"/><path d="M78 72H276M78 64V80M276 64V80"/>',
+        "curve": '<path d="M36 174V24M36 174H330"/><path d="M46 146C86 104 116 79 154 63S233 42 320 36" class="v-curve"/><path d="M46 155C84 127 120 109 154 100S233 89 320 85" class="v-curve-alt"/><circle cx="154" cy="63" r="6" class="v-good"/><circle cx="320" cy="36" r="6" class="v-good"/>',
+        "chromosome": '<path d="M82 38V170M178 38V170M274 38V170" class="v-chrom"/><circle cx="82" cy="76" r="9" class="v-good"/><circle cx="82" cy="96" r="9" class="v-warn"/><circle cx="178" cy="135" r="9" class="v-good"/><circle cx="274" cy="58" r="9" class="v-mid"/>',
+        "links": '<path d="M68 34V174M286 34V174" class="v-chrom"/><path d="M68 58C140 58 210 70 286 76M68 89C140 89 210 108 286 112M68 126C140 126 210 137 286 145" class="v-link"/><circle cx="68" cy="89" r="10" class="v-warn"/><circle cx="286" cy="112" r="10" class="v-warn"/>',
+        "scatter": '<path d="M36 174V24M36 174H330M46 158L316 40" class="v-reference"/><circle cx="82" cy="132" r="8" class="v-mid"/><circle cx="132" cy="123" r="8" class="v-good"/><circle cx="186" cy="91" r="8" class="v-warn"/><circle cx="248" cy="74" r="8" class="v-good"/><circle cx="290" cy="52" r="8" class="v-bad"/>',
+        "bars": '<path d="M36 174V24M36 174H330"/><rect x="64" y="88" width="54" height="86" class="v-mid"/><rect x="148" y="48" width="54" height="126" class="v-good"/><rect x="232" y="112" width="54" height="62" class="v-warn"/>',
+        "expression": '<g class="v-grid"><rect x="74" y="38" width="58" height="38" class="v-good"/><rect x="136" y="38" width="58" height="38" class="v-good"/><rect x="198" y="38" width="58" height="38" class="v-low"/><rect x="74" y="80" width="58" height="38" class="v-low"/><rect x="136" y="80" width="58" height="38" class="v-mid"/><rect x="198" y="80" width="58" height="38" class="v-good"/><rect x="74" y="122" width="58" height="38" class="v-mid"/><rect x="136" y="122" width="58" height="38" class="v-low"/><rect x="198" y="122" width="58" height="38" class="v-mid"/></g>',
+    }
+    title = html.escape(example["visual_title_zh"])
+    description = html.escape(
+        f"横向说明：{example['x_axis_zh']}。纵向说明：{example['y_axis_zh']}。"
+        f"颜色和符号：{example['legend_zh']}。"
+    )
+    return (
+        f'<svg class="analysis-micro-figure" viewBox="0 0 360 205" role="img" '
+        f'aria-labelledby="micro-title-{source_slug} micro-desc-{source_slug}">'
+        f'<title id="micro-title-{source_slug}">{title}</title>'
+        f'<desc id="micro-desc-{source_slug}">{description}</desc>'
+        f'<g class="analysis-micro-shapes">{shapes[visual_type]}</g></svg>'
+    )
+
+
+def micro_lesson(example: dict[str, str]) -> str:
+    value = {key: html.escape(example[key], quote=True) for key in EXAMPLE_FIELDS}
+    input_table = render_table(
+        split_cells(example["input_headers_zh"]),
+        [split_cells(example["input_row_zh"])],
+        "analysis-input-table",
+    )
+    output_table = render_table(
+        split_cells(example["output_headers_zh"]),
+        [split_cells(item) for item in example["output_rows_zh"].split("；")],
+        "analysis-example-table",
+    )
+    return (
+        '<div class="analysis-micro-lesson">'
+        '<div class="analysis-foundation-grid">'
+        f'<div><h4>先懂一个概念</h4><p>{value["concept_zh"]}</p></div>'
+        f'<div><h4 class="analysis-why-title">为什么要做</h4><p>{value["why_zh"]}</p></div></div>'
+        '<h4>看一条具体输入记录</h4>'
+        f"{input_table}"
+        f'<p class="analysis-operation"><strong>本项怎样处理：</strong>{value["operation_zh"]}</p>'
+        '<div class="analysis-result-grid"><figure>'
+        f"{micro_svg(example)}"
+        '<figcaption><b>横向说明：</b>'
+        f'{value["x_axis_zh"]}<br><b>纵向说明：</b>{value["y_axis_zh"]}'
+        f'<br><b>图中颜色与符号：</b>{value["legend_zh"]}</figcaption></figure>'
+        '<div><h4>用结果小表核对图</h4>'
+        f"{output_table}</div></div>"
+        f'<details class="analysis-reading-check"><summary>先试着回答：{value["reading_question_zh"]}</summary>'
+        f'<p><strong>参考答案：</strong>{value["reading_answer_zh"]}</p></details>'
+        '<div class="analysis-verdict-grid">'
+        f'<div class="analysis-normal"><h4>看到什么算正常</h4><p>{value["normal_zh"]}</p></div>'
+        f'<div class="analysis-stop"><h4>什么情况先暂停</h4><p>{value["stop_zh"]}</p></div></div>'
+        f'<p class="analysis-next"><strong>这项完成后：</strong>{value["next_zh"]}</p>'
+        '<p class="analysis-teaching-note">本页数值只用于练习读图，不代表真实水稻分析结果。</p>'
+        "</div>"
+    )
+
+
+def beginner_guide(row: dict[str, str], example: dict[str, str]) -> str:
     value = {key: html.escape(row[key], quote=True) for key in FIELDS}
     condition = html.escape(
         CONDITIONAL_BEGINNER_CONDITIONS.get(row["source_id"], DEFAULT_BEGINNER_CONDITION),
         quote=True,
-    )
-    chapter = row["source_id"].split(".", 1)[0]
-    action = html.escape(
-        ITEM_ACTION_OVERRIDES.get(row["source_id"], CHAPTER_ACTIONS[chapter]), quote=True
     )
     location = ""
     if row["source_id"] in CHAPTER_TEN_ITEM_CONTEXT:
@@ -165,10 +309,7 @@ def beginner_guide(row: dict[str, str]) -> str:
         "<div><h5>按什么顺序看</h5>"
         f"<p>{value['beginner_read_zh']}</p></div>"
         "</div>"
-        '<div class="beginner-bridge"><span><strong>一条输入记录</strong>'
-        f'{value["beginner_input_zh"]}</span><b aria-hidden="true">→</b>'
-        f'<span><strong>本项怎样处理</strong>{action}</span><b aria-hidden="true">→</b>'
-        f"<span><strong>在结果中看到</strong>{value['beginner_output_zh']}</span></div>"
+        f"{micro_lesson(example)}"
         '<p class="beginner-warning"><strong>不要这样理解：</strong>'
         f"{value['beginner_warning_zh']}</p>"
         '<p class="beginner-condition"><strong>继续前先确认：</strong>'
@@ -206,6 +347,7 @@ def beginner_analysis_nav(source_id: str, rows: dict[str, dict[str, str]]) -> st
 def replace_card(
     match: re.Match[str],
     rows: dict[str, dict[str, str]],
+    examples: dict[str, dict[str, str]],
     advanced_titles: dict[str, str],
 ) -> str:
     card = match.group(0)
@@ -242,7 +384,7 @@ def replace_card(
         raise ValueError(f"Could not replace title for {source_id}")
     card, count = re.subn(
         r"(</header>)",
-        rf"\1{beginner_guide(row)}",
+        rf"\1{beginner_guide(row, examples[source_id])}",
         card,
         count=1,
     )
@@ -262,10 +404,12 @@ def replace_card(
 def render(source: str) -> str:
     row_list = read_tsv(CONTRACT_PATH)
     rows = {row["source_id"]: row for row in row_list}
+    example_list = read_examples()
+    examples = {row["source_id"]: row for row in example_list}
     advanced_titles = read_advanced_titles()
     rendered, count = re.subn(
         r'<article class="analysis-card".*?</article>',
-        lambda match: replace_card(match, rows, advanced_titles),
+        lambda match: replace_card(match, rows, examples, advanced_titles),
         source,
         flags=re.DOTALL,
     )
