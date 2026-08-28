@@ -179,3 +179,41 @@ def test_beginner_mode_has_one_clear_path_and_keeps_advanced_content_available()
     )
     assert "}.beginner-analysis-nav{display:grid" not in text
     assert 'html[data-learning-mode="beginner"] .chapter-quick-nav{display:none!important}' in text
+
+
+def test_course_map_supports_overview_search_and_truthful_state_filters() -> None:
+    text = Path("docs/index.html").read_text(encoding="utf-8")
+    parser = TutorialParser()
+    parser.feed(text)
+
+    for control_id in (
+        "mindmap-finder-title",
+        "mapOverviewButton",
+        "mapCompleteButton",
+        "mapSearch",
+        "mapStateFilter",
+        "mapClearFilters",
+        "mapFilterSummary",
+        "mapNoResults",
+    ):
+        assert control_id in parser.ids
+
+    assert "只看 8 个大节" in text
+    assert "展开 58 项分析" in text
+    assert "按编号或名称查找" in text
+    assert "按结果条件查看" in text
+    assert text.count('data-map-search="') == 58
+    assert text.count('data-map-state="direct"') == 50
+    assert text.count('data-map-state="postprocess"') == 3
+    assert text.count('data-map-state="conditional"') == 5
+    assert 'option value="direct">已有直接结果' in text
+    assert 'option value="postprocess">需要后处理' in text
+    assert 'option value="conditional">满足条件后运行' in text
+    assert "function setMapView(view)" in text
+    assert "function filterMap()" in text
+    assert "item.dataset.mapState===state" in text
+    assert "branch.classList.toggle('map-filtered'" in text
+    assert "stage.classList.toggle('map-filtered'" in text
+    assert "mapNoResults.hidden=mapVisible!==0" in text
+    assert ".chapter-map.map-overview .mindmap-analysis-list{display:none}" in text
+    assert 'aria-live="polite"' in text

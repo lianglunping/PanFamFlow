@@ -204,11 +204,21 @@ def render_analysis_links(rows: list[dict[str, str]]) -> str:
         if row["source_id"] in POSTPROCESS_ONLY_IDS:
             state_label = "基础结果可用，专用比较需后处理"
             state_class = "postprocess"
+            map_state = "postprocess"
         else:
             state_label = "已提供规范结果" if row["state"] == "IMPLEMENTED" else "有条件可用"
             state_class = row["state"].lower()
+            map_state = "direct" if row["state"] == "IMPLEMENTED" else "conditional"
+        search_text = " ".join(
+            (
+                row["source_id"],
+                row["professional_title_zh"],
+                row["beginner_title_zh"],
+            )
+        ).lower()
         rendered.append(
-            f'<li class="mindmap-analysis-item {state_class}">'
+            f'<li class="mindmap-analysis-item {state_class}" '
+            f'data-map-state="{map_state}" data-map-search="{html.escape(search_text)}">'
             f'<a href="#analysis-{row["source_id"].replace(".", "-")}">'
             f'<span class="mindmap-analysis-number">{html.escape(row["source_id"])}</span>'
             f'<span class="mindmap-analysis-copy"><strong>{html.escape(row["professional_title_zh"])}</strong>'
@@ -267,6 +277,22 @@ def render_mindmap(
         '<p><a class="button" href="#newbie-path">第一次学习：先看四步路线</a></p>'
         '<div class="mindmap-summary" aria-label="课程覆盖摘要"><strong>58 / 58 项全部可见</strong><span>8 个专业大节</span><span>53 项提供流程结果</span><span>其中 3 项需基于基础表后处理</span><span>5 项有条件可用</span></div>'
         '<div class="callout"><strong>状态怎么理解：</strong>“提供流程结果”表示已有规范表或图；“需后处理”表示已有基础结果，但还要按本项口径汇总或比较；“有条件可用”表示只有输入与重复等前提满足时才运行。三种状态都不等于已经得到真实水稻结论。</div>'
+        '<section class="mindmap-finder" aria-labelledby="mindmap-finder-title">'
+        '<div class="mindmap-finder-heading"><div><h3 id="mindmap-finder-title">在 58 项分析中快速定位</h3>'
+        "<p>第一次只想理解框架，可以看 8 个大节；需要查具体分析时，再按编号、名称或结果条件筛选。</p></div>"
+        '<div class="mindmap-view-switch" role="group" aria-label="图谱显示范围">'
+        '<button id="mapOverviewButton" type="button" aria-pressed="false">只看 8 个大节</button>'
+        '<button id="mapCompleteButton" class="primary" type="button" aria-pressed="true">展开 58 项分析</button>'
+        '</div></div><div class="mindmap-finder-fields">'
+        '<label for="mapSearch">按编号或名称查找<input id="mapSearch" type="search" '
+        'placeholder="例如：6.3、基因树、表达" autocomplete="off"></label>'
+        '<label for="mapStateFilter">按结果条件查看<select id="mapStateFilter">'
+        '<option value="all">全部结果条件</option><option value="direct">已有直接结果</option>'
+        '<option value="postprocess">需要后处理</option><option value="conditional">满足条件后运行</option>'
+        '</select></label><button id="mapClearFilters" type="button">清除查找条件</button></div>'
+        '<p id="mapFilterSummary" class="mindmap-filter-summary" aria-live="polite">当前显示 58 / 58 项分析</p>'
+        '<p id="mapNoResults" class="mindmap-no-results" role="status" hidden>没有找到符合条件的分析。请更换关键词或清除查找条件。</p>'
+        "</section>"
         '<div class="mindmap-root"><strong>研究一个目标基因家族</strong><span>可靠成员 → 结构与位置 → 来源与变化 → 实际活跃条件</span></div>'
         f'<div class="mindmap-stages">{"".join(stage_html)}</div>'
         '<div class="beginner-note"><span aria-hidden="true">↓</span><div><strong>建议顺序：</strong>第一次学习请按阶段 1 → 4、专业大节 4 → 11 顺序学习。点击任一专业小节，可直接进入该项的基础知识、分析方法和结果解读。</div></div>'
