@@ -510,3 +510,64 @@ def test_mobile_micro_figure_scroll_is_contained_inside_the_figure() -> None:
 
 def test_analysis_example_sync_is_idempotent() -> None:
     subprocess.run([sys.executable, str(SYNC), "--check"], cwd=ROOT, check=True)
+
+
+def test_beginner_keyboard_routes_expand_before_scroll_and_focus() -> None:
+    text = HTML.read_text(encoding="utf-8")
+    assert "event.detail === 0" in text
+    assert "event.preventDefault()" in text
+    assert "function scheduleBeginnerKeyboardTarget(target)" in text
+    helper = re.search(
+        r"function scheduleBeginnerKeyboardTarget\(target\)\{(.*?)\n  \}", text, re.DOTALL
+    )
+    assert helper is not None
+    assert "requestAnimationFrame" in helper.group(1)
+    assert "window.scrollTo" in helper.group(1)
+    assert "target.focus({preventScroll:true})" in helper.group(1)
+    handler = re.search(
+        r"a\[href\^=\"#chapter-\"\].*?addEventListener\('click',\(event\)=>\{(.*?)\n  \}\)\);",
+        text,
+        re.DOTALL,
+    )
+    assert handler is not None
+    body = handler.group(1)
+    assert body.index("setBeginnerChapterOpen(chapter,true)") < body.index(
+        "scheduleBeginnerKeyboardTarget(target)"
+    )
+    assert "history.pushState" in body
+
+
+def test_beginner_9_6_uses_one_plain_term_while_advanced_keeps_ks() -> None:
+    rows = {row["source_id"]: row for row in read_rows()}
+    row = rows["9.6"]
+    beginner_fields = "｜".join(
+        row[key]
+        for key in (
+            "concept_zh",
+            "why_zh",
+            "input_headers_zh",
+            "input_row_zh",
+            "operation_zh",
+            "visual_title_zh",
+            "x_axis_zh",
+            "y_axis_zh",
+            "legend_zh",
+            "output_headers_zh",
+            "output_rows_zh",
+            "reading_question_zh",
+            "reading_answer_zh",
+            "normal_zh",
+            "stop_zh",
+            "next_zh",
+        )
+    )
+    assert "基准变化率" not in beginner_fields
+    assert "不改变蛋白的编码变化率" in beginner_fields
+    html = HTML.read_text(encoding="utf-8")
+    card = re.search(r'<article[^>]+id="analysis-9-6".*?</article>', html, re.DOTALL)
+    assert card is not None
+    guide = re.search(r'<section class="beginner-guide".*?</section>', card.group(0), re.DOTALL)
+    assert guide is not None
+    assert "基准变化率" not in guide.group(0)
+    assert "不改变蛋白的编码变化率" in guide.group(0)
+    assert "Ks" in card.group(0)
