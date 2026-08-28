@@ -110,22 +110,24 @@ def test_beginner_mode_has_one_clear_path_and_keeps_advanced_content_available()
     ):
         assert required_id in parser.ids
 
-    assert "零基础开始学习" in text
+    assert "第一次来：从分析全图开始" in text
     assert "第一次学习，只走这四步" in text
     assert text.count('class="path-step"') == 4
     assert "教学示意，不是真实分析结果" in text
     assert "第 1 看：对象" in text
     assert "第 2 看：质量" in text
     assert "第 3 看：解释" in text
-    assert "八章只回答八个问题" in text
-    assert text.count('class="chapter-map-card"') == 8
+    assert "先看全图：58 项分析怎样连成一个故事" in text
+    assert text.count('class="mindmap-stage"') == 4
+    assert text.count('class="mindmap-branch"') == 8
+    assert text.count('class="mindmap-analysis-list"') == 8
     assert text.count('class="beginner-chapter-intro"') == 8
     assert text.count('class="chapter-toggle primary"') == 8
-    assert "哪些基因真正属于这个家族？" in text
-    assert "这些基因在什么条件下活跃？" in text
-    assert "先看什么" in text
-    assert "再看什么" in text
-    assert "最容易误读" in text
+    assert "哪些基因真正属于目标家族，它们彼此谁更接近？" in text
+    assert "这些基因在什么组织或处理下更活跃，哪些变化有可靠证据？" in text
+    for lesson in ("① 基础知识", "② 为什么做", "③ 怎么做", "④ 怎么读结果"):
+        assert text.count(lesson) == 8
+    assert text.count('class="lesson-diagram"') == 8
     assert "examples/toy/config.yaml" in text
     assert "panfamflowTutorialMode" in text
     assert "dataset.learningMode='beginner'" in text
@@ -138,7 +140,10 @@ def test_beginner_mode_has_one_clear_path_and_keeps_advanced_content_available()
     assert 'html[data-learning-mode="beginner"] .chapter-foundation{display:none!important}' in text
     assert "function setBeginnerChapterOpen(chapter, open)" in text
     assert "document.getElementById(decodeURIComponent(location.hash.slice(1)))" in text
-    assert "button.textContent=expanded?'返回八章问题地图':'开始本章'" in text
+    assert "button.textContent=expanded?'返回分析思维导图':'开始本章'" in text
+    assert "const visitedAnalyses = new Set" in text
+    assert "const done=visitedAnalyses.size;const total=58" in text
+    assert "已读 ${done} / ${total} 项" in text
     assert (
         "beginner:{concept:'先懂它',input:'准备什么',run:'怎么运行',interpret:'怎么看结果'}" in text
     )

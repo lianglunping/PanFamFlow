@@ -19,6 +19,8 @@ HTML_PATH = ROOT / "docs" / "index.html"
 TERMINOLOGY_PATH = ROOT / "docs" / "TUTORIAL_TERMINOLOGY.tsv"
 BEGINNER_LANGUAGE_PATH = ROOT / "docs" / "TUTORIAL_BEGINNER_LANGUAGE.tsv"
 BEGINNER_SYNC_PATH = ROOT / "scripts" / "sync_tutorial_beginner_language.py"
+LESSON_PATH = ROOT / "docs" / "TUTORIAL_CHAPTER_LESSONS.tsv"
+LESSON_SYNC_PATH = ROOT / "scripts" / "sync_tutorial_learning_structure.py"
 
 EXPECTED_IDS = (
     [f"4.{index}" for index in range(1, 5)]
@@ -66,6 +68,24 @@ BEGINNER_LANGUAGE_FIELDS = [
     "beginner_warning_zh",
 ]
 
+LESSON_FIELDS = [
+    "chapter",
+    "stage_id",
+    "chapter_title_zh",
+    "analysis_count",
+    "question_zh",
+    "foundation_zh",
+    "why_zh",
+    "input_zh",
+    "method_zh",
+    "output_zh",
+    "read_zh",
+    "boundary_zh",
+    "diagram_type",
+    "output_label_zh",
+    "dependency_zh",
+]
+
 BEGINNER_FORBIDDEN_JARGON = (
     "系统发育",
     "正交组",
@@ -86,6 +106,7 @@ BEGINNER_FORBIDDEN_JARGON = (
     "表达矩阵",
     "正向选择",
     "同义变化",
+    "外群",
     "独立基因簇",
     "单位长度",
     "随机重复",
@@ -296,11 +317,12 @@ def test_beginner_navigation_and_chapter_intros_avoid_unexplained_jargon() -> No
         return False
 
     plain_regions = (
-        nodes_with_class(parser, "chapter-map-card")
+        nodes_with_class(parser, "mindmap-stage")
         + nodes_with_class(parser, "beginner-chapter-intro")
         + [node for node in parser.all_nodes if node.tag == "small" and is_inside_sidebar(node)]
     )
-    assert len(nodes_with_class(parser, "chapter-map-card")) == 8
+    assert len(nodes_with_class(parser, "mindmap-stage")) == 4
+    assert len(nodes_with_class(parser, "mindmap-branch")) == 8
     assert len(nodes_with_class(parser, "beginner-chapter-intro")) == 8
 
     for node in plain_regions:
@@ -377,9 +399,100 @@ def test_beginner_mode_defines_its_five_required_basic_concepts() -> None:
     assert re.search(r"[A-Za-z]", text) is None
 
     map_text = re.sub(r"\s+", " ", chapter_map.all_text()).strip()
-    assert "编号沿用原分析资料" in map_text
-    assert "第 1–3 节是通用准备" in map_text
-    assert "从第 4 节的家族分析开始" in map_text
+    assert "58 项分析怎样连成一个故事" in map_text
+    assert "可靠成员 → 结构与位置 → 来源与变化 → 实际活跃条件" in map_text
+    assert "第 4 章是共同起点" in map_text
+
+
+def test_mindmap_and_chapter_lessons_form_a_complete_learning_route() -> None:
+    parser = parse_html()
+    stages = nodes_with_class(parser, "mindmap-stage")
+    branches = nodes_with_class(parser, "mindmap-branch")
+    analysis_lists = nodes_with_class(parser, "mindmap-analysis-list")
+    intros = nodes_with_class(parser, "beginner-chapter-intro")
+
+    assert [node.attrs["data-stage"] for node in stages] == ["1", "2", "3", "4"]
+    assert [node.attrs["data-chapter"] for node in branches] == [str(i) for i in range(4, 12)]
+    assert len(analysis_lists) == 8
+    assert (
+        sum(
+            len([child for child in item.descendants() if child.tag == "a"])
+            for item in analysis_lists
+        )
+        == 58
+    )
+    assert len(intros) == 8
+    start_links = nodes_with_class(parser, "mindmap-start")
+    assert len(start_links) == 8
+    assert all(link.parent is not None and link.parent.tag == "article" for link in start_links)
+    assert [link.attrs["href"] for link in start_links] == [f"#chapter-{i}" for i in range(4, 12)]
+
+    expected_diagrams = {
+        "member_funnel",
+        "gene_structure",
+        "presence_matrix",
+        "chromosome_map",
+        "duplication_paths",
+        "coding_change",
+        "promoter_signals",
+        "expression_heatmap",
+    }
+    diagrams = nodes_with_class(parser, "lesson-diagram")
+    assert {node.attrs["data-diagram"] for node in diagrams} == expected_diagrams
+    for intro in intros:
+        lesson_parts = [
+            node.attrs.get("data-lesson")
+            for node in intro.descendants()
+            if node.attrs.get("data-lesson")
+        ]
+        assert lesson_parts == ["foundation", "why", "how", "read"]
+        text = re.sub(r"\s+", " ", intro.all_text()).strip()
+        for heading in ("基础知识", "为什么做", "怎么做", "怎么读结果", "不要误读"):
+            assert heading in text
+
+    chapter_ten = find_by_id(parser, "chapter-10")
+    subgroup_grids = [
+        node for node in chapter_ten.descendants() if "lesson-subgroup-grid" in node.classes
+    ]
+    assert len(subgroup_grids) == 1
+    assert len([node for node in subgroup_grids[0].children if node.tag == "div"]) == 4
+
+
+def test_all_58_items_have_linear_navigation_and_learning_progress() -> None:
+    parser = parse_html()
+    cards = nodes_with_class(parser, "analysis-card")
+    navigations = nodes_with_class(parser, "beginner-analysis-nav")
+    assert len(cards) == len(navigations) == 58
+    html = HTML_PATH.read_text(encoding="utf-8")
+    assert html.count('rel="prev"') == 50
+    assert html.count('rel="next"') == 50
+    assert html.count("本章完成：返回分析思维导图") == 8
+    assert "panfamflowTutorialVisitedAnalyses" in html
+    assert "const done=visitedAnalyses.size;const total=58" in html
+    assert "已读 ${done} / ${total} 项" in html
+
+
+def test_chapter_lesson_contract_and_html_are_synchronized() -> None:
+    with LESSON_PATH.open(encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle, delimiter="\t")
+        assert reader.fieldnames == LESSON_FIELDS
+        rows = list(reader)
+    assert [row["chapter"] for row in rows] == [str(i) for i in range(4, 12)]
+    assert sum(int(row["analysis_count"]) for row in rows) == 58
+    assert len({row["diagram_type"] for row in rows}) == 8
+    for row in rows:
+        for field in set(LESSON_FIELDS) - {"chapter", "stage_id", "analysis_count", "diagram_type"}:
+            value = row[field].strip()
+            assert value
+            assert re.search(r"[A-Za-z]", value) is None, (row["chapter"], field, value)
+
+    subprocess.run(
+        [sys.executable, str(LESSON_SYNC_PATH), "--check"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
 
 
 def test_five_conditional_analyses_explain_their_extra_input_in_plain_chinese() -> None:
