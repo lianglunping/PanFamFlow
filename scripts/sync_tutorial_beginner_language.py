@@ -11,12 +11,11 @@ import csv
 import html
 import math
 import re
+import runpy
 from pathlib import Path
 
-try:
-    from tutorial_title_contract import PROFESSIONAL_ANALYSIS_TITLE_OVERRIDES
-except ModuleNotFoundError:  # Loaded as a module from the repository root in tests.
-    from scripts.tutorial_title_contract import PROFESSIONAL_ANALYSIS_TITLE_OVERRIDES
+_TITLE_CONTRACT = runpy.run_path(Path(__file__).with_name("tutorial_title_contract.py"))
+PROFESSIONAL_ANALYSIS_TITLE_OVERRIDES = _TITLE_CONTRACT["PROFESSIONAL_ANALYSIS_TITLE_OVERRIDES"]
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_PATH = ROOT / "docs" / "TUTORIAL_BEGINNER_LANGUAGE.tsv"

@@ -10,19 +10,13 @@ import argparse
 import csv
 import html
 import re
+import runpy
 from collections import defaultdict
 from pathlib import Path
 
-try:
-    from tutorial_title_contract import (
-        PROFESSIONAL_CHAPTER_TITLES,
-        professional_analysis_title,
-    )
-except ModuleNotFoundError:  # Loaded as a module from the repository root in tests.
-    from scripts.tutorial_title_contract import (
-        PROFESSIONAL_CHAPTER_TITLES,
-        professional_analysis_title,
-    )
+_TITLE_CONTRACT = runpy.run_path(Path(__file__).with_name("tutorial_title_contract.py"))
+PROFESSIONAL_CHAPTER_TITLES = _TITLE_CONTRACT["PROFESSIONAL_CHAPTER_TITLES"]
+professional_analysis_title = _TITLE_CONTRACT["professional_analysis_title"]
 
 ROOT = Path(__file__).resolve().parents[1]
 LESSONS_PATH = ROOT / "docs" / "TUTORIAL_CHAPTER_LESSONS.tsv"
