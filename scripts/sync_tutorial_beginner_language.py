@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import csv
 import html
+import math
 import re
 from pathlib import Path
 
@@ -60,6 +61,11 @@ SUPPORTED_VISUALS = {
     "scatter",
     "bars",
     "expression",
+    "paired",
+    "stacked",
+    "multi_indicator",
+    "de",
+    "test",
 }
 EXPECTED_IDS = (
     [f"4.{index}" for index in range(1, 5)]
@@ -212,34 +218,205 @@ def render_table(headers: list[str], rows: list[list[str]], class_name: str) -> 
     )
 
 
+CHINESE_DIGITS = {"零": 0, "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
+
+
+def chinese_number(value: str) -> float | None:
+    """Read the first plain-Chinese number so teaching geometry follows its table."""
+    percentage = re.search(r"百分之(负?[零一二两三四五六七八九十百千万点]+)", value)
+    if percentage:
+        token = percentage.group(1)
+    else:
+        matches = re.findall(r"负?[零一二两三四五六七八九十百千万点]+", value)
+        if not matches:
+            return None
+        token = matches[0]
+    negative = token.startswith("负")
+    token = token.removeprefix("负")
+    if "点" in token:
+        integer, decimal = token.split("点", 1)
+        integer_value = chinese_number(integer) if integer else 0
+        if integer_value is None or any(item not in CHINESE_DIGITS for item in decimal):
+            return None
+        fraction = float("0." + "".join(str(CHINESE_DIGITS[item]) for item in decimal))
+        result = integer_value + fraction
+        return -result if negative else result
+    total = 0
+    current = 0
+    units = {"十": 10, "百": 100, "千": 1000, "万": 10000}
+    if all(item in CHINESE_DIGITS for item in token):
+        result = float("".join(str(CHINESE_DIGITS[item]) for item in token))
+        return -result if negative else result
+    for item in token:
+        if item in CHINESE_DIGITS:
+            current = CHINESE_DIGITS[item]
+        elif item in units:
+            total += (current or 1) * units[item]
+            current = 0
+        else:
+            return None
+    result = float(total + current)
+    return -result if negative else result
+
+
+def svg_text(x: int, y: int, value: str, class_name: str) -> str:
+    escaped = html.escape(value)
+    fit = ' textLength="505" lengthAdjust="spacingAndGlyphs"' if len(value) > 34 else ""
+    return f'<text x="{x}" y="{y}" class="{class_name}"{fit}>{escaped}</text>'
+
+
+def row_value(headers: list[str], row: list[str], visual_type: str) -> float | None:
+    preferred_headers = {
+        "bars": ("比例",),
+        "sequence": ("一致比例",),
+        "de": ("效应方向与大小",),
+        "test": ("效应方向与大小",),
+        "multi_indicator": ("中间比值", "中间基准变化率"),
+    }.get(visual_type, ())
+    for preferred in preferred_headers:
+        for index, header in enumerate(headers):
+            if preferred in header:
+                number = chinese_number(row[index])
+                if number is not None:
+                    return number
+    for cell in reversed(row):
+        number = chinese_number(cell)
+        if number is not None:
+            return number
+    return None
+
+
 def micro_svg(example: dict[str, str]) -> str:
     source_slug = example["source_id"].replace(".", "-")
     visual_type = example["visual_type"]
-    shapes = {
-        "decision": '<rect x="24" y="62" width="112" height="54" rx="9" class="v-mid"/><path d="M136 89H194"/><path d="m184 80 12 9-12 9"/><rect x="202" y="28" width="126" height="44" rx="9" class="v-good"/><rect x="202" y="82" width="126" height="44" rx="9" class="v-warn"/><rect x="202" y="136" width="126" height="44" rx="9" class="v-bad"/>',
-        "tree": '<path d="M45 105H115M115 42V168M115 62H205M115 148H205M205 28V92M205 118V174M205 45H326M205 78H326M205 130H326M205 164H326"/><circle cx="326" cy="45" r="8" class="v-good"/><circle cx="326" cy="78" r="8" class="v-good"/><circle cx="326" cy="130" r="8" class="v-warn"/><circle cx="326" cy="164" r="8" class="v-warn"/>',
-        "matrix": '<g class="v-grid"><rect x="75" y="38" width="66" height="40" class="v-low"/><rect x="145" y="38" width="66" height="40" class="v-mid"/><rect x="215" y="38" width="66" height="40" class="v-good"/><rect x="75" y="82" width="66" height="40" class="v-good"/><rect x="145" y="82" width="66" height="40" class="v-low"/><rect x="215" y="82" width="66" height="40" class="v-mid"/><rect x="75" y="126" width="66" height="40" class="v-mid"/><rect x="145" y="126" width="66" height="40" class="v-good"/><rect x="215" y="126" width="66" height="40" class="v-low"/></g>',
-        "sequence": '<rect x="32" y="72" width="42" height="54" class="v-mid"/><rect x="79" y="52" width="42" height="74" class="v-good"/><rect x="126" y="84" width="42" height="42" class="v-warn"/><rect x="173" y="40" width="42" height="86" class="v-good"/><rect x="220" y="66" width="42" height="60" class="v-mid"/><rect x="267" y="92" width="42" height="34" class="v-low"/><path d="M25 135H326"/>',
-        "distribution": '<path d="M36 174V24M36 174H330"/><path d="M92 52V145M70 91H114M70 110H114"/><circle cx="83" cy="75" r="7" class="v-good"/><circle cx="101" cy="132" r="7" class="v-mid"/><path d="M210 40V158M188 74H232M188 112H232"/><circle cx="197" cy="57" r="7" class="v-warn"/><circle cx="222" cy="140" r="7" class="v-mid"/>',
-        "comparison": '<path d="M36 174V24M36 174H330"/><rect x="78" y="86" width="70" height="88" class="v-mid"/><rect x="206" y="48" width="70" height="126" class="v-good"/><path d="M78 72H276M78 64V80M276 64V80"/>',
-        "curve": '<path d="M36 174V24M36 174H330"/><path d="M46 146C86 104 116 79 154 63S233 42 320 36" class="v-curve"/><path d="M46 155C84 127 120 109 154 100S233 89 320 85" class="v-curve-alt"/><circle cx="154" cy="63" r="6" class="v-good"/><circle cx="320" cy="36" r="6" class="v-good"/>',
-        "chromosome": '<path d="M82 38V170M178 38V170M274 38V170" class="v-chrom"/><circle cx="82" cy="76" r="9" class="v-good"/><circle cx="82" cy="96" r="9" class="v-warn"/><circle cx="178" cy="135" r="9" class="v-good"/><circle cx="274" cy="58" r="9" class="v-mid"/>',
-        "links": '<path d="M68 34V174M286 34V174" class="v-chrom"/><path d="M68 58C140 58 210 70 286 76M68 89C140 89 210 108 286 112M68 126C140 126 210 137 286 145" class="v-link"/><circle cx="68" cy="89" r="10" class="v-warn"/><circle cx="286" cy="112" r="10" class="v-warn"/>',
-        "scatter": '<path d="M36 174V24M36 174H330M46 158L316 40" class="v-reference"/><circle cx="82" cy="132" r="8" class="v-mid"/><circle cx="132" cy="123" r="8" class="v-good"/><circle cx="186" cy="91" r="8" class="v-warn"/><circle cx="248" cy="74" r="8" class="v-good"/><circle cx="290" cy="52" r="8" class="v-bad"/>',
-        "bars": '<path d="M36 174V24M36 174H330"/><rect x="64" y="88" width="54" height="86" class="v-mid"/><rect x="148" y="48" width="54" height="126" class="v-good"/><rect x="232" y="112" width="54" height="62" class="v-warn"/>',
-        "expression": '<g class="v-grid"><rect x="74" y="38" width="58" height="38" class="v-good"/><rect x="136" y="38" width="58" height="38" class="v-good"/><rect x="198" y="38" width="58" height="38" class="v-low"/><rect x="74" y="80" width="58" height="38" class="v-low"/><rect x="136" y="80" width="58" height="38" class="v-mid"/><rect x="198" y="80" width="58" height="38" class="v-good"/><rect x="74" y="122" width="58" height="38" class="v-mid"/><rect x="136" y="122" width="58" height="38" class="v-low"/><rect x="198" y="122" width="58" height="38" class="v-mid"/></g>',
-    }
+    headers = split_cells(example["output_headers_zh"])
+    rows = [split_cells(item) for item in example["output_rows_zh"].split("；")]
+    height = 78 + 64 * len(rows)
+    values = [row_value(headers, row, visual_type) for row in rows]
+
+    def magnitude(index: int) -> int:
+        value = values[index]
+        if value is None:
+            return 260
+        return round(130 + min(320, 75 * math.log10(abs(value) + 1)))
+
+    def color(index: int, row: list[str]) -> str:
+        combined = "".join(row)
+        if (
+            "不允许" in combined
+            or "只描述" in combined
+            or "暂不" in combined
+            or "待定" in combined
+            or "不能" in combined
+            or "未检出" in combined
+        ):
+            return "v-low"
+        if "排除" in combined or "暂停" in combined:
+            return "v-bad"
+        if "复核" in combined:
+            return "v-warn"
+        if "保留" in combined or "通过" in combined or "可以解释" in combined:
+            return "v-good"
+        if "上升" in combined:
+            return "v-bad"
+        if "下降" in combined:
+            return "v-mid"
+        return ("v-mid", "v-good", "v-warn")[index % 3]
+
+    parts: list[str] = []
+    header_line = "结果列：" + "｜".join(headers)
+    parts.append(svg_text(22, 27, header_line, "micro-column-label"))
+    if visual_type == "stacked":
+        height = 82 + 92 * len(rows)
+        cell_width = 125
+        for index, row in enumerate(rows):
+            y = 55 + 92 * index
+            row_title = html.escape("｜".join(row))
+            parts.append(
+                f'<g class="micro-data-row" data-row="{index + 1}"><title>{row_title}</title>'
+            )
+            parts.append(svg_text(22, y, row[0], "micro-row-label"))
+            for cell_index, cell in enumerate(row[1:]):
+                x = 22 + cell_index * cell_width
+                parts.append(
+                    f'<rect x="{x}" y="{y + 12}" width="116" height="42" rx="7" '
+                    f'class="{("v-mid", "v-good", "v-warn", "v-bad")[cell_index % 4]}"/>'
+                )
+                parts.append(svg_text(x + 6, y + 29, headers[cell_index + 1], "micro-cell-label"))
+                parts.append(svg_text(x + 6, y + 47, cell, "micro-cell-value"))
+            parts.append("</g>")
+    else:
+        for index, row in enumerate(rows):
+            y = 58 + 64 * index
+            label = " · ".join(row[:2])
+            detail = " ｜ ".join(
+                f"{headers[cell_index]}：{cell}"
+                for cell_index, cell in enumerate(row[2:], start=2)
+            )
+            row_class = color(index, row)
+            row_title = html.escape("｜".join(row))
+            data_value = "" if values[index] is None else f' data-value="{values[index]:g}"'
+            parts.append(
+                f'<g class="micro-data-row" data-row="{index + 1}"{data_value}>'
+                f"<title>{row_title}</title>"
+            )
+            if visual_type == "tree":
+                parts.append(f'<path d="M28 45V{y}H118" class="v-link"/>')
+                parts.append(f'<circle cx="118" cy="{y}" r="8" class="{row_class}"/>')
+            elif visual_type == "paired":
+                parts.append(f'<path d="M28 45V{y}H92" class="v-link"/>')
+                parts.append(f'<rect x="102" y="{y - 18}" width="44" height="38" rx="6" class="{row_class}"/>')
+            elif visual_type == "sequence":
+                parts.append(f'<rect x="22" y="{y - 19}" width="126" height="39" rx="5" class="{row_class}"/>')
+            elif visual_type == "chromosome":
+                parts.append(f'<path d="M72 {y - 25}V{y + 25}" class="v-chrom"/>')
+                parts.append(f'<circle cx="72" cy="{y}" r="8" class="{row_class}"/>')
+            elif visual_type == "links":
+                parts.append(f'<path d="M32 {y - 20}V{y + 20}M126 {y - 20}V{y + 20}" class="v-chrom"/>')
+                parts.append(f'<path d="M32 {y - 6}C68 {y - 6} 90 {y + 6} 126 {y + 6}" class="v-link"/>')
+            elif visual_type in {"matrix", "expression"}:
+                parts.append(
+                    f'<rect x="18" y="{y - 25}" width="712" height="52" rx="8" '
+                    f'class="{row_class}" opacity=".22"/>'
+                )
+            elif visual_type in {"scatter", "de"}:
+                x = 58 + magnitude(index)
+                parts.append(f'<path d="M30 {y + 25}H520" class="v-reference"/>')
+                parts.append(f'<circle cx="{x}" cy="{y}" r="10" class="{row_class}"/>')
+            elif visual_type == "curve":
+                x = 72 + index * 125
+                point_y = y - round(magnitude(index) / 8)
+                if index:
+                    previous_x = 72 + (index - 1) * 125
+                    previous_y = (58 + 64 * (index - 1)) - round(magnitude(index - 1) / 8)
+                    parts.append(f'<path d="M{previous_x} {previous_y}L{x} {point_y}" class="v-curve"/>')
+                parts.append(f'<circle cx="{x}" cy="{point_y}" r="8" class="{row_class}"/>')
+            elif visual_type == "decision":
+                parts.append(f'<rect x="18" y="{y - 24}" width="138" height="50" rx="8" class="{row_class}"/>')
+            else:
+                width = magnitude(index)
+                parts.append(f'<rect x="18" y="{y - 20}" width="{width}" height="39" rx="6" class="{row_class}" opacity=".28"/>')
+                parts.append(
+                    f'<path d="M18 {y + 23}H{18 + width}" class="v-reference"/>'
+                )
+                parts.append(f'<circle cx="{18 + width}" cy="{y}" r="9" class="{row_class}"/>')
+            text_x = 170 if visual_type not in {"matrix", "expression"} else 36
+            parts.append(svg_text(text_x, y - 5, label, "micro-row-label"))
+            parts.append(svg_text(text_x, y + 15, detail, "micro-row-value"))
+            parts.append("</g>")
+
     title = html.escape(example["visual_title_zh"])
     description = html.escape(
         f"横向说明：{example['x_axis_zh']}。纵向说明：{example['y_axis_zh']}。"
         f"颜色和符号：{example['legend_zh']}。"
     )
     return (
-        f'<svg class="analysis-micro-figure" viewBox="0 0 360 205" role="img" '
+        f'<svg class="analysis-micro-figure" viewBox="0 0 760 {height}" role="img" '
+        f'data-source-id="{html.escape(example["source_id"])}" data-result-rows="{len(rows)}" '
         f'aria-labelledby="micro-title-{source_slug} micro-desc-{source_slug}">'
         f'<title id="micro-title-{source_slug}">{title}</title>'
         f'<desc id="micro-desc-{source_slug}">{description}</desc>'
-        f'<g class="analysis-micro-shapes">{shapes[visual_type]}</g></svg>'
+        f'<g class="analysis-micro-shapes">{"".join(parts)}</g></svg>'
     )
 
 
