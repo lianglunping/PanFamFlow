@@ -13,6 +13,11 @@ import math
 import re
 from pathlib import Path
 
+try:
+    from tutorial_title_contract import PROFESSIONAL_ANALYSIS_TITLE_OVERRIDES
+except ModuleNotFoundError:  # Loaded as a module from the repository root in tests.
+    from scripts.tutorial_title_contract import PROFESSIONAL_ANALYSIS_TITLE_OVERRIDES
+
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_PATH = ROOT / "docs" / "TUTORIAL_BEGINNER_LANGUAGE.tsv"
 EXAMPLES_PATH = ROOT / "docs" / "TUTORIAL_ANALYSIS_EXAMPLES.tsv"
@@ -126,18 +131,6 @@ CHAPTER_TEN_ITEM_CONTEXT = {
     source_id: (group_index, label)
     for group_index, (label, source_ids) in enumerate(CHAPTER_TEN_GROUPS, start=1)
     for source_id in source_ids
-}
-ADVANCED_TITLE_OVERRIDES = {
-    "6.1": "物种系统树与正交组有无聚类（两类对象分开）",
-    "6.2": "正交组成员与占有明细",
-    "6.3": "正交组质量综合评估",
-    "6.4": "目标家族占有类型双分母分布",
-    "9.1": "正交组内成对 Ka/Ks 分析",
-    "9.2": "物种间正交组配对 Ka/Ks 分析",
-    "10.12": "正交组层面的启动子分布",
-    "11.3": "差异表达基因跨条件重叠分析（全条件汇总）",
-    "11.4": "非生物胁迫响应",
-    "11.5": "生物胁迫响应",
 }
 DEFAULT_BEGINNER_CONDITION = "前一项结果已经看懂，材料名称和结果没有缺项；有疑问时先返回本章说明。"
 CHAPTER_ACTIONS = {
@@ -311,7 +304,7 @@ def read_advanced_titles() -> dict[str, str]:
     with COVERAGE_PATH.open(encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle, delimiter="\t"))
     titles = {row["source_id"]: row["source_title"] for row in rows}
-    titles.update(ADVANCED_TITLE_OVERRIDES)
+    titles.update(PROFESSIONAL_ANALYSIS_TITLE_OVERRIDES)
     if list(titles) != EXPECTED_IDS:
         raise ValueError("Coverage source IDs no longer match the frozen 58-item order")
     return titles
@@ -598,8 +591,8 @@ def replace_card(
     )
     card, count = re.subn(
         r'(<header class="analysis-head">.*?<h3>).*?(</h3>)',
-        rf'\1<span class="beginner-title">{beginner_title}</span>'
-        rf'<span class="advanced-title">{advanced_title}</span>\2',
+        rf'\1<span class="advanced-title">{advanced_title}</span>'
+        rf'<span class="beginner-title">{beginner_title}</span>\2',
         card,
         count=1,
         flags=re.DOTALL,
@@ -651,8 +644,8 @@ def render(source: str) -> str:
             pattern = rf'<a href="#analysis-{re.escape(source_id.replace(".", "-"))}">.*?</a>'
             replacement = (
                 f'<a href="#analysis-{source_id.replace(".", "-")}">'
-                f'<span class="beginner-title">{source_id} {beginner}</span>'
-                f'<span class="advanced-title">{source_id} {advanced}</span></a>'
+                f'<span class="advanced-title">{source_id} {advanced}</span>'
+                f'<span class="beginner-title">{beginner}</span></a>'
             )
             nav, link_count = re.subn(pattern, replacement, nav, count=1, flags=re.DOTALL)
             quick_nav_replacements += link_count
@@ -679,8 +672,8 @@ def render(source: str) -> str:
         else:
             advanced = re.sub(r"<[^>]+>", "", current_inner)
         replacement = (
-            rf'\1<span class="beginner-title">{html.escape(beginner)}</span>'
-            rf'<span class="advanced-title">{advanced}</span>\3'
+            rf'\1<span class="advanced-title">{advanced}</span>'
+            rf'<span class="beginner-title">{html.escape(beginner)}</span>\3'
         )
         rendered = re.sub(pattern, replacement, rendered, count=1, flags=re.DOTALL)
     return re.sub(r"^[ \t]+$", "", rendered, flags=re.MULTILINE)

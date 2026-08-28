@@ -300,14 +300,14 @@ def test_beginner_cards_show_only_the_plain_language_contract() -> None:
         'html[data-learning-mode="beginner"] .analysis-takeaway',
         'html[data-learning-mode="beginner"] .analysis-tabs',
         'html[data-learning-mode="beginner"] .analysis-panels',
-        'html[data-learning-mode="beginner"] .analysis-head .source-id',
         'html[data-learning-mode="beginner"] .analysis-head .state-badge',
         'html[data-learning-mode="beginner"] .technical-note',
     ):
         assert hidden_selector in css
+    assert 'html[data-learning-mode="beginner"] .analysis-head .source-id' not in css
 
 
-def test_beginner_navigation_and_chapter_intros_avoid_unexplained_jargon() -> None:
+def test_beginner_explanations_stay_plain_beneath_professional_titles() -> None:
     parser = parse_html()
 
     def is_inside_sidebar(node: Node) -> bool:
@@ -318,20 +318,31 @@ def test_beginner_navigation_and_chapter_intros_avoid_unexplained_jargon() -> No
             parent = parent.parent
         return False
 
-    plain_regions = (
-        nodes_with_class(parser, "mindmap-stage")
-        + nodes_with_class(parser, "beginner-chapter-intro")
-        + [node for node in parser.all_nodes if node.tag == "small" and is_inside_sidebar(node)]
-    )
     assert len(nodes_with_class(parser, "mindmap-stage")) == 4
     assert len(nodes_with_class(parser, "mindmap-branch")) == 8
     assert len(nodes_with_class(parser, "beginner-chapter-intro")) == 8
 
+    plain_regions = (
+        nodes_with_class(parser, "mindmap-analysis-copy")
+        + [node for node in parser.all_nodes if node.tag == "small" and is_inside_sidebar(node)]
+    )
     for node in plain_regions:
+        if "mindmap-analysis-copy" in node.classes:
+            node = next(child for child in node.descendants() if child.tag == "small")
         text = re.sub(r"\s+", " ", node.all_text()).strip()
         assert text
         assert re.search(r"[A-Za-z]", text) is None, text
         assert all(term not in text for term in BEGINNER_FORBIDDEN_JARGON), text
+
+    professional_titles = [
+        node.all_text().strip()
+        for copy in nodes_with_class(parser, "mindmap-analysis-copy")
+        for node in copy.descendants()
+        if node.tag == "strong"
+    ]
+    assert len(professional_titles) == 58
+    assert "核心结构域氨基酸序列 Logo" in professional_titles
+    assert "正交组内成对 Ka/Ks 分析" in professional_titles
 
     html = HTML_PATH.read_text(encoding="utf-8")
     for hidden_selector in (
@@ -499,9 +510,10 @@ def test_beginner_mode_defines_its_five_required_basic_concepts() -> None:
     assert re.search(r"[A-Za-z]", text) is None
 
     map_text = re.sub(r"\s+", " ", chapter_map.all_text()).strip()
-    assert "58 项分析怎样连成一个故事" in map_text
+    assert "泛基因家族分析课程图谱：8 个专业大节、58 项分析" in map_text
+    assert "58 / 58 项全部可见" in map_text
     assert "可靠成员 → 结构与位置 → 来源与变化 → 实际活跃条件" in map_text
-    assert "第 4 章是共同起点" in map_text
+    assert "专业大节 4 → 11 顺序学习" in map_text
 
 
 def test_mindmap_and_chapter_lessons_form_a_complete_learning_route() -> None:
@@ -524,8 +536,30 @@ def test_mindmap_and_chapter_lessons_form_a_complete_learning_route() -> None:
     assert len(intros) == 8
     start_links = nodes_with_class(parser, "mindmap-start")
     assert len(start_links) == 8
-    assert all(link.parent is not None and link.parent.tag == "article" for link in start_links)
     assert [link.attrs["href"] for link in start_links] == [f"#chapter-{i}" for i in range(4, 12)]
+
+    items = nodes_with_class(parser, "mindmap-analysis-item")
+    assert len(items) == 58
+    assert all(node.tag == "li" for node in items)
+    assert sum("implemented" in node.classes for node in items) == 53
+    assert sum("conditionally_available" in node.classes for node in items) == 5
+    assert not any(node.tag == "details" for node in branches)
+    assert len(nodes_with_class(parser, "mindmap-analysis-state")) == 58
+
+    map_titles = {
+        item.attrs.get("href", "").removeprefix("#analysis-").replace("-", ".", 1):
+        next(node for node in item.descendants() if node.tag == "strong").all_text().strip()
+        for analysis_list in analysis_lists
+        for item in analysis_list.descendants()
+        if item.tag == "a" and item.attrs.get("href", "").startswith("#analysis-")
+    }
+    cards = {
+        card.attrs["data-source-id"]: next(
+            node for node in card.descendants() if "advanced-title" in node.classes
+        ).all_text().strip()
+        for card in nodes_with_class(parser, "analysis-card")
+    }
+    assert map_titles == cards
 
     expected_diagrams = {
         "member_funnel",

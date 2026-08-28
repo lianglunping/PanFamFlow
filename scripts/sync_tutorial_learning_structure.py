@@ -13,9 +13,21 @@ import re
 from collections import defaultdict
 from pathlib import Path
 
+try:
+    from tutorial_title_contract import (
+        PROFESSIONAL_CHAPTER_TITLES,
+        professional_analysis_title,
+    )
+except ModuleNotFoundError:  # Loaded as a module from the repository root in tests.
+    from scripts.tutorial_title_contract import (
+        PROFESSIONAL_CHAPTER_TITLES,
+        professional_analysis_title,
+    )
+
 ROOT = Path(__file__).resolve().parents[1]
 LESSONS_PATH = ROOT / "docs" / "TUTORIAL_CHAPTER_LESSONS.tsv"
 LANGUAGE_PATH = ROOT / "docs" / "TUTORIAL_BEGINNER_LANGUAGE.tsv"
+COVERAGE_PATH = ROOT / "docs" / "ANALYSIS_COVERAGE.tsv"
 EXAMPLES_PATH = ROOT / "docs" / "TUTORIAL_COURSE_EXAMPLES.tsv"
 HTML_PATH = ROOT / "docs" / "index.html"
 
@@ -172,8 +184,13 @@ def read_rows(path: Path, expected_fields: tuple[str, ...]) -> list[dict[str, st
 
 def render_analysis_links(rows: list[dict[str, str]]) -> str:
     return "".join(
-        f'<li><a href="#analysis-{row["source_id"].replace(".", "-")}">'
-        f"{html.escape(row['source_id'])} {html.escape(row['beginner_title_zh'])}</a></li>"
+        f'<li class="mindmap-analysis-item {row["state"].lower()}">'
+        f'<a href="#analysis-{row["source_id"].replace(".", "-")}">'
+        f'<span class="mindmap-analysis-number">{html.escape(row["source_id"])}</span>'
+        f'<span class="mindmap-analysis-copy"><strong>{html.escape(row["professional_title_zh"])}</strong>'
+        f'<small>{html.escape(row["beginner_title_zh"])}</small></span>'
+        f'<span class="mindmap-analysis-state">'
+        f'{"已实现" if row["state"] == "IMPLEMENTED" else "有条件可用"}</span></a></li>'
         for row in rows
     )
 
@@ -190,32 +207,35 @@ def render_mindmap(
         for row in lessons_by_stage[stage_id]:
             chapter = row["chapter"]
             branches.append(
-                f'<details class="mindmap-branch" data-chapter="{chapter}">'
-                f'<summary><span class="mindmap-chapter">第 {chapter} 章</span>'
-                f"<span><strong>{html.escape(row['chapter_title_zh'])}</strong>"
-                f"<small>{html.escape(row['question_zh'])}</small></span>"
-                f"<em>{row['analysis_count']} 项</em></summary>"
+                f'<article class="mindmap-branch" data-chapter="{chapter}">'
+                f'<header class="mindmap-branch-heading"><span class="mindmap-chapter">{chapter}</span>'
+                f'<span><strong>{html.escape(PROFESSIONAL_CHAPTER_TITLES[chapter])}</strong>'
+                f'<small>通俗理解：{html.escape(row["chapter_title_zh"])}</small></span>'
+                f'<em>{row["analysis_count"]} 项</em></header>'
                 '<div class="mindmap-branch-body">'
+                f'<p class="mindmap-chapter-question">本节回答：{html.escape(row["question_zh"])}</p>'
                 f"<p><b>接着哪里：</b>{html.escape(row['dependency_zh'])}</p>"
                 f"<p><b>主要得到：</b>{html.escape(row['output_label_zh'])}</p>"
                 '<ol class="mindmap-analysis-list">'
                 f"{render_analysis_links(language_by_chapter[chapter])}</ol>"
-                "</div></details>"
-                f'<a class="mindmap-start button" href="#chapter-{chapter}">开始第 {chapter} 章</a>'
+                f'<a class="mindmap-start button" href="#chapter-{chapter}">学习{html.escape(PROFESSIONAL_CHAPTER_TITLES[chapter])}</a>'
+                "</div></article>"
             )
         stage_html.append(
             f'<article class="mindmap-stage" data-stage="{stage_id}">'
             f'<header><span class="mindmap-stage-number">{stage_id}</span><div><h3>{stage_title}</h3>'
-            f"<p>{stage_text}</p></div></header>{''.join(branches)}</article>"
+            f'<p>{stage_text}</p></div></header><div class="mindmap-stage-chapters">'
+            f"{''.join(branches)}</div></article>"
         )
     return (
         "<!-- BEGIN TUTORIAL_MINDMAP -->\n"
         '<section class="reference-section chapter-map beginner-only" id="chapter-map">'
-        "<h2>先看全图：58 项分析怎样连成一个故事</h2>"
-        '<p class="chapter-map-lead">中心问题不是“要画多少张图”，而是：从多个材料中找到可靠家族成员，说明它们长什么样、在哪里、怎样产生和变化，最后看它们在什么条件下活跃。</p>'
+        "<h2>泛基因家族分析课程图谱：8 个专业大节、58 项分析</h2>"
+        '<p class="chapter-map-lead">这不是摘要，也不是折叠菜单。下面按研究顺序完整列出 58 项分析；专业标题是课程目录，标题下的一句话负责解释“这一项在做什么”。</p>'
+        '<div class="mindmap-summary" aria-label="课程覆盖摘要"><strong>58 / 58 项全部可见</strong><span>8 个专业大节</span><span>53 项已实现</span><span>5 项有条件可用</span></div>'
         '<div class="mindmap-root"><strong>研究一个目标基因家族</strong><span>可靠成员 → 结构与位置 → 来源与变化 → 实际活跃条件</span></div>'
         f'<div class="mindmap-stages">{"".join(stage_html)}</div>'
-        '<div class="beginner-note"><span aria-hidden="true">↓</span><div><strong>建议顺序：</strong>第一次学习请按 1 → 4 走；每个分支都能展开查看该章全部分析。第 4 章是共同起点，后面的箭头表示需要前一章提供的结果。</div></div>'
+        '<div class="beginner-note"><span aria-hidden="true">↓</span><div><strong>建议顺序：</strong>第一次学习请按阶段 1 → 4、专业大节 4 → 11 顺序学习。点击任一专业小节，可直接进入该项的基础知识、分析方法和结果解读。</div></div>'
         "</section>\n<!-- END TUTORIAL_MINDMAP -->"
     )
 
@@ -345,7 +365,8 @@ def render_chapter_intro(
     return (
         f'<section class="beginner-chapter-intro" data-chapter="{row["chapter"]}">'
         '<div class="chapter-lesson-heading"><div><span class="lesson-label">本章学习路线</span>'
-        f"<h3>{html.escape(row['chapter_title_zh'])}</h3>"
+        f"<h3>{html.escape(PROFESSIONAL_CHAPTER_TITLES[row['chapter']])}</h3>"
+        f'<p class="chapter-plain-title">通俗理解：{html.escape(row["chapter_title_zh"])}</p>'
         f'<p class="beginner-chapter-question">{html.escape(row["question_zh"])}</p></div>'
         f'<span class="lesson-count">{row["analysis_count"]} 项分析</span></div>'
         '<div class="chapter-lesson-layout">'
@@ -396,9 +417,21 @@ def render(source: str) -> str:
             "beginner_warning_zh",
         ),
     )
+    coverage_rows = read_rows(
+        COVERAGE_PATH,
+        ("source_id", "source_title", "state", "evidence", "output", "limitation", "tutorial_anchor"),
+    )
+    if [row["source_id"] for row in coverage_rows] != [row["source_id"] for row in language_rows]:
+        raise ValueError("Coverage and beginner-language rows must use the same frozen order")
+    coverage = {row["source_id"]: row for row in coverage_rows}
     language_by_chapter: dict[str, list[dict[str, str]]] = defaultdict(list)
     language = {}
     for row in language_rows:
+        coverage_row = coverage[row["source_id"]]
+        row["professional_title_zh"] = professional_analysis_title(
+            row["source_id"], coverage_row["source_title"]
+        )
+        row["state"] = coverage_row["state"]
         language_by_chapter[row["source_id"].split(".", 1)[0]].append(row)
         language[row["source_id"]] = row
     if {chapter: len(rows) for chapter, rows in language_by_chapter.items()} != EXPECTED_COUNTS:
