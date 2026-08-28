@@ -9,11 +9,13 @@ from __future__ import annotations
 import argparse
 import csv
 import html
+import math
 import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_PATH = ROOT / "docs" / "TUTORIAL_BEGINNER_LANGUAGE.tsv"
+EXAMPLES_PATH = ROOT / "docs" / "TUTORIAL_ANALYSIS_EXAMPLES.tsv"
 COVERAGE_PATH = ROOT / "docs" / "ANALYSIS_COVERAGE.tsv"
 HTML_PATH = ROOT / "docs" / "index.html"
 
@@ -26,6 +28,74 @@ FIELDS = (
     "beginner_read_zh",
     "beginner_warning_zh",
 )
+EXAMPLE_FIELDS = (
+    "source_id",
+    "concept_zh",
+    "why_zh",
+    "input_headers_zh",
+    "input_row_zh",
+    "operation_zh",
+    "visual_type",
+    "visual_title_zh",
+    "x_axis_zh",
+    "y_axis_zh",
+    "legend_zh",
+    "output_headers_zh",
+    "output_rows_zh",
+    "plot_value_source_column_zh",
+    "plot_color_source_column_zh",
+    "plot_values",
+    "plot_colors",
+    "plot_value_label_zh",
+    "reading_question_zh",
+    "reading_answer_zh",
+    "normal_zh",
+    "stop_zh",
+    "next_zh",
+)
+SUPPORTED_VISUALS = {
+    "decision",
+    "tree",
+    "matrix",
+    "sequence",
+    "distribution",
+    "comparison",
+    "curve",
+    "chromosome",
+    "links",
+    "scatter",
+    "bars",
+    "expression",
+    "paired",
+    "stacked",
+    "multi_indicator",
+    "de",
+    "test",
+}
+PLOT_COLOR_CLASSES = {
+    "blue": "v-mid",
+    "green": "v-good",
+    "orange": "v-warn",
+    "red": "v-bad",
+    "grey": "v-low",
+    "neutral": "v-neutral",
+    "purple": "v-purple",
+}
+PLOT_COLOR_LABELS = {
+    "blue": "蓝色",
+    "green": "绿色",
+    "orange": "橙色",
+    "red": "红色",
+    "grey": "灰色",
+    "neutral": "白色",
+    "purple": "紫色",
+}
+PLOT_VALUE_SPECIAL_SOURCES = {"教学行序"}
+PLOT_COLOR_SPECIAL_SOURCES = {"plot_values连续色", "固定教学色"}
+PLOT_SOURCE_DISPLAY = {
+    "plot_values连续色": "绘图数值的连续颜色",
+    "固定教学色": "固定教学颜色",
+}
 EXPECTED_IDS = (
     [f"4.{index}" for index in range(1, 5)]
     + [f"5.{index}" for index in range(1, 7)]
@@ -123,6 +193,120 @@ def read_tsv(path: Path) -> list[dict[str, str]]:
     return rows
 
 
+def split_cells(value: str) -> list[str]:
+    return [item.strip() for item in value.split("｜")]
+
+
+def parse_plot_contract(example: dict[str, str], row_count: int) -> tuple[list[float], list[str]]:
+    source_id = example["source_id"]
+    value_cells = split_cells(example["plot_values"])
+    color_tokens = split_cells(example["plot_colors"])
+    if len(value_cells) != row_count or len(color_tokens) != row_count:
+        raise ValueError(f"Plot contract length mismatch for {source_id}")
+    try:
+        values = [float(item) for item in value_cells]
+    except ValueError as exc:
+        raise ValueError(f"Non-numeric plot value for {source_id}") from exc
+    if not all(math.isfinite(item) for item in values):
+        raise ValueError(f"Non-finite plot value for {source_id}")
+    invalid_colors = set(color_tokens) - set(PLOT_COLOR_CLASSES)
+    if invalid_colors:
+        raise ValueError(f"Invalid plot colors for {source_id}: {sorted(invalid_colors)}")
+    return values, color_tokens
+
+
+def validate_plot_source_contract(
+    example: dict[str, str], headers: list[str], rows: list[list[str]]
+) -> None:
+    source_id = example["source_id"]
+    value_source = example["plot_value_source_column_zh"]
+    color_source = example["plot_color_source_column_zh"]
+    if value_source not in headers and value_source not in PLOT_VALUE_SPECIAL_SOURCES:
+        raise ValueError(f"Plot value source is not an output column for {source_id}")
+    if example["plot_value_label_zh"] != value_source:
+        raise ValueError(f"Plot value label does not match its source for {source_id}")
+    if color_source not in headers and color_source not in PLOT_COLOR_SPECIAL_SOURCES:
+        raise ValueError(f"Plot color source is not an output column for {source_id}")
+
+    values, colors = parse_plot_contract(example, len(rows))
+    if value_source == "教学行序" and values != list(range(1, len(rows) + 1)):
+        raise ValueError(f"Teaching row order is not 1..n in {source_id}")
+    if color_source in headers:
+        source_index = headers.index(color_source)
+        mapping: dict[str, str] = {}
+        for row, color in zip(rows, colors, strict=True):
+            source_value = row[source_index]
+            previous = mapping.setdefault(source_value, color)
+            if previous != color:
+                raise ValueError(
+                    f"Inconsistent color for {color_source}={source_value} in {source_id}"
+                )
+        return
+    if color_source == "固定教学色":
+        if len(set(colors)) != 1:
+            raise ValueError(f"Fixed teaching color varies within {source_id}")
+        return
+
+    has_negative = any(value < 0 for value in values)
+    non_grey_colors = {color for color in colors if color != "grey"}
+    if not has_negative and len(non_grey_colors) > 1:
+        raise ValueError(f"Continuous non-negative color uses multiple base colors in {source_id}")
+    for row, value, color in zip(rows, values, colors, strict=True):
+        row_text = "｜".join(row)
+        if color == "grey":
+            if not re.search(r"缺失|不计算|不能解释|只描述方向|先暂停", row_text):
+                raise ValueError(f"Grey continuous row lacks an explicit stop state in {source_id}")
+        elif value < 0 and color != "blue":
+            raise ValueError(f"Negative continuous value is not blue in {source_id}")
+        elif has_negative and value == 0 and color != "neutral":
+            raise ValueError(f"Zero signed value is not neutral in {source_id}")
+        elif has_negative and value > 0 and color != "red":
+            raise ValueError(f"Positive signed value is not red in {source_id}")
+
+
+def format_plot_value(value: float) -> str:
+    """Render a validated finite plot value without scientific notation."""
+    if value == 0:
+        return "0"
+    if value.is_integer():
+        return str(int(value))
+    return f"{value:.15f}".rstrip("0").rstrip(".")
+
+
+def plot_source_display(value: str) -> str:
+    return PLOT_SOURCE_DISPLAY.get(value, value)
+
+
+def read_examples() -> list[dict[str, str]]:
+    with EXAMPLES_PATH.open(encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle, delimiter="\t")
+        if tuple(reader.fieldnames or ()) != EXAMPLE_FIELDS:
+            raise ValueError(f"Unexpected columns in {EXAMPLES_PATH}: {reader.fieldnames}")
+        rows = list(reader)
+    if [row["source_id"] for row in rows] != EXPECTED_IDS:
+        raise ValueError("Analysis-example source IDs must be the frozen 58-item order")
+    for row in rows:
+        source_id = row["source_id"]
+        for field in EXAMPLE_FIELDS[1:]:
+            if not row[field].strip():
+                raise ValueError(f"Blank {field} for {source_id}")
+        if row["visual_type"] not in SUPPORTED_VISUALS:
+            raise ValueError(f"Unsupported visual type for {source_id}: {row['visual_type']}")
+        input_headers = split_cells(row["input_headers_zh"])
+        input_values = split_cells(row["input_row_zh"])
+        if len(input_headers) < 2 or len(input_headers) != len(input_values):
+            raise ValueError(f"Input example has mismatched columns for {source_id}")
+        output_headers = split_cells(row["output_headers_zh"])
+        output_rows = [split_cells(item) for item in row["output_rows_zh"].split("；")]
+        if len(output_headers) < 2 or len(output_rows) < 2:
+            raise ValueError(f"Output example is too small for {source_id}")
+        if any(len(item) != len(output_headers) for item in output_rows):
+            raise ValueError(f"Output example has mismatched columns for {source_id}")
+        parse_plot_contract(row, len(output_rows))
+        validate_plot_source_contract(row, output_headers, output_rows)
+    return rows
+
+
 def read_advanced_titles() -> dict[str, str]:
     with COVERAGE_PATH.open(encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle, delimiter="\t"))
@@ -133,15 +317,199 @@ def read_advanced_titles() -> dict[str, str]:
     return titles
 
 
-def beginner_guide(row: dict[str, str]) -> str:
+def render_table(headers: list[str], rows: list[list[str]], class_name: str) -> str:
+    head = "".join(f'<th scope="col">{html.escape(item)}</th>' for item in headers)
+    body = "".join(
+        "<tr>" + "".join(f"<td>{html.escape(item)}</td>" for item in row) + "</tr>" for row in rows
+    )
+    return (
+        f'<div class="analysis-table-scroll" tabindex="0"><table class="{class_name}">'
+        f"<thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>"
+    )
+
+
+def svg_text(x: int, y: int, value: str, class_name: str) -> str:
+    escaped = html.escape(value)
+    fit = ' textLength="505" lengthAdjust="spacingAndGlyphs"' if len(value) > 34 else ""
+    return f'<text x="{x}" y="{y}" class="{class_name}"{fit}>{escaped}</text>'
+
+
+def micro_svg(example: dict[str, str]) -> str:
+    source_slug = example["source_id"].replace(".", "-")
+    visual_type = example["visual_type"]
+    headers = split_cells(example["output_headers_zh"])
+    rows = [split_cells(item) for item in example["output_rows_zh"].split("；")]
+    height = 94 + 78 * len(rows)
+    values, color_tokens = parse_plot_contract(example, len(rows))
+    max_abs = max((abs(item) for item in values), default=1) or 1
+    non_grey_values = [
+        abs(value) for value, token in zip(values, color_tokens, strict=True) if token != "grey"
+    ]
+    min_continuous = min(non_grey_values, default=0)
+    max_continuous = max(non_grey_values, default=1)
+
+    def magnitude(index: int, low: int = 24, high: int = 128) -> int:
+        return round(low + (high - low) * abs(values[index]) / max_abs)
+
+    def matrix_opacity(index: int) -> float:
+        if color_tokens[index] == "grey":
+            return 0.24
+        span = max_continuous - min_continuous
+        proportion = 1 if span == 0 else (abs(values[index]) - min_continuous) / span
+        return 0.22 + 0.62 * proportion
+
+    parts: list[str] = []
+    header_line = "结果列：" + "｜".join(headers)
+    parts.append(svg_text(22, 27, header_line, "micro-column-label"))
+    for index, row in enumerate(rows):
+        y = 60 + 78 * index
+        label = " · ".join(row[:2])
+        detail = " ｜ ".join(
+            f"{headers[cell_index]}：{cell}" for cell_index, cell in enumerate(row[2:], start=2)
+        )
+        row_class = PLOT_COLOR_CLASSES[color_tokens[index]]
+        row_title = html.escape("｜".join(row))
+        parts.append(
+            f'<g class="micro-data-row" data-row="{index + 1}" '
+            f'data-plot-value="{format_plot_value(values[index])}" '
+            f'data-plot-color="{color_tokens[index]}">'
+            f"<title>{row_title}</title>"
+        )
+        if visual_type == "tree":
+            endpoint = 20 + magnitude(index)
+            parts.append(f'<path d="M20 39V{y}H{endpoint}" class="v-link"/>')
+            parts.append(f'<circle cx="{endpoint}" cy="{y}" r="8" class="{row_class}"/>')
+        elif visual_type == "paired":
+            endpoint = 32 + magnitude(index)
+            parts.append(f'<path d="M28 {y}H{endpoint}" class="v-link"/>')
+            parts.append(
+                f'<rect x="{endpoint - 18}" y="{y - 18}" width="36" height="36" rx="6" class="{row_class}"/>'
+            )
+        elif visual_type == "sequence":
+            parts.append(
+                f'<rect x="22" y="{y - 19}" width="{magnitude(index)}" height="39" rx="5" class="{row_class}"/>'
+            )
+        elif visual_type == "chromosome":
+            position = 22 + round(126 * abs(values[index]) / max_abs)
+            parts.append(f'<path d="M22 {y}H148" class="v-chrom"/>')
+            parts.append(f'<circle cx="{position}" cy="{y}" r="8" class="{row_class}"/>')
+        elif visual_type == "links":
+            endpoint = 32 + magnitude(index)
+            parts.append(
+                f'<path d="M32 {y - 20}V{y + 20}M{endpoint} {y - 20}V{y + 20}" class="v-chrom"/>'
+            )
+            parts.append(
+                f'<path d="M32 {y - 6}C68 {y - 6} 90 {y + 6} {endpoint} {y + 6}" class="v-link"/>'
+            )
+        elif visual_type in {"matrix", "expression"}:
+            parts.append(
+                f'<rect x="18" y="{y - 25}" width="712" height="52" rx="8" '
+                f'class="{row_class}" opacity="{matrix_opacity(index):.2f}"/>'
+            )
+        elif visual_type in {"scatter", "de"}:
+            x = 84 + round(62 * values[index] / max_abs)
+            parts.append(f'<path d="M22 {y + 25}H148" class="v-reference"/>')
+            parts.append(f'<circle cx="{x}" cy="{y}" r="10" class="{row_class}"/>')
+        elif visual_type == "curve":
+            x = 72 + index * 125
+            point_y = y - round(30 * abs(values[index]) / max_abs)
+            if index:
+                previous_x = 72 + (index - 1) * 125
+                previous_y = (60 + 78 * (index - 1)) - round(30 * abs(values[index - 1]) / max_abs)
+                parts.append(
+                    f'<path d="M{previous_x} {previous_y}L{x} {point_y}" class="v-curve"/>'
+                )
+            parts.append(f'<circle cx="{x}" cy="{point_y}" r="8" class="{row_class}"/>')
+        elif visual_type == "decision":
+            parts.append(
+                f'<rect x="18" y="{y - 24}" width="{magnitude(index)}" height="50" rx="8" class="{row_class}"/>'
+            )
+        else:
+            width = magnitude(index)
+            start = 84 if values[index] >= 0 else 84 - width
+            parts.append(
+                f'<rect x="{start}" y="{y - 20}" width="{width}" height="39" rx="6" class="{row_class}" opacity=".36"/>'
+            )
+            parts.append(f'<path d="M22 {y + 23}H148" class="v-reference"/>')
+            endpoint = start + width if values[index] >= 0 else start
+            parts.append(f'<circle cx="{endpoint}" cy="{y}" r="9" class="{row_class}"/>')
+        text_x = 170 if visual_type not in {"matrix", "expression"} else 36
+        parts.append(svg_text(text_x, y - 5, label, "micro-row-label"))
+        parts.append(svg_text(text_x, y + 15, detail, "micro-row-value"))
+        contract_text = (
+            f"{example['plot_value_label_zh']}：{format_plot_value(values[index])}；"
+            f"颜色：{PLOT_COLOR_LABELS[color_tokens[index]]}"
+        )
+        parts.append(svg_text(text_x, y + 34, contract_text, "micro-plot-contract"))
+        parts.append("</g>")
+
+    title = html.escape(example["visual_title_zh"])
+    description = html.escape(
+        f"横向说明：{example['x_axis_zh']}。纵向说明：{example['y_axis_zh']}。"
+        f"颜色和符号：{example['legend_zh']}。显式绘图值：{example['plot_value_label_zh']}。"
+        f"绘图值来自结果列：{plot_source_display(example['plot_value_source_column_zh'])}。"
+        f"颜色来自：{plot_source_display(example['plot_color_source_column_zh'])}。"
+        "逐行颜色：" + "、".join(PLOT_COLOR_LABELS[item] for item in color_tokens) + "。"
+    )
+    return (
+        f'<svg class="analysis-micro-figure" viewBox="0 0 760 {height}" role="img" '
+        f'data-source-id="{html.escape(example["source_id"])}" data-result-rows="{len(rows)}" '
+        f'aria-labelledby="micro-title-{source_slug} micro-desc-{source_slug}">'
+        f'<title id="micro-title-{source_slug}">{title}</title>'
+        f'<desc id="micro-desc-{source_slug}">{description}</desc>'
+        f'<g class="analysis-micro-shapes">{"".join(parts)}</g></svg>'
+    )
+
+
+def micro_lesson(example: dict[str, str]) -> str:
+    value = {key: html.escape(example[key], quote=True) for key in EXAMPLE_FIELDS}
+    input_table = render_table(
+        split_cells(example["input_headers_zh"]),
+        [split_cells(example["input_row_zh"])],
+        "analysis-input-table",
+    )
+    output_table = render_table(
+        split_cells(example["output_headers_zh"]),
+        [split_cells(item) for item in example["output_rows_zh"].split("；")],
+        "analysis-example-table",
+    )
+    return (
+        '<div class="analysis-micro-lesson">'
+        '<div class="analysis-foundation-grid">'
+        f"<div><h4>先懂一个概念</h4><p>{value['concept_zh']}</p></div>"
+        f'<div><h4 class="analysis-why-title">为什么要做</h4><p>{value["why_zh"]}</p></div></div>'
+        "<h4>看一条具体输入记录</h4>"
+        f"{input_table}"
+        f'<p class="analysis-operation"><strong>本项怎样处理：</strong>{value["operation_zh"]}</p>'
+        '<div class="analysis-result-grid"><figure>'
+        f"{micro_svg(example)}"
+        "<figcaption><b>横向说明：</b>"
+        f"{value['x_axis_zh']}<br><b>纵向说明：</b>{value['y_axis_zh']}"
+        f"<br><b>图中颜色与符号：</b>{value['legend_zh']}"
+        f"<br><b>本图显式数值：</b>{value['plot_value_label_zh']}（按结果表行顺序）"
+        f"<br><b>绘图值来自：</b>{plot_source_display(example['plot_value_source_column_zh'])}"
+        f"<br><b>颜色来自：</b>{plot_source_display(example['plot_color_source_column_zh'])}"
+        "<br><b>逐行颜色：</b>"
+        + "、".join(PLOT_COLOR_LABELS[item] for item in split_cells(example["plot_colors"]))
+        + "</figcaption></figure>"
+        "<div><h4>用结果小表核对图</h4>"
+        f"{output_table}</div></div>"
+        f'<details class="analysis-reading-check"><summary>先试着回答：{value["reading_question_zh"]}</summary>'
+        f"<p><strong>参考答案：</strong>{value['reading_answer_zh']}</p></details>"
+        '<div class="analysis-verdict-grid">'
+        f'<div class="analysis-normal"><h4>看到什么算正常</h4><p>{value["normal_zh"]}</p></div>'
+        f'<div class="analysis-stop"><h4>什么情况先暂停</h4><p>{value["stop_zh"]}</p></div></div>'
+        f'<p class="analysis-next"><strong>这项完成后：</strong>{value["next_zh"]}</p>'
+        '<p class="analysis-teaching-note">本页数值只用于练习读图，不代表真实水稻分析结果。</p>'
+        "</div>"
+    )
+
+
+def beginner_guide(row: dict[str, str], example: dict[str, str]) -> str:
     value = {key: html.escape(row[key], quote=True) for key in FIELDS}
     condition = html.escape(
         CONDITIONAL_BEGINNER_CONDITIONS.get(row["source_id"], DEFAULT_BEGINNER_CONDITION),
         quote=True,
-    )
-    chapter = row["source_id"].split(".", 1)[0]
-    action = html.escape(
-        ITEM_ACTION_OVERRIDES.get(row["source_id"], CHAPTER_ACTIONS[chapter]), quote=True
     )
     location = ""
     if row["source_id"] in CHAPTER_TEN_ITEM_CONTEXT:
@@ -165,10 +533,7 @@ def beginner_guide(row: dict[str, str]) -> str:
         "<div><h5>按什么顺序看</h5>"
         f"<p>{value['beginner_read_zh']}</p></div>"
         "</div>"
-        '<div class="beginner-bridge"><span><strong>一条输入记录</strong>'
-        f'{value["beginner_input_zh"]}</span><b aria-hidden="true">→</b>'
-        f'<span><strong>本项怎样处理</strong>{action}</span><b aria-hidden="true">→</b>'
-        f"<span><strong>在结果中看到</strong>{value['beginner_output_zh']}</span></div>"
+        f"{micro_lesson(example)}"
         '<p class="beginner-warning"><strong>不要这样理解：</strong>'
         f"{value['beginner_warning_zh']}</p>"
         '<p class="beginner-condition"><strong>继续前先确认：</strong>'
@@ -206,6 +571,7 @@ def beginner_analysis_nav(source_id: str, rows: dict[str, dict[str, str]]) -> st
 def replace_card(
     match: re.Match[str],
     rows: dict[str, dict[str, str]],
+    examples: dict[str, dict[str, str]],
     advanced_titles: dict[str, str],
 ) -> str:
     card = match.group(0)
@@ -242,7 +608,7 @@ def replace_card(
         raise ValueError(f"Could not replace title for {source_id}")
     card, count = re.subn(
         r"(</header>)",
-        rf"\1{beginner_guide(row)}",
+        rf"\1{beginner_guide(row, examples[source_id])}",
         card,
         count=1,
     )
@@ -262,10 +628,12 @@ def replace_card(
 def render(source: str) -> str:
     row_list = read_tsv(CONTRACT_PATH)
     rows = {row["source_id"]: row for row in row_list}
+    example_list = read_examples()
+    examples = {row["source_id"]: row for row in example_list}
     advanced_titles = read_advanced_titles()
     rendered, count = re.subn(
         r'<article class="analysis-card".*?</article>',
-        lambda match: replace_card(match, rows, advanced_titles),
+        lambda match: replace_card(match, rows, examples, advanced_titles),
         source,
         flags=re.DOTALL,
     )

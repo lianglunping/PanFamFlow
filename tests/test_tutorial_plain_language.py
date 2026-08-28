@@ -377,6 +377,104 @@ def test_beginner_global_guidance_avoids_unexplained_statistics_and_domain_terms
     assert "结果目录" in beginner_notes[0].all_text()
 
 
+def test_first_run_is_an_eight_step_zero_terminal_closed_loop() -> None:
+    parser = parse_html()
+    start = find_by_id(parser, "start")
+
+    assert start is not None
+    steps = [node for node in start.descendants() if "first-run-step" in node.classes]
+    assert len(steps) == 8
+    assert [node.attrs.get("data-step") for node in steps] == [str(i) for i in range(1, 9)]
+    assert all(node.tag == "li" and node.parent is not None for node in steps)
+    assert all(node.parent.tag == "ol" for node in steps)
+    assert all("beginner-only" not in node.classes for node in steps)
+
+    text = re.sub(r"\s+", " ", start.all_text()).strip()
+    for required in (
+        "打开终端",
+        "pwd",
+        "检查电脑里已有的工具",
+        "git --version",
+        "mamba --version",
+        "conda --version",
+        "uv --version",
+        "Windows 用户必须先进入 WSL 的 Ubuntu 终端",
+        "不要在 PowerShell 中运行后面的命令",
+        "conda 是本示例运行时必需的",
+        "mamba 只是可选的下载加速工具",
+        "安装后关闭并重新打开终端",
+        "git clone https://github.com/lianglunping/PanFamFlow.git",
+        "cd PanFamFlow",
+        "我已经在 PanFamFlow 根目录",
+        "当前目录的下一层已有 PanFamFlow",
+        "当前目录和下一层都没有 PanFamFlow",
+        "PANFAMFLOW ROOT OK",
+        "git remote get-url origin",
+        "uv sync --locked --dev",
+        "uv run panfamflow --version",
+        "uv run panfamflow validate -c examples/toy/config.yaml -m qc",
+        "Validation passed",
+        "uv run panfamflow plan -c examples/toy/config.yaml -m qc",
+        "qc",
+        "results/00_qc/qc.done",
+        "uv run --with 'snakemake==9.25.1' panfamflow run -c examples/toy/config.yaml -m qc",
+        "2 of 2 steps (100%) done",
+        "Nothing to be done (all requested files are present and up to date).",
+        "examples/toy/results/00_qc/input_audit.tsv",
+        "examples/toy/results/00_qc/qc.done",
+        "examples/toy/.snakemake/log",
+        "NO SNAKEMAKE LOG: skip this step",
+        "TOY RUN PASSED",
+        "results",
+        "work",
+        "logs",
+        "最后 30 行",
+    ):
+        assert required in text
+
+    assert "--with" in text
+    assert "只在这一次运行时临时加入" in text
+    assert "不会自动使用" in text
+    assert "只证明命令和预期文件能够形成闭环" in text
+    assert "不能作为真实水稻的生物学结论" in text
+    assert "0.1.2a0" not in text
+    assert "只做三件事" not in text
+
+    links = {
+        node.attrs.get("href")
+        for node in start.descendants()
+        if node.tag == "a" and node.attrs.get("href")
+    }
+    assert {
+        "https://git-scm.com/install/",
+        "https://docs.astral.sh/uv/getting-started/installation/",
+        "https://docs.conda.io/projects/conda/en/stable/user-guide/install/",
+        "https://learn.microsoft.com/en-us/windows/wsl/install",
+    }.issubset(links)
+
+
+def test_first_run_commands_match_ci_verified_toy_contract() -> None:
+    html = Path("docs/index.html").read_text(encoding="utf-8")
+    ci = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+
+    def normalized_shell(value: str) -> str:
+        return re.sub(r"\s*\\\s*", " ", re.sub(r"\s+", " ", value)).strip()
+
+    run_command = (
+        "uv run --with 'snakemake==9.25.1' panfamflow run -c examples/toy/config.yaml -m qc"
+    )
+    assert run_command in normalized_shell(ci)
+    assert run_command in normalized_shell(html)
+    assert "uv run panfamflow run -c examples/toy/config.yaml\n" not in html
+    assert html.count("git clone https://github.com/lianglunping/PanFamFlow.git") == 1
+    assert "git clone https://github.com/lianglunping/PanFamFlow.git &amp;&amp;" in html
+    assert html.count("test -f pyproject.toml") == 3
+    assert "echo 'PANFAMFLOW ROOT OK'" in html
+    assert "test -s examples/toy/results/00_qc/input_audit.tsv" in html
+    assert "test -s examples/toy/results/00_qc/qc.done" in html
+    assert "echo 'TOY RUN PASSED'" in html
+
+
 def test_beginner_mode_defines_its_five_required_basic_concepts() -> None:
     parser = parse_html()
     concepts = find_by_id(parser, "basic-concepts")
