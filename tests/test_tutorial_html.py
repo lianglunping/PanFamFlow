@@ -153,13 +153,15 @@ def test_beginner_mode_has_one_clear_path_and_keeps_advanced_content_available()
     )
     assert "location.hash='chapter-map'" in text
     assert (
-        ".beginner-analysis-nav{display:grid;grid-template-columns:1fr;gap:10px;"
+        'html[data-learning-mode="beginner"] .beginner-analysis-nav{display:grid;'
+        "grid-template-columns:1fr;gap:10px;"
         "padding:0 13px 18px}" in text
     )
     assert (
-        ".beginner-analysis-nav a{display:flex;align-items:center;width:100%;min-height:44px"
-        in text
+        'html[data-learning-mode="beginner"] .beginner-analysis-nav a{display:flex;'
+        "align-items:center;width:100%;min-height:44px" in text
     )
+    assert "}.beginner-analysis-nav{display:grid" not in text
     assert (
         'html[data-learning-mode="beginner"] #chapter-10>.chapter-quick-nav{display:none}' in text
     )

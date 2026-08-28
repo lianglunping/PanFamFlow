@@ -65,8 +65,8 @@ DIAGRAMS = {
       <div class="promoter-demo" aria-hidden="true"><span>基因前方序列</span><div><i></i><b></b><i></i><b></b><i></i></div><strong>基因</strong></div>
       <div class="diagram-legend"><span><b class="legend-signal"></b>匹配到的短序列线索</span><span>匹配 ≠ 已经发挥调控作用</span></div>
       <div class="promoter-summary-demo"><strong>同一张线索表</strong><b aria-hidden="true">→</b><div><span>按四类汇总</span><span>按家族分组</span><span>按材料或群体</span><span>按成员有无</span></div></div>
-      <div class="color-range-demo" role="group" aria-label="两种颜色范围的读图差别"><div><strong>统一颜色范围</strong><p><i class="c1"></i><i class="c2"></i><i class="c3"></i></p><small>所有线索共用一条色尺，可以比较原始深浅</small></div><div><strong>每种线索分别调色</strong><div class="split-scales"><p><span>线索甲</span><i class="c1"></i><i class="c2"></i><i class="c3"></i></p><p><span>线索乙</span><i class="c1"></i><i class="c2"></i><i class="c3"></i></p></div><small>每行各用一条色尺，只比较同一行内部的高低</small></div></div>
-      <p class="diagram-side">同一份数据可按不同问题重新汇总；分别调色不会改变原始数值，但颜色深浅不能跨线索直接比较。</p>""",
+      <div class="color-range-demo" role="group" aria-label="原始数值与换算后相对高低的读图差别"><div><strong>原始数值</strong><p><i class="c1"></i><i class="c2"></i><i class="c3"></i></p><small>共同颜色范围，可以比较原始深浅</small></div><div><strong>换算后的相对高低</strong><div class="split-scales"><p><span>线索甲</span><i class="c1"></i><i class="c2"></i><i class="c3"></i></p><p><span>线索乙</span><i class="c1"></i><i class="c2"></i><i class="c3"></i></p></div><small>每种线索先按自身平均水平和波动换算</small></div></div>
+      <p class="diagram-side">同一份数据可按不同问题重新汇总。换算会产生相对高低值，原始数值表仍单独保留、不被覆盖；换算图的颜色不能用来比较不同线索的原始多少。</p>""",
     "expression_heatmap": """
       <div class="expression-demo"><div class="heatmap-demo" role="img" aria-label="三个基因在四个样本中活跃程度不同的颜色示意"><i class="v1"></i><i class="v2"></i><i class="v3"></i><i class="v1"></i><i class="v3"></i><i class="v3"></i><i class="v2"></i><i class="v1"></i><i class="v2"></i><i class="v1"></i><i class="v1"></i><i class="v3"></i></div><div class="replicate-demo"><strong>对照</strong><span>● ● ●</span><strong>处理</strong><span>● ● ●</span><small>独立重复后才能严格比较</small></div></div>""",
 }

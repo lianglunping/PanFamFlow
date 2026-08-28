@@ -489,9 +489,11 @@ def test_chapter_ten_items_keep_group_context_and_explain_color_ranges() -> None
         "按家族分组",
         "按材料或群体",
         "按成员有无",
-        "统一颜色范围",
-        "每种线索分别调色",
-        "颜色深浅不能跨线索直接比较",
+        "原始数值",
+        "换算后的相对高低",
+        "每种线索先按自身平均水平和波动换算",
+        "原始数值表仍单独保留、不被覆盖",
+        "不能用来比较不同线索的原始多少",
     ):
         assert teaching_point in diagram_text
 
