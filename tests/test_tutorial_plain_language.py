@@ -638,8 +638,10 @@ def test_chapter_ten_items_keep_group_context_and_explain_color_ranges() -> None
     assert sum("第 2 组 / 4：按家族分组比较" in text for text in location_text) == 4
     assert sum("第 3 组 / 4：按材料或群体比较" in text for text in location_text) == 4
     assert sum("第 4 组 / 4：看重点线索和组合分组" in text for text in location_text) == 4
-    assert location_text[0].endswith("第 1 / 15 项")
-    assert location_text[-1].endswith("第 15 / 15 项")
+    assert "本节第 1 / 15 项" in location_text[0]
+    assert location_text[0].endswith("全课程第 37 / 58 项")
+    assert "本节第 15 / 15 项" in location_text[-1]
+    assert location_text[-1].endswith("全课程第 51 / 58 项")
 
     promoter_diagrams = [
         node
@@ -677,6 +679,36 @@ def test_all_58_items_have_linear_navigation_and_learning_progress() -> None:
     assert "const done=visitedAnalyses.size;const total=58" in html
     assert "已打开 ${done} / ${total} 项" in html
     assert "已读 ${done} / ${total} 项" not in html
+
+    chapter_counts = Counter(source_id.split(".", 1)[0] for source_id in EXPECTED_IDS)
+    chapter_positions: Counter[str] = Counter()
+    for course_position, (source_id, card, navigation) in enumerate(
+        zip(EXPECTED_IDS, cards, navigations, strict=True),
+        start=1,
+    ):
+        chapter = source_id.split(".", 1)[0]
+        chapter_positions[chapter] += 1
+        locations = [
+            node for node in card.descendants() if "beginner-item-location" in node.classes
+        ]
+        assert len(locations) == 1, source_id
+        location_text = re.sub(r"\s+", " ", locations[0].all_text()).strip()
+        assert f"第 {chapter} 节" in location_text
+        assert (
+            f"本节第 {chapter_positions[chapter]} / {chapter_counts[chapter]} 项" in location_text
+        )
+        assert location_text.endswith(f"全课程第 {course_position} / 58 项")
+
+        links = [node for node in navigation.children if node.tag == "a"]
+        assert links
+        assert "primary" in links[0].classes, source_id
+        first_action = re.sub(r"\s+", " ", links[0].all_text()).strip()
+        if source_id == "11.7":
+            assert first_action == "课程完成：用教学示例跑一次"
+        elif chapter_positions[chapter] == chapter_counts[chapter]:
+            assert first_action == "本节完成：返回分析思维导图"
+        else:
+            assert first_action.startswith("下一项：")
 
 
 def test_each_section_starts_from_its_own_learning_route() -> None:
