@@ -695,8 +695,7 @@ def test_all_58_items_have_linear_navigation_and_learning_progress() -> None:
         location_text = re.sub(r"\s+", " ", locations[0].all_text()).strip()
         assert f"第 {chapter} 节" in location_text
         assert (
-            f"本节第 {chapter_positions[chapter]} / {chapter_counts[chapter]} 项"
-            in location_text
+            f"本节第 {chapter_positions[chapter]} / {chapter_counts[chapter]} 项" in location_text
         )
         assert location_text.endswith(f"全课程第 {course_position} / 58 项")
 
