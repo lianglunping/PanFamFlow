@@ -591,22 +591,26 @@ def micro_lesson(example: dict[str, str]) -> str:
 def beginner_guide(row: dict[str, str], example: dict[str, str]) -> str:
     value = {key: html.escape(row[key], quote=True) for key in FIELDS}
     source_id = row["source_id"]
-    chapter_item = source_id.split(".", 1)[1]
+    chapter, chapter_item = source_id.split(".", 1)
+    chapter_ids = [item for item in EXPECTED_IDS if item.split(".", 1)[0] == chapter]
+    chapter_position = chapter_ids.index(source_id) + 1
+    course_position = EXPECTED_IDS.index(source_id) + 1
     default_condition = (
         FIRST_ITEM_BEGINNER_CONDITION if chapter_item == "1" else DEFAULT_BEGINNER_CONDITION
     )
     condition = html.escape(
         CONDITIONAL_BEGINNER_CONDITIONS.get(source_id, default_condition), quote=True
     )
-    location = ""
-    if row["source_id"] in CHAPTER_TEN_ITEM_CONTEXT:
-        group_index, group_label = CHAPTER_TEN_ITEM_CONTEXT[row["source_id"]]
-        item_index = int(row["source_id"].split(".", 1)[1])
-        location = (
-            '<p class="beginner-item-location">'
-            f"第 10 节 · 第 {group_index} 组 / 4：{html.escape(group_label)}"
-            f" · 第 {item_index} / 15 项</p>"
-        )
+    group_context = ""
+    if source_id in CHAPTER_TEN_ITEM_CONTEXT:
+        group_index, group_label = CHAPTER_TEN_ITEM_CONTEXT[source_id]
+        group_context = f" · 第 {group_index} 组 / 4：{html.escape(group_label)}"
+    location = (
+        '<p class="beginner-item-location">'
+        f"第 {chapter} 节{group_context}"
+        f" · 本节第 {chapter_position} / {len(chapter_ids)} 项"
+        f" · 全课程第 {course_position} / {len(EXPECTED_IDS)} 项</p>"
+    )
     return (
         f'\n<section class="beginner-guide" aria-label="{value["source_id"]} 零基础说明">'
         f"{location}"
@@ -633,24 +637,25 @@ def beginner_analysis_nav(source_id: str, rows: dict[str, dict[str, str]]) -> st
     chapter = source_id.split(".", 1)[0]
     chapter_ids = [item for item in EXPECTED_IDS if item.split(".", 1)[0] == chapter]
     index = chapter_ids.index(source_id)
-    links = [f'<a href="#chapter-{chapter}">返回本节路线</a>']
-    if index > 0:
-        previous_id = chapter_ids[index - 1]
-        links.append(
-            f'<a rel="prev" href="#analysis-{previous_id.replace(".", "-")}">'
-            f"上一项：{html.escape(rows[previous_id]['beginner_title_zh'])}</a>"
-        )
+    links = []
     if index + 1 < len(chapter_ids):
         next_id = chapter_ids[index + 1]
         links.append(
-            f'<a rel="next" href="#analysis-{next_id.replace(".", "-")}">'
+            f'<a class="primary" rel="next" href="#analysis-{next_id.replace(".", "-")}">'
             f"下一项：{html.escape(rows[next_id]['beginner_title_zh'])}</a>"
         )
     elif source_id == "11.7":
         links.append('<a class="primary" href="#start">课程完成：用教学示例跑一次</a>')
         links.append('<a href="#chapter-map">返回分析思维导图</a>')
     else:
-        links.append('<a href="#chapter-map">本节完成：返回分析思维导图</a>')
+        links.append('<a class="primary" href="#chapter-map">本节完成：返回分析思维导图</a>')
+    if index > 0:
+        previous_id = chapter_ids[index - 1]
+        links.append(
+            f'<a rel="prev" href="#analysis-{previous_id.replace(".", "-")}">'
+            f"上一项：{html.escape(rows[previous_id]['beginner_title_zh'])}</a>"
+        )
+    links.append(f'<a href="#chapter-{chapter}">返回本节路线</a>')
     return (
         '<nav class="beginner-analysis-nav beginner-only" aria-label="本项学习导航">'
         + "".join(links)
