@@ -673,7 +673,17 @@ def test_all_58_items_have_linear_navigation_and_learning_progress() -> None:
     html = HTML_PATH.read_text(encoding="utf-8")
     assert html.count('rel="prev"') == 50
     assert html.count('rel="next"') == 50
-    assert html.count("本节完成：返回分析思维导图") == 7
+    next_chapters = {
+        "4.4": "继续第 5 节：基因结构",
+        "5.6": "继续第 6 节：HOG、目标家族占有与核心型 / 近核心型 / 壳层型 / 稀有型",
+        "6.8": "继续第 7 节：染色体定位",
+        "7.3": "继续第 8 节：复制类型与共线性",
+        "8.6": "继续第 9 节：Ka、Ks、Ka/Ks 与选择约束线索",
+        "9.9": "继续第 10 节：启动子与顺式作用元件",
+        "10.15": "继续第 11 节：表达模式与外部表达结果整合",
+    }
+    assert html.count("本节完成：返回分析思维导图") == 0
+    assert sum(label in html for label in next_chapters.values()) == 7
     assert "课程完成：用教学示例跑一次" in html
     assert "panfamflowTutorialVisitedAnalyses" in html
     assert "const done=visitedAnalyses.size;const total=58" in html
@@ -706,7 +716,8 @@ def test_all_58_items_have_linear_navigation_and_learning_progress() -> None:
         if source_id == "11.7":
             assert first_action == "课程完成：用教学示例跑一次"
         elif chapter_positions[chapter] == chapter_counts[chapter]:
-            assert first_action == "本节完成：返回分析思维导图"
+            assert first_action == next_chapters[source_id]
+            assert links[0].attrs["href"] == f"#chapter-{int(chapter) + 1}"
         else:
             assert first_action.startswith("下一项：")
 

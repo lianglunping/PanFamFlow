@@ -16,6 +16,7 @@ from pathlib import Path
 
 _TITLE_CONTRACT = runpy.run_path(Path(__file__).with_name("tutorial_title_contract.py"))
 PROFESSIONAL_ANALYSIS_TITLE_OVERRIDES = _TITLE_CONTRACT["PROFESSIONAL_ANALYSIS_TITLE_OVERRIDES"]
+PROFESSIONAL_CHAPTER_TITLES = _TITLE_CONTRACT["PROFESSIONAL_CHAPTER_TITLES"]
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_PATH = ROOT / "docs" / "TUTORIAL_BEGINNER_LANGUAGE.tsv"
@@ -648,7 +649,12 @@ def beginner_analysis_nav(source_id: str, rows: dict[str, dict[str, str]]) -> st
         links.append('<a class="primary" href="#start">课程完成：用教学示例跑一次</a>')
         links.append('<a href="#chapter-map">返回分析思维导图</a>')
     else:
-        links.append('<a class="primary" href="#chapter-map">本节完成：返回分析思维导图</a>')
+        next_chapter = str(int(chapter) + 1)
+        links.append(
+            f'<a class="primary" href="#chapter-{next_chapter}">'
+            f"继续{html.escape(PROFESSIONAL_CHAPTER_TITLES[next_chapter])}</a>"
+        )
+        links.append('<a href="#chapter-map">返回分析思维导图</a>')
     if index > 0:
         previous_id = chapter_ids[index - 1]
         links.append(
