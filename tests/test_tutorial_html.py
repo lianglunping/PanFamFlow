@@ -209,11 +209,11 @@ def test_course_map_supports_overview_search_and_truthful_state_filters() -> Non
         assert control_id in parser.ids
 
     assert "只看 8 个大节" in text
-    assert "展开 58 项分析" in text
+    assert "显示全部 58 项分析" in text
+    assert '<button id="mapOverviewButton" type="button" aria-pressed="false">' in text
     assert (
-        '<button id="mapOverviewButton" class="primary" type="button" aria-pressed="true">' in text
+        '<button id="mapCompleteButton" class="primary" type="button" aria-pressed="true">' in text
     )
-    assert '<button id="mapCompleteButton" type="button" aria-pressed="false">' in text
     assert "按编号或名称查找" in text
     assert "按结果条件查看" in text
     assert text.count('data-map-search="') == 58
@@ -224,9 +224,9 @@ def test_course_map_supports_overview_search_and_truthful_state_filters() -> Non
     assert 'option value="postprocess">需要后处理' in text
     assert 'option value="conditional">满足条件后运行' in text
     assert "function setMapView(view)" in text
-    assert "58 项分析默认收起，点击“展开 58 项分析”查看" in text
-    assert "let mapView='overview', mapVisible=58" in text
-    assert "setMapView('overview');filterMap()" in text
+    assert "当前显示 58 / 58 项分析" in text
+    assert "let mapView='complete', mapVisible=58" in text
+    assert "setMapView('complete');filterMap()" in text
     assert "function filterMap()" in text
     assert "item.dataset.mapState===state" in text
     assert "branch.classList.toggle('map-filtered'" in text

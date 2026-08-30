@@ -279,10 +279,10 @@ def render_mindmap(
         '<div class="callout"><strong>状态怎么理解：</strong>“提供流程结果”表示已有规范表或图；“需后处理”表示已有基础结果，但还要按本项口径汇总或比较；“有条件可用”表示只有输入与重复等前提满足时才运行。三种状态都不等于已经得到真实水稻结论。</div>'
         '<section class="mindmap-finder" aria-labelledby="mindmap-finder-title">'
         '<div class="mindmap-finder-heading"><div><h3 id="mindmap-finder-title">在 58 项分析中快速定位</h3>'
-        "<p>第一次只想理解框架，可以看 8 个大节；需要查具体分析时，再按编号、名称或结果条件筛选。</p></div>"
+        "<p>完整 58 项默认展开；第一次只想理解框架时，可切换为只看 8 个大节。</p></div>"
         '<div class="mindmap-view-switch" role="group" aria-label="图谱显示范围">'
-        '<button id="mapOverviewButton" class="primary" type="button" aria-pressed="true">只看 8 个大节</button>'
-        '<button id="mapCompleteButton" type="button" aria-pressed="false">展开 58 项分析</button>'
+        '<button id="mapOverviewButton" type="button" aria-pressed="false">只看 8 个大节</button>'
+        '<button id="mapCompleteButton" class="primary" type="button" aria-pressed="true">显示全部 58 项分析</button>'
         '</div></div><div class="mindmap-finder-fields">'
         '<label for="mapSearch">按编号或名称查找<input id="mapSearch" type="search" '
         'placeholder="例如：6.3、基因树、表达" autocomplete="off"></label>'
@@ -290,7 +290,7 @@ def render_mindmap(
         '<option value="all">全部结果条件</option><option value="direct">已有直接结果</option>'
         '<option value="postprocess">需要后处理</option><option value="conditional">满足条件后运行</option>'
         '</select></label><button id="mapClearFilters" type="button">清除查找条件</button></div>'
-        '<p id="mapFilterSummary" class="mindmap-filter-summary" aria-live="polite">当前显示 8 / 8 个专业大节；具体 58 项默认收起</p>'
+        '<p id="mapFilterSummary" class="mindmap-filter-summary" aria-live="polite">当前显示 58 / 58 项分析</p>'
         '<p id="mapNoResults" class="mindmap-no-results" role="status" hidden>没有找到符合条件的分析。请更换关键词或清除查找条件。</p>'
         "</section>"
         '<div class="mindmap-root"><strong>研究一个目标基因家族</strong><span>可靠成员 → 结构与位置 → 来源与变化 → 实际活跃条件</span></div>'
