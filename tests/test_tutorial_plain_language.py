@@ -722,6 +722,27 @@ def test_all_58_items_have_linear_navigation_and_learning_progress() -> None:
             assert first_action.startswith("下一项：")
 
 
+def test_previous_and_next_labels_match_professional_map_titles() -> None:
+    parser = parse_html()
+    map_links = {}
+    for item in nodes_with_class(parser, "mindmap-analysis-item"):
+        link = next(node for node in item.children if node.tag == "a")
+        title = next(node for node in link.descendants() if node.tag == "strong")
+        source_id = item.attrs["data-map-id"]
+        map_links[link.attrs["href"]] = f"{source_id} {title.all_text()}"
+    assert len(map_links) == 58
+    checked = 0
+    for nav in nodes_with_class(parser, "beginner-analysis-nav"):
+        for link in nav.children:
+            relation = link.attrs.get("rel")
+            if relation not in ("prev", "next"):
+                continue
+            prefix = "上一项：" if relation == "prev" else "下一项："
+            assert link.all_text() == prefix + map_links[link.attrs["href"]]
+            checked += 1
+    assert checked == 100
+
+
 def test_each_section_starts_from_its_own_learning_route() -> None:
     parser = parse_html()
     for source_id in ("4.1", "5.1", "6.1", "7.1", "8.1", "9.1", "10.1", "11.1"):

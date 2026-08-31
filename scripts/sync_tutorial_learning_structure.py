@@ -218,7 +218,8 @@ def render_analysis_links(rows: list[dict[str, str]]) -> str:
         ).lower()
         rendered.append(
             f'<li class="mindmap-analysis-item {state_class}" '
-            f'data-map-state="{map_state}" data-map-search="{html.escape(search_text)}">'
+            f'data-map-state="{map_state}" data-map-id="{row["source_id"]}" '
+            f'data-map-search="{html.escape(search_text)}">'
             f'<a href="#analysis-{row["source_id"].replace(".", "-")}">'
             f'<span class="mindmap-analysis-number">{html.escape(row["source_id"])}</span>'
             f'<span class="mindmap-analysis-copy"><strong>{html.escape(row["professional_title_zh"])}</strong>'
@@ -285,11 +286,13 @@ def render_mindmap(
         '<button id="mapCompleteButton" class="primary" type="button" aria-pressed="true">显示全部 58 项分析</button>'
         '</div></div><div class="mindmap-finder-fields">'
         '<label for="mapSearch">按编号或名称查找<input id="mapSearch" type="search" '
-        'placeholder="例如：6.3、基因树、表达" autocomplete="off"></label>'
+        'placeholder="例如：10.1、10、基因树" autocomplete="off" aria-describedby="mapSearchHelp"></label>'
         '<label for="mapStateFilter">按结果条件查看<select id="mapStateFilter">'
         '<option value="all">全部结果条件</option><option value="direct">已有直接结果</option>'
         '<option value="postprocess">需要后处理</option><option value="conditional">满足条件后运行</option>'
         '</select></label><button id="mapClearFilters" type="button">清除查找条件</button></div>'
+        '<p id="mapSearchHelp">输入完整编号（如 10.1）只找这一项；输入大节编号（如 10）查看整节，也可输入名称关键词。'
+        "“已打开”只记录访问，不表示已经学会或分析已经完成。</p>"
         '<p id="mapFilterSummary" class="mindmap-filter-summary" aria-live="polite">当前显示 58 / 58 项分析</p>'
         '<p id="mapNoResults" class="mindmap-no-results" role="status" hidden>没有找到符合条件的分析。请更换关键词或清除查找条件。</p>'
         "</section>"
