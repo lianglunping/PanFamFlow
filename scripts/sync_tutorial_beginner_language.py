@@ -634,7 +634,7 @@ def beginner_guide(row: dict[str, str], example: dict[str, str]) -> str:
     )
 
 
-def beginner_analysis_nav(source_id: str, rows: dict[str, dict[str, str]]) -> str:
+def beginner_analysis_nav(source_id: str, titles: dict[str, str]) -> str:
     chapter = source_id.split(".", 1)[0]
     chapter_ids = [item for item in EXPECTED_IDS if item.split(".", 1)[0] == chapter]
     index = chapter_ids.index(source_id)
@@ -643,7 +643,7 @@ def beginner_analysis_nav(source_id: str, rows: dict[str, dict[str, str]]) -> st
         next_id = chapter_ids[index + 1]
         links.append(
             f'<a class="primary" rel="next" href="#analysis-{next_id.replace(".", "-")}">'
-            f"下一项：{html.escape(rows[next_id]['beginner_title_zh'])}</a>"
+            f"下一项：{next_id} {html.escape(titles[next_id])}</a>"
         )
     elif source_id == "11.7":
         links.append('<a class="primary" href="#start">课程完成：用教学示例跑一次</a>')
@@ -659,7 +659,7 @@ def beginner_analysis_nav(source_id: str, rows: dict[str, dict[str, str]]) -> st
         previous_id = chapter_ids[index - 1]
         links.append(
             f'<a rel="prev" href="#analysis-{previous_id.replace(".", "-")}">'
-            f"上一项：{html.escape(rows[previous_id]['beginner_title_zh'])}</a>"
+            f"上一项：{previous_id} {html.escape(titles[previous_id])}</a>"
         )
     links.append(f'<a href="#chapter-{chapter}">返回本节路线</a>')
     return (
@@ -717,7 +717,7 @@ def replace_card(
         raise ValueError(f"Could not insert beginner guide for {source_id}")
     card, count = re.subn(
         r'(<a class="back-to-chapter")',
-        beginner_analysis_nav(source_id, rows) + r"\n\1",
+        beginner_analysis_nav(source_id, advanced_titles) + r"\n\1",
         card,
         count=1,
     )

@@ -236,6 +236,21 @@ def test_course_map_supports_overview_search_and_truthful_state_filters() -> Non
     assert 'aria-live="polite"' in text
 
 
+def test_course_map_exact_search_and_visits_have_explicit_meaning() -> None:
+    text = Path("docs/index.html").read_text(encoding="utf-8")
+    assert text.count('data-map-id="') == 58
+    assert 'aria-describedby="mapSearchHelp"' in text
+    assert "输入完整编号（如 10.1）只找这一项" in text
+    assert "不表示已经学会或分析已经完成" in text
+    assert 'content:" · 已打开"' in text
+    assert 'content:" ✓"' not in text
+    assert "function matchesMapQuery(sourceId, searchText, rawQuery)" in text
+    assert "rawQuery.normalize('NFKC')" in text
+    assert "return sourceId===query" in text
+    assert "sourceId.split('.')[0]" in text
+    assert "matchesMapQuery(item.dataset.mapId" in text
+
+
 def test_beginner_semantic_closure_keeps_internal_drawing_contracts_advanced_only() -> None:
     text = Path("docs/index.html").read_text(encoding="utf-8")
     assert 'class="advanced-plot-contract technical-mode-only"' in text
