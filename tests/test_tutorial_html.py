@@ -111,10 +111,14 @@ def test_beginner_mode_has_one_clear_path_and_keeps_advanced_content_available()
         assert required_id in parser.ids
 
     assert "第一次来：先走四步学习路线" in text
+    assert "沿着完整课程，学会目标基因家族分析" in text
+    assert "用一个完整例子，学会目标基因家族分析" not in text
     assert 'href="#newbie-path"' in text
     assert "查阅完整 58 项思维导图" in text
     assert "第一次学习，只走这四步" in text
     assert text.count('class="path-step"') == 4
+    assert "练习启动流程" in text
+    assert "不会生成 58 项正式分析结果" in text
     assert "教学示意，不是真实分析结果" in text
     assert "第 1 看：对象" in text
     assert "第 2 看：质量" in text
@@ -126,6 +130,8 @@ def test_beginner_mode_has_one_clear_path_and_keeps_advanced_content_available()
         < text.index('id="chapter-map"')
     )
     assert "58 / 58 项完整收录" in text
+    assert 'class="mindmap-course-start"><a class="button primary" href="#chapter-4"' in text
+    assert "看完全图：从第 4 节开始按顺序学习" in text
     assert "58 / 58 项全部可见" not in text
     assert text.count('class="mindmap-stage"') == 4
     assert text.count('class="mindmap-branch"') == 8
@@ -168,7 +174,7 @@ def test_beginner_mode_has_one_clear_path_and_keeps_advanced_content_available()
         in text
     )
     assert "location.hash='chapter-map'" in text
-    assert 'href="#start">课程完成：用教学示例跑一次' in text
+    assert 'href="#start">课程内容学完：练习启动流程（只做输入检查）' in text
     assert 'href="#output-reader">运行完成：下一步学习怎样读结果' in text
     assert "const readingTarget=getHashTarget()" in text
     assert "scheduleBeginnerKeyboardTarget(readingTarget)" in text

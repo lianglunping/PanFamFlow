@@ -646,7 +646,9 @@ def beginner_analysis_nav(source_id: str, titles: dict[str, str]) -> str:
             f"下一项：{next_id} {html.escape(titles[next_id])}</a>"
         )
     elif source_id == "11.7":
-        links.append('<a class="primary" href="#start">课程完成：用教学示例跑一次</a>')
+        links.append(
+            '<a class="primary" href="#start">课程内容学完：练习启动流程（只做输入检查）</a>'
+        )
         links.append('<a href="#chapter-map">返回分析思维导图</a>')
     else:
         next_chapter = str(int(chapter) + 1)
