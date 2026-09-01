@@ -298,7 +298,8 @@ def render_mindmap(
         "</section>"
         '<div class="mindmap-root"><strong>研究一个目标基因家族</strong><span>可靠成员 → 结构与位置 → 来源与变化 → 实际活跃条件</span></div>'
         f'<div class="mindmap-stages">{"".join(stage_html)}</div>'
-        '<div class="beginner-note"><span aria-hidden="true">↓</span><div><strong>建议顺序：</strong>第一次学习请按阶段 1 → 4、专业大节 4 → 11 顺序学习。点击任一专业小节，可直接进入该项的基础知识、分析方法和结果解读。</div></div>'
+        '<div class="beginner-note"><span aria-hidden="true">↓</span><div><strong>建议顺序：</strong>第一次学习请按阶段 1 → 4、专业大节 4 → 11 顺序学习。点击任一专业小节，可直接进入该项的基础知识、分析方法和结果解读。'
+        '<p class="mindmap-course-start"><a class="button primary" href="#chapter-4">看完全图：从第 4 节开始按顺序学习</a></p></div></div>'
         "</section>\n<!-- END TUTORIAL_MINDMAP -->"
     )
 
@@ -420,7 +421,7 @@ def render_chapter_intro(
     diagram = DIAGRAMS[row["diagram_type"]]
     chapter_ten = render_chapter_ten_groups(language) if row["chapter"] == "10" else ""
     next_link = (
-        '<a class="primary" href="#start">课程完成：用教学示例跑一次</a>'
+        '<a class="primary" href="#start">课程内容学完：练习启动流程（只做输入检查）</a>'
         if row["chapter"] == "11"
         else f'<a href="#chapter-{int(row["chapter"]) + 1}" '
         f'data-next-chapter="{int(row["chapter"]) + 1}">继续下一节</a>'

@@ -465,6 +465,8 @@ def test_first_run_is_an_eight_step_zero_terminal_closed_loop() -> None:
     assert "只在这一次运行时临时加入" in text
     assert "不会自动使用" in text
     assert "只证明命令和预期文件能够形成闭环" in text
+    assert "只运行输入与质量检查模块" in text
+    assert "不会生成 58 项正式分析结果" in text
     assert "不能作为真实水稻的生物学结论" in text
     assert "0.1.2a0" not in text
     assert "只做三件事" not in text
@@ -684,7 +686,7 @@ def test_all_58_items_have_linear_navigation_and_learning_progress() -> None:
     }
     assert html.count("本节完成：返回分析思维导图") == 0
     assert sum(label in html for label in next_chapters.values()) == 7
-    assert "课程完成：用教学示例跑一次" in html
+    assert "课程内容学完：练习启动流程（只做输入检查）" in html
     assert "panfamflowTutorialVisitedAnalyses" in html
     assert "const done=visitedAnalyses.size;const total=58" in html
     assert "已打开 ${done} / ${total} 项" in html
@@ -714,7 +716,7 @@ def test_all_58_items_have_linear_navigation_and_learning_progress() -> None:
         assert "primary" in links[0].classes, source_id
         first_action = re.sub(r"\s+", " ", links[0].all_text()).strip()
         if source_id == "11.7":
-            assert first_action == "课程完成：用教学示例跑一次"
+            assert first_action == "课程内容学完：练习启动流程（只做输入检查）"
         elif chapter_positions[chapter] == chapter_counts[chapter]:
             assert first_action == next_chapters[source_id]
             assert links[0].attrs["href"] == f"#chapter-{int(chapter) + 1}"
