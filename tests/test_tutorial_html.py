@@ -117,6 +117,10 @@ def test_beginner_mode_has_one_clear_path_and_keeps_advanced_content_available()
     assert "查阅完整 58 项思维导图" in text
     assert "第一次学习，只走这四步" in text
     assert text.count('class="path-step"') == 4
+    assert "先懂五个基础概念" in text
+    assert "再看完整分析路线" in text
+    assert "按专业章节学习" in text
+    assert "最后练习启动与读结果" in text
     assert "练习启动流程" in text
     assert "不会生成 58 项正式分析结果" in text
     assert "教学示意，不是真实分析结果" in text
@@ -129,6 +133,7 @@ def test_beginner_mode_has_one_clear_path_and_keeps_advanced_content_available()
         < text.index('id="basic-concepts"')
         < text.index('id="chapter-map"')
     )
+    assert 'href="#chapter-map">下一步：查看 8 个专业大节和 58 项分析总图' in text
     assert "58 / 58 项完整收录" in text
     assert 'class="mindmap-course-start"><a class="button primary" href="#chapter-4"' in text
     assert "看完全图：从第 4 节开始按顺序学习" in text
