@@ -406,6 +406,25 @@ def test_beginner_global_guidance_avoids_unexplained_statistics_and_domain_terms
     assert "结果目录" in beginner_notes[0].all_text()
 
 
+def test_four_step_route_is_a_forward_learning_sequence() -> None:
+    parser = parse_html()
+    newbie_path = find_by_id(parser, "newbie-path")
+    concepts = find_by_id(parser, "basic-concepts")
+
+    steps = [node for node in newbie_path.descendants() if "path-step" in node.classes]
+    assert len(steps) == 4
+    assert [node.all_text().split()[0] for node in steps] == ["1", "2", "3", "4"]
+
+    step_links = [
+        next(node for node in step.descendants() if node.tag == "a").attrs["href"] for step in steps
+    ]
+    assert step_links == ["#basic-concepts", "#chapter-map", "#chapter-4", "#start"]
+
+    concept_links = [node.attrs.get("href") for node in concepts.descendants() if node.tag == "a"]
+    assert "#chapter-map" in concept_links
+    assert "#chapter-4" not in concept_links
+
+
 def test_first_run_is_an_eight_step_zero_terminal_closed_loop() -> None:
     parser = parse_html()
     start = find_by_id(parser, "start")
