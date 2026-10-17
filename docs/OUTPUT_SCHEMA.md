@@ -1,5 +1,16 @@
 # 关键输出表结构
 
+## `00_qc/input_audit.tsv`
+
+每个登记的输入保留原有 `role`、`species_id`、文件大小、SHA256、序列/特征数量、`status` 和 `notes`。现在还对每个 `gff3` 记录与**同一 `species_id`** 的 assembled genome FASTA 进行只读配对核查：
+
+- `seqid_compatibility_status`：`PASS`、`EMPTY_GFF_FEATURES`、`SEQID_MISMATCH`、`COORDINATE_OVERRUN` 或 `SEQID_MISMATCH_AND_COORDINATE_OVERRUN`。
+- `genome_seqid_count`、`gff_matched_seqid_count`、`gff_missing_seqid_count`：以 FASTA 主 ID 为准的集合统计；FASTA 中有未注释的 contig 不算失败。
+- `gff_missing_seqid_examples`：最多五个按字典序排序、未在 FASTA 中找到的 GFF3 seqid。
+- `gff_coordinate_overrun_count`、`gff_coordinate_overrun_examples`：GFF3 任意特征的最大 1-based end 超出 FASTA 长度的 seqid 数及示例。
+
+存在任一不一致时 `gff3` 行的 `status=FAIL`，`input_manifest.json.failed_records` 计入该行，规范化/提取模块不能继续。**不会按 contig 序号或表面相似性自动重命名，也不会修改原 FASTA/GFF3。** 任何名称映射必须由用户使用可信原注释来源审定，并另行生成派生 GFF3；新增字段本身不证明组装质量或注释完整性。
+
 ## `family_members.tsv`
 
 核心列：
@@ -8,7 +19,7 @@
 - `family_name`, `subfamily`
 - `chromosome`, `gene_start`, `gene_end`, `strand`
 - `evidence_hmm`, `evidence_blast`, `evidence_precomputed`
-- HMM/BLAST best-hit fields
+- HMM/BLAST best-hit fields；存在 HMM 证据时另记 `hmm_model_length`、`hmm_model_from`、`hmm_model_to`、`hmm_model_coverage`（最佳单条 domain hit 的 HMM 模型坐标覆盖比例，闭区间除以模型长度）。没有 HMM 命中的候选保留 NA。覆盖比例只是描述性诊断，不代表全蛋白完整性、多结构域架构或真实功能，也**不新增任何筛选阈值或改变 PASS/REJECT**。
 - `molecular_weight_da`, `theoretical_pi`, `protein_property_qc`
 - optional domain/localization prefixed columns
 - `decision`, `rejection_reason`
