@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
 from external_evidence_utils import validate_external_evidence_table
+from hmm_domain_utils import hmm_model_span
 from sequence_logo_utils import build_sequence_logo
 from stratified_summary_utils import build_family_distribution
 from workflow_utils import (
@@ -72,6 +73,7 @@ if hmm_path.exists() and hmm_path.stat().st_size:
                 "hmm_domain_score": float(fields[13]),
                 "hmm_ali_from": int(fields[17]),
                 "hmm_ali_to": int(fields[18]),
+                **hmm_model_span(fields),
             }
             current = hmm_hits.get(target)
             if current is None or domain_ievalue < float(current["hmm_domain_ievalue"]):
