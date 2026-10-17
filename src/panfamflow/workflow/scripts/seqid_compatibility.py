@@ -29,11 +29,7 @@ def assess_seqid_compatibility(
     gff_ids = set(gff_max_ends)
     matched = sorted(gff_ids & genome_ids)
     missing = sorted(gff_ids - genome_ids)
-    overrun = sorted(
-        seqid
-        for seqid in matched
-        if gff_max_ends[seqid] > genome_lengths[seqid]
-    )
+    overrun = sorted(seqid for seqid in matched if gff_max_ends[seqid] > genome_lengths[seqid])
 
     if not gff_ids:
         status = "EMPTY_GFF_FEATURES"
