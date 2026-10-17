@@ -20,8 +20,7 @@ def hmm_model_span(fields: Sequence[str]) -> dict[str, int | float]:
     model_to = int(fields[16])
     if model_length < 1 or not 1 <= model_from <= model_to <= model_length:
         raise ValueError(
-            "Invalid HMM model-coordinate interval "
-            f"{model_from}-{model_to} of {model_length}"
+            f"Invalid HMM model-coordinate interval {model_from}-{model_to} of {model_length}"
         )
     return {
         "hmm_model_length": model_length,
