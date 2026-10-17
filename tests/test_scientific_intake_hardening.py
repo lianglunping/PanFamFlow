@@ -40,9 +40,10 @@ def test_partial_match_and_coordinate_overrun_are_both_reported() -> None:
 
 
 def test_empty_gff_fails_closed() -> None:
-    assert assess_seqid_compatibility({"Chr01": 100}, {})[
-        "seqid_compatibility_status"
-    ] == "EMPTY_GFF_FEATURES"
+    assert (
+        assess_seqid_compatibility({"Chr01": 100}, {})["seqid_compatibility_status"]
+        == "EMPTY_GFF_FEATURES"
+    )
 
 
 def test_seqid_examples_are_bounded_and_deterministic() -> None:
@@ -139,8 +140,7 @@ def test_family_hmm_search_wires_additive_span_diagnostics() -> None:
     from pathlib import Path
 
     script = (
-        Path(__file__).parents[1]
-        / "src/panfamflow/workflow/scripts/combine_family_evidence.py"
+        Path(__file__).parents[1] / "src/panfamflow/workflow/scripts/combine_family_evidence.py"
     ).read_text(encoding="utf-8")
     assert "from hmm_domain_utils import hmm_model_span" in script
     assert "**hmm_model_span(fields)" in script
